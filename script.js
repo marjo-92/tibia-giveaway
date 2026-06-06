@@ -5,7 +5,7 @@ let players = [];
 let boss = { x: 400, y: 240, hp: 1000, maxHp: 1000, size: 36, isDead: false, name: "Ferumbras" };
 let damageTexts = [];
 let visualEffects = [];
-let gameActive = false; // Czy trwa walka
+let gameActive = false; // Czy trwa walka (faza gry)
 let registrationOpen = false;
 let killTimer = 0;
 let killInterval = 60;
@@ -58,7 +58,7 @@ function connectAndListen() {
     document.getElementById("statusText").style.color = "#ffff55";
     document.getElementById("lootMessage").innerText = "";
     players = [];
-    gameActive = false; // Resetujemy do widoku listy
+    gameActive = false; // Wymuszenie widoku listy uczestników
     boss.isDead = false;
     boss.hp = boss.maxHp;
 
@@ -94,7 +94,7 @@ function startBossFight() {
     if (players.length <= targetWinners) return alert("Masz za mało zapisanych osób w stosunku do liczby zwycięzców!");
 
     registrationOpen = false;
-    gameActive = true; // URUCHOMIENIE GRY: Przełączamy ekran na arenę z bossem
+    gameActive = true; // Przełączenie ekranu na walkę z bossem
     boss.hp = boss.maxHp;
     boss.isDead = false;
     
@@ -138,15 +138,14 @@ function executeBossAttack() {
     }
 }
 
-// Główna pętla rysująca ekran
 function gameLoop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    if (!gameActive && !boss.isDead) {
+    if (!gameActive) {
         // -------------------------------------------------------------
-        // EKRAN 1: RYSOWANIE ESTETYCZNEJ LISTY GRACZY (Gdy trwają zapisy)
+        // EKRAN 1: RYSOWANIE LISTY UCZESTNIKÓW (Przed kliknięciem START)
         // -------------------------------------------------------------
-        ctx.fillStyle = "#1e1e24"; // Tło listy
+        ctx.fillStyle = "#1e1e24"; 
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         
         ctx.fillStyle = "#ffaa00";
@@ -154,24 +153,21 @@ function gameLoop() {
         ctx.textAlign = "left";
         ctx.fillText(`LISTA UCZESTNIKÓW RAIDU (${players.length}):`, 30, 40);
         
-        ctx.fillStyle = "#ffffff";
-        ctx.font = "14px monospace";
-        
-        // Rysowanie nicków w kilku kolumnach, żeby pomieścić wielu widzów
         let startX = 30;
         let startY = 80;
         let colWidth = 180;
         let rowHeight = 25;
         
+        ctx.font = "14px monospace";
         players.forEach((p, index) => {
-            let col = Math.floor(index / 14); // Maksymalnie 14 nicków w pionie na kolumnę
+            let col = Math.floor(index / 14);
             let row = index % 14;
             
             let x = startX + col * colWidth;
             let y = startY + row * rowHeight;
             
             if (x < canvas.width - 50) {
-                ctx.fillStyle = p.color; // Każdy widz ma swój losowy kolor tekstu
+                ctx.fillStyle = p.color;
                 ctx.fillText(`• ${p.name}`, x, y);
             }
         });
@@ -185,13 +181,13 @@ function gameLoop() {
         
     } else {
         // -------------------------------------------------------------
-        // EKRAN 2: RYSOWANIE ARENY Z POTWORAMI (Po kliknięciu przycisku)
+        // EKRAN 2: ARENA WALKI (Po kliknięciu START)
         // -------------------------------------------------------------
         ctx.strokeStyle = "#474747"; ctx.lineWidth = 1;
         for(let x=0; x<canvas.width; x+=32) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke(); }
         for(let y=0; y<canvas.height; y+=32) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke(); }
 
-        if (gameActive && !boss.isDead) {
+        if (!boss.isDead) {
             killTimer++;
             if (killTimer >= killInterval) { executeBossAttack(); killTimer = 0; }
             let aliveCount = players.filter(p => !p.isDead).length;
@@ -216,17 +212,8 @@ function gameLoop() {
         for (let i = visualEffects.length - 1; i >= 0; i--) {
             let fx = visualEffects[i];
             if (fx.type === 'beam') {
-        ctx.strokeStyle = "#ff3333"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(fx.x1, fx.y1); ctx.lineTo(fx.x2, fx.y2); ctx.stroke();
-        } else if (fx.type === 'ue') {
-        ctx.fillStyle = fx.color; ctx.beginPath(); ctx.arc(fx.x, fx.y, fx.radius, 0, Math.PI * 2); ctx.fill();fx.radius += (fx.maxRadius - fx.radius) * 0.15;    
-        } else {
-         ctx.strokeStyle = fx.color; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(fx.x, fx.y, fx.radius, 0, Math.PI * 2); ctx.stroke();fx.radius += (fx.maxRadius - fx.radius) * 0.2;
-        }
-            fx.timer--; if (fx.timer <= 0) visualEffects.splice(i, 1);
-        }    
-        for (let i = damageTexts.length - 1; i >= 0; i--) {let dt = damageTexts[i]; ctx.fillStyle = dt.color; ctx.font = "bold 14px monospace"; ctx.textAlign = "center";ctx.fillText(dt.text, dt.x, dt.y); dt.y -= 0.6; dt.timer--; if (dt.timer <= 0) damageTexts.splice(i, 1);
-        }
-    }
-    requestAnimationFrame(gameLoop);
-}
-gameLoop();    
+                ctx.strokeStyle = "#ff3333"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(fx.x1, fx.y1); ctx.lineTo(fx.x2, fx.y2); ctx.stroke();
+            } else if (fx.type === 'ue') {
+                ctx.fillStyle = fx.color; ctx.beginPath(); ctx.arc(fx.x, fx.y, fx.radius, 0, Math.PI * 2); ctx.fill();
+fx.radius += (fx.maxRadius - fx.radius) * 0.15;} else {ctx.strokeStyle = fx.color; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(fx.x, fx.y, fx.radius, 0, Math.PI * 2); ctx.stroke();fx.radius += (fx.maxRadius - fx.radius) * 0.2;}fx.timer--; if (fx.timer <= 0) visualEffects.splice(i, 1);}for (let i = damageTexts.length - 1; i >= 0; i--) {let dt = damageTexts[i]; ctx.fillStyle = dt.color; ctx.font = "bold 14px monospace"; ctx.textAlign = "center";ctx.fillText(dt.text, dt.x, dt.y); dt.y -= 0.6; dt.timer--; if (dt.timer <= 0) damageTexts.splice(i, 1);}}requestAnimationFrame(gameLoop);}gameLoop();
+
