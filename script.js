@@ -11,9 +11,13 @@ let killTimer = 0;
 let killInterval = 60;
 let pusherInstance = null;
 
+// 🔑 Twój unikalny numer czatu Kick wpisany na sztywno:
+const MY_CHATROOM_ID = 2791851; 
+
 class Player {
     constructor(name) {
         this.name = name;
+        // Rozrzucenie postaci po bokach mapy
         this.x = Math.random() > 0.5 ? Math.random() * 100 + 40 : Math.random() * 100 + 660;
         this.y = Math.random() > 0.5 ? Math.random() * 100 + 40 : Math.random() * 100 + 340;
         this.color = ["#ff5555", "#55ff55", "#5555ff", "#ffff55", "#ff55ff", "#55ffff"][Math.floor(Math.random() * 6)];
@@ -47,12 +51,12 @@ class Player {
     }
 }
 
-async function connectAndListen() {
-    const channelName = document.getElementById("kickChannel").value.trim().toLowerCase();
+// 🟢 Automatyczne i bezpośrednie łączenie z Twoim czatem Kick
+function connectAndListen() {
     const command = document.getElementById("chatCommand").value.trim().toLowerCase();
-    if (!channelName || !command) return alert("Wpisz nick oraz hasło do zapisu!");
+    if (!command) return alert("Wpisz hasło do zapisu!");
 
-    document.getElementById("statusText").innerText = "Łączenie z API Kick...";
+    document.getElementById("statusText").innerText = "Łączenie z czatem Kick...";
     document.getElementById("statusText").style.color = "#ffff55";
     document.getElementById("lootMessage").innerText = "";
     players = [];
@@ -60,48 +64,38 @@ async function connectAndListen() {
     boss.isDead = false;
     boss.hp = boss.maxHp;
 
-    try {
-        const response = await fetch(`https://kick.com{channelName}`);
-        if (!response.ok) throw new Error();
-        const data = await response.json();
-        const chatroomId = data.chatroom.id;
+    if (pusherInstance) pusherInstance.disconnect();
+    
+    // Połączenie z serwerem czatu przez oficjalny klucz Kicka i Twoje ID
+    pusherInstance = new Pusher('32cbd69e4b950bf97679', { cluster: 'us2', forceTLS: true });
+    const channel = pusherInstance.subscribe(`chatrooms.${MY_CHATROOM_ID}.v2`);
+    
+    registrationOpen = true;
+    document.getElementById("statusText").innerHTML = `🟢 Zapisy URUCHOMIONE! Hasło na czacie: <span style="color:#00ff00; font-weight:bold;">${command}</span> | Zapisanych: <b id="count">0</b>`;
+    document.getElementById("statusText").style.color = "#00ff00";
 
-        if (pusherInstance) pusherInstance.disconnect();
+    channel.bind('App\\Events\\ChatMessageEvent', function(msg) {
+        if (!registrationOpen || gameActive) return;
         
-        pusherInstance = new Pusher('32cbd69e4b950bf97679', { cluster: 'us2', forceTLS: true });
-        const channel = pusherInstance.subscribe(`chatrooms.${chatroomId}.v2`);
-        
-        registrationOpen = true;
-        document.getElementById("statusText").innerHTML = `🟢 Zapisy OTWARTE! Kanał: <b>${channelName}</b> | Hasło: <span style="color:#00ff00; font-weight:bold;">${command}</span> | Zapisanych: <b id="count">0</b>`;
-        document.getElementById("statusText").style.color = "#00ff00";
+        const messageText = msg.content.trim().toLowerCase();
+        const senderName = msg.sender.username;
 
-        channel.bind('App\\Events\\ChatMessageEvent', function(msg) {
-            if (!registrationOpen || gameActive) return;
-            
-            const messageText = msg.content.trim().toLowerCase();
-            const senderName = msg.sender.username;
-
-            if (messageText === command) {
-                const exists = players.some(p => p.name.toLowerCase() === senderName.toLowerCase());
-                if (!exists) {
-                    players.push(new Player(senderName));
-                    document.getElementById("count").innerText = players.length;
-                    damageTexts.push({ x: Math.random()*600+100, y: Math.random()*300+80, text: `+ ${senderName}`, color: "#00ff00", timer: 40 });
-                }
+        if (messageText === command) {
+            const exists = players.some(p => p.name.toLowerCase() === senderName.toLowerCase());
+            if (!exists) {
+                players.push(new Player(senderName));
+                document.getElementById("count").innerText = players.length;
+                damageTexts.push({ x: Math.random()*600+100, y: Math.random()*300+80, text: `+ ${senderName}`, color: "#00ff00", timer: 40 });
             }
-        });
-
-    } catch (err) {
-        document.getElementById("statusText").innerText = "❌ Błąd! Sprawdź czy nick kanału jest poprawny.";
-        document.getElementById("statusText").style.color = "#ff3333";
-    }
+        }
+    });
 }
 
 function startBossFight() {
     if (players.length === 0) return alert("Nikt jeszcze nie zapisał się na losowanie!");
     
     const targetWinners = parseInt(document.getElementById("winnersCount").value);
-    if (players.length <= targetWinners) return alert("Masz za mało zapisanych osób!");
+    if (players.length <= targetWinners) return alert("Masz za mało zapisanych osób w stosunku do liczby zwycięzców!");
 
     registrationOpen = false;
     gameActive = true;
@@ -198,3 +192,4 @@ function gameLoop() {
     requestAnimationFrame(gameLoop);
 }
 gameLoop();
+
