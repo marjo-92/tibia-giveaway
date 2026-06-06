@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <title>Tibia Kick Raid Lottery</title>
-    <link rel="stylesheet" href="style.css">
-    <script src="https://pusher.com"></script>
+    <!-- Łączymy z plikiem stylów -->
+    <link rel="stylesheet" href="style.css?v=3">
 </head>
 <body>
 
@@ -36,7 +36,7 @@
         </div>
     </div>
 
-    <!-- EKRAN 1: OKNO ZAPISÓW (WŁĄCZONE NA START) -->
+    <!-- EKRAN 1: OKNO ZAPISÓW -->
     <div id="registrationView">
         <div id="listTitle">LISTA ZAPISANYCH GRACZY (0):</div>
         <div id="viewerList">
@@ -44,13 +44,14 @@
         </div>
     </div>
 
-    <!-- EKRAN 2: ARENA DO WALK (UKRYTA DZIĘKI STYLE="DISPLAY:NONE") -->
-    <div id="arenaView" style="display: none;">
+    <!-- EKRAN 2: ARENA DO WALK -->
+    <div id="arenaView">
         <canvas id="gameCanvas" width="800" height="480"></canvas>
     </div>
 
     <div id="lootMessage"></div>
 
-    <script src="script.js"></script>
+    <!-- Łączymy z plikiem skryptu -->
+    <script src="script.js?v=3"></script>
 </body>
 </html>
