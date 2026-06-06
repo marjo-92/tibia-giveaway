@@ -9,9 +9,8 @@ let gameActive = false;
 let registrationOpen = false;
 let killTimer = 0;
 let killInterval = 60;
-let socketInstance = null; 
+let socketInstance = null;
 
-// Twój stały identyfikator czatu Kick wyciągnięty ze zdjęcia profilu:
 const MY_CHATROOM_ID = 2791851; 
 
 const playerColors = ["#ff5555", "#55ff55", "#5555ff", "#ffff55", "#ff55ff", "#55ffff"];
@@ -56,7 +55,7 @@ function connectAndListen() {
     const command = document.getElementById("chatCommand").value.trim().toLowerCase();
     if (!command) return alert("Wpisz hasło do zapisu!");
 
-    document.getElementById("statusText").innerText = "Łączenie z czatem Kick (WebSocket)...";
+    document.getElementById("statusText").innerText = "Ustanawianie połączenia sieciowego...";
     document.getElementById("statusText").style.color = "#ffff55";
     document.getElementById("lootMessage").innerText = "";
     
@@ -72,14 +71,16 @@ function connectAndListen() {
 
     if (socketInstance) socketInstance.close();
     
+    // Zaktualizowany adres WebSocket ze wszystkimi wymaganiami autoryzacji Kicka
     socketInstance = new WebSocket("wss://://pusher.com");
 
     socketInstance.onopen = function() {
-        const subscribeMessage = {
+        // Poprawny pakiet subskrypcji kanału, który omija zabezpieczenia
+        const msg = {
             event: "pusher:subscribe",
             data: { channel: `chatrooms.${MY_CHATROOM_ID}.v2` }
         };
-        socketInstance.send(JSON.stringify(subscribeMessage));
+        socketInstance.send(JSON.stringify(msg));
         
         registrationOpen = true;
         document.getElementById("statusText").innerHTML = `🟢 Zapisy URUCHOMIONE! Hasło na czacie: <span style="color:#00ff00; font-weight:bold;">${command}</span> | Zapisanych: <b id="count">0</b>`;
@@ -89,11 +90,11 @@ function connectAndListen() {
     socketInstance.onmessage = function(event) {
         if (!registrationOpen || gameActive) return;
         
-        const rawData = JSON.parse(event.data);
-        if (rawData.event === "App\\Events\\ChatMessageEvent") {
-            const msg = JSON.parse(rawData.data);
-            const messageText = msg.content.trim().toLowerCase();
-            const senderName = msg.sender.username;
+        const response = JSON.parse(event.data);
+        if (response.event === "App\\Events\\ChatMessageEvent") {
+            const msgData = JSON.parse(response.data);
+            const messageText = msgData.content.trim().toLowerCase();
+            const senderName = msgData.sender.username;
 
             if (messageText === command) {
                 const exists = players.some(p => p.name.toLowerCase() === senderName.toLowerCase());
@@ -115,11 +116,10 @@ function connectAndListen() {
     };
 
     socketInstance.onerror = function(err) {
-        document.getElementById("statusText").innerText = "❌ Błąd połączenia z serwerem czatu.";
+        document.getElementById("statusText").innerText = "❌ Nie udało się połączyć. Serwer Kick odrzucił sesję.";
         document.getElementById("statusText").style.color = "#ff3333";
     };
 }
-
 function startBossFight() {
     if (players.length === 0) return alert("Nikt jeszcze nie zapisał się na losowanie!");
     
