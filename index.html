@@ -2,120 +2,263 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>Tibia Kick Raffle System</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kick Raffle System - Tibia Edition</title>
+    <!-- Czcionki Google Fonts używane przez Sedrona -->
+    <link rel="preconnect" href="https://googleapis.com">
+    <link rel="preconnect" href="https://gstatic.com" crossorigin>
+    <link href="https://googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Arkusze stylów Sedrona zasymilowane do jednej sekcji dla stabilności na GitHubie -->
     <style>
-        body { background-color: #0b0e14; color: #d1d5db; font-family: sans-serif; margin: 0; padding: 0; user-select: none; }
-        #topBar { background-color: #111622; border-bottom: 1px solid #1f2937; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; }
-        .brand { color: #00e701; font-weight: bold; font-size: 18px; }
-        .badge { background: #00e701; color: black; font-size: 10px; padding: 2px 6px; border-radius: 4px; margin-left: 5px; font-weight: bold; }
-        #dashboardLayout { display: flex; height: calc(100vh - 60px); }
-        #leftPanel, #rightPanel { width: 300px; background-color: #111622; padding: 20px; box-sizing: border-box; border-right: 1px solid #1f2937; }
-        #rightPanel { border-right: none; border-left: 1px solid #1f2937; display: flex; flex-direction: column; }
-        #centerPanel { flex: 1; background-color: #090c14; padding: 25px; display: flex; flex-direction: column; }
-        .panel-section h3 { color: white; font-size: 16px; margin-top: 0; margin-bottom: 20px; border-bottom: 1px solid #1f2937; padding-bottom: 10px; }
-        .input-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 18px; }
-        .input-group label { font-size: 11px; color: #9ca3af; font-weight: bold; text-transform: uppercase; }
-        .input-group input, .input-group select { background: #1f2937; color: white; border: 1px solid #374151; padding: 10px; font-size: 14px; border-radius: 6px; width: 100%; box-sizing: border-box; }
-        button.btn-green { background-color: #00e701; color: black; border: none; padding: 12px; font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%; margin-bottom: 10px; }
-        button.btn-green:hover { background-color: #00ff00; }
-        button.btn-red { background-color: #ff3333; color: white; border: none; padding: 12px; font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%; }
-        button.btn-red:hover { background-color: #ff0000; }
-        button.btn-clear { background-color: #27272a; color: #f4f4f5; border: 1px solid #3f3f46; padding: 10px; font-weight: bold; border-radius: 6px; cursor: pointer; margin-top: auto; width: 100%; }
-        #statsSummary { display: flex; gap: 15px; margin-bottom: 15px; }
-        .stat-card { background: #111622; border: 1px solid #1f2937; border-radius: 8px; padding: 15px 20px; flex: 1; display: flex; flex-direction: column; gap: 4px; font-size: 18px; font-weight: bold; color: white; }
-        .stat-card .label { font-size: 10px; color: #9ca3af; font-weight: bold; }
-        #statusText { font-size: 14px; color: #ffff55; background: #18181b; padding: 12px 15px; border-radius: 6px; margin-bottom: 20px; border: 1px solid #27272a; font-weight: bold; }
-        #registrationView { background-color: #111622; border: 1px solid #1f2937; border-radius: 8px; flex: 1; padding: 25px; display: flex; flex-direction: column; }
-        #listTitle { color: #00e701; font-weight: bold; font-size: 14px; margin-bottom: 15px; }
-        #viewerList { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; overflow-y: auto; }
-        #emptyMessage { text-align: center; color: #4b5563; font-style: italic; margin-top: 50px; font-size: 14px; grid-column: 1/-1; }
-        .viewer-tag { background: #1f2937; border: 1px solid #374151; padding: 8px 12px; border-radius: 6px; font-weight: bold; font-size: 13px; color: white; text-align: center; }
-        #winnersList { display: flex; flex-direction: column; gap: 10px; }
-        .empty-winners { color: #4b5563; font-size: 13px; font-style: italic; text-align: center; margin-top: 50px; }
-        .winner-tag { background: rgba(0,231,1,0.1); border: 1px solid #00e701; color: #00e701; padding: 10px; border-radius: 6px; text-align: center; font-weight: bold; }
+        :root {
+            --bg-main: #0b0e14; --bg-card: #111622; --border-color: #1f2937;
+            --text-main: #d1d5db; --text-muted: #9ca3af; --kick-green: #00e701;
+            --btn-red: #ff3333; --font-inter: 'Inter', sans-serif; --font-outfit: 'Outfit', sans-serif;
+        }
+        body { background-color: var(--bg-main); color: var(--text-main); font-family: var(--font-inter); margin: 0; padding: 0; user-select: none; overflow: hidden; }
+        .hidden { display: none !important; }
+        
+        /* Ekran logowania */
+        .login-screen { display: flex; justify-content: center; align-items: center; height: 100vh; width: 100%; }
+        .login-card { background-color: var(--bg-card); border: 2px solid var(--kick-green); box-shadow: 0 0 25px rgba(0,231,1,0.15); border-radius: 12px; padding: 40px; width: 380px; text-align: center; }
+        .login-logo { color: var(--kick-green); font-family: var(--font-outfit); font-size: 24px; margin: 0 0 5px 0; font-weight: 800; }
+        .login-subtitle { color: var(--text-muted); font-size: 14px; margin: 0 0 25px 0; }
+        .input { width: 100%; background: #090c14; color: white; border: 1px solid var(--border-color); padding: 12px; font-size: 14px; border-radius: 8px; box-sizing: border-box; text-align: center; font-family: var(--font-inter); font-weight: 600; }
+        .input:focus { border-color: var(--kick-green); outline: none; }
+        .btn { width: 100%; border: none; padding: 14px; font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; font-family: var(--font-inter); transition: 0.2s; }
+        .btn-primary { background: linear-gradient(135deg, #00ff00, #00b300); color: black; }
+        .btn-primary:hover { transform: scale(1.02); box-shadow: 0 0 15px rgba(0,255,0,0.3); }
+        .btn-danger { background-color: var(--btn-red); color: white; }
+        .btn-secondary { background-color: #27272a; color: white; border: 1px solid #3f3f46; }
+        .btn-small { padding: 8px 12px; font-size: 12px; width: auto; }
+        .author-credit { margin-top: 25px; font-size: 11px; color: #4b5563; }
+        .author-credit a { color: var(--kick-green); text-decoration: none; font-weight: bold; }
+
+        /* Panel Główny */
+        .main-screen { display: flex; flex-direction: column; height: 100vh; }
+        .header { background-color: var(--bg-card); border-bottom: 1px solid var(--border-color); padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; height: 60px; box-sizing: border-box; }
+        .logo { color: var(--kick-green); font-family: var(--font-outfit); font-weight: 800; font-size: 18px; }
+        .header-right { display: flex; align-items: center; gap: 20px; }
+        .channel-info { font-size: 14px; color: var(--text-muted); }
+        .channel-name { color: white; font-weight: bold; }
+        
+        /* Układ kolumn */
+        .content-grid { display: flex; flex: 1; height: calc(100vh - 60px); overflow: hidden; }
+        .settings-panel, .winners-panel { width: 320px; background-color: var(--bg-card); padding: 20px; box-sizing: border-box; }
+        .settings-panel { border-right: 1px solid var(--border-color); overflow-y: auto; }
+        .winners-panel { border-left: 1px solid var(--border-color); display: flex; flex-direction: column; }
+        .giveaway-panel { flex: 1; background-color: #090c14; padding: 25px; display: flex; flex-direction: column; overflow-y: auto; box-sizing: border-box; }
+        
+        /* Zakładki i karty */
+        .card { background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+        .settings-tabs { display: flex; gap: 5px; margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; }
+        .settings-tab, .mode-toggle-btn { flex: 1; background: #1f2937; color: var(--text-muted); border: none; padding: 10px; font-weight: bold; font-size: 12px; cursor: pointer; border-radius: 6px; }
+        .settings-tab.active, .mode-toggle-btn.active { background: var(--kick-green); color: black; }
+        .mode-toggle-container { display: flex; gap: 5px; margin-bottom: 20px; }
+        .card-title { color: white; font-size: 16px; margin: 0 0 15px 0; font-family: var(--font-outfit); border-bottom: 1px solid var(--border-color); padding-bottom: 8px; }
+        
+        /* Banery statystyk i listy uczestników */
+        .giveaway-info-banner { display: flex; gap: 15px; margin-bottom: 20px; width: 100%; }
+        .banner-prize, .banner-keyword, .banner-participants { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px 20px; flex: 1; display: flex; align-items: center; gap: 12px; }
+        .banner-icon { font-size: 20px; }
+        .banner-content { display: flex; flex-direction: column; }
+        .banner-label { font-size: 10px; color: var(--text-muted); font-weight: bold; letter-spacing: 0.5px; }
+        .banner-value { font-size: 16px; font-weight: bold; color: white; }
+        #statusText { font-size: 13px; color: #ffff55; background: #18181b; padding: 12px 15px; border-radius: 6px; margin-bottom: 20px; border: 1px solid #27272a; font-weight: bold; }
+        
+        .participant-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; list-style: none; padding: 0; margin: 0; max-height: 420px; overflow-y: auto; }
+        .viewer-tag { background: #1f2937; border: 1px solid var(--border-color); padding: 8px 12px; border-radius: 6px; font-weight: bold; font-size: 13px; color: white; text-align: center; }
+        .giveaway-actions { display: flex; justify-content: space-between; margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--border-color); }
+        .giveaway-actions-center { display: flex; gap: 8px; }
+        
+        /* Zwycięzcy */
+        .winners-list-container { flex: 1; overflow-y: auto; margin-bottom: 15px; }
+        .winner-item { background: rgba(0,231,1,0.08); border: 1px solid var(--kick-green); color: var(--kick-green); padding: 12px; border-radius: 6px; text-align: center; font-weight: bold; font-size: 14px; margin-bottom: 10px; }
+        .empty-winners { color: #4b5563; font-size: 13px; font-style: italic; text-align: center; margin-top: 40px; }
     </style>
 </head>
 <body>
 
-    <header id="topBar">
-        <div class="brand">KICK RAFFLE SYSTEM <span class="badge">LIVE CHAT</span></div>
-        <div>Połączono: ililiililiililiiliilil</div>
-    </header>
+    <div class="app-wrapper">
 
-    <div id="dashboardLayout">
-        <aside id="leftPanel">
-            <div class="panel-section">
-                <h3>Ustawienia</h3>
-                <div class="input-group">
-                    <label>Hasło na czat:</label>
-                    <input type="text" id="chatCommand" value="!losowanie">
-                </div>
-                <div class="input-group">
-                    <label>Nagroda:</label>
-                    <input type="text" id="prizeText" value="250 TC">
-                </div>
-                <div class="input-group">
-                    <label>Liczba zwycięzców:</label>
-                    <select id="winnersCount">
-                        <option value="1">1</option>
-                        <option value="2">2</option>
-                        <option value="3">3</option>
-                    </select>
-                </div>
-                <div class="button-actions">
-                    <button onclick="connectAndListen()" class="btn-green">Rozpocznij zapisy</button>
-                    <button onclick="startTextLottery()" class="btn-red">Wylosuj zwycięzców</button>
-                </div>
-            </div>
-        </aside>
+        <!-- EKRAN 1: LOGOWANIE -->
+        <div id="login-screen" class="login-screen">
+            <div class="login-card">
+                <h1 class="login-logo">KICK RAFFLE SYSTEM</h1>
+                <p class="login-subtitle">Enter the Kick channel for the giveaway</p>
 
-        <main id="centerPanel">
-            <div id="statsSummary">
-                <div class="stat-card"><span class="label">🎁 NAGRODA</span><span id="summaryPrize">-</span></div>
-                <div class="stat-card"><span class="label">🔑 HASŁO</span><span id="summaryKeyword">-</span></div>
-                <div class="stat-card"><span class="label">👥 UCZESTNIKÓW</span><span id="count">0</span></div>
-            </div>
-            <div id="statusText">Kliknij "Rozpocznij zapisy", aby aktywować system.</div>
-            <div id="registrationView">
-                <div id="listTitle">ZAPISANI UCZESTNICY:</div>
-                <div id="viewerList">
-                    <div id="emptyMessage">Napisz hasło na czacie, aby dołączyć...</div>
+                <div class="login-form">
+                    <input type="text" id="channel-input" class="input" placeholder="E.g., sedron" style="margin-bottom: 20px;">
+                    <button onclick="handleLogin()" class="btn btn-primary" id="connect-button">Connect</button>
                 </div>
-            </div>
-        </main>
+                <div id="loginStatus" style="margin-top: 15px; font-size: 13px; font-weight: bold;"></div>
 
-        <aside id="rightPanel">
-            <div class="panel-section" style="height: 100%; display: flex; flex-direction: column;">
-                <h3>Zwycięzcy</h3>
-                <div id="winnersList">
-                    <div class="empty-winners">Czekam na losowanie...</div>
+                <div class="author-credit">
+                    <span>Created by</span> <a href="https://kick.com" target="_blank">KICK.COM/SEDRON</a>
                 </div>
-                <button onclick="resetAllData()" class="btn-clear">Wyczyść dane</button>
             </div>
-        </aside>
+        </div>
+
+        <!-- EKRAN 2: PANEL GŁÓWNY -->
+        <div id="main-screen" class="main-screen hidden">
+
+            <header class="header">
+                <div class="header-left"><div class="logo">KICK RAFFLE SYSTEM</div></div>
+                <div class="header-right">
+                    <div class="channel-info">
+                        <span>Connected to:</span> <span class="channel-name" id="connected-channel-name">Channel</span>
+                    </div>
+                </div>
+            </header>
+
+            <div class="content-grid">
+                <!-- LEWY PANEL: USTAWIENIA -->
+                <aside class="settings-panel">
+                    <div class="card" style="border:none; padding:0; background:none;">
+                        <div class="settings-tabs">
+                            <button class="settings-tab active">RAFFLE</button>
+                            <button class="settings-tab">WHEEL</button>
+                        </div>
+                        <div class="card-header"><h2 class="card-title">Settings</h2></div>
+                        
+                        <div class="tab-content active">
+                            <div class="mode-toggle-container">
+                                <button class="mode-toggle-btn active">Chat</button>
+                                <button class="mode-toggle-btn">Manual</button>
+                            </div>
+
+                            <div class="input-group" style="margin-bottom: 15px;">
+                                <label style="font-size: 11px; font-weight: bold; color: var(--text-muted); display: block; margin-bottom: 5px;">WHAT ARE YOU GIVING AWAY:</label>
+                                <input type="text" id="prize-input" class="input" value="250 TC" style="text-align: left;">
+                            </div>
+
+                            <div class="input-group" style="margin-bottom: 15px;">
+KEYWORD (OPTIONAL):
+                                NUMBER OF WINNERS:
+                                Start Collecting
+
+                                                <!-- ========================================== -->
+                <!-- ŚRODKOWY PANEL: STATUS I UCZESTNICY        -->
+                <!-- ========================================== -->
+                <main class="giveaway-panel">
+                    <div id="raffle-view">
+                        <!-- Banery informacyjne w stylu Sedrona -->
+                        <div class="giveaway-info-banner" id="giveaway-info-banner">
+                            <div class="banner-prize">
+                                <span class="banner-icon">🎁</span>
+                                <div class="banner-content">
+                                    <span class="banner-label">GIVEAWAY</span>
+                                    <span class="banner-value" id="banner-prize-value">-</span>
+                                </div>
+                            </div>
+                            <div class="banner-keyword">
+                                <span class="banner-icon">🔑</span>
+                                <div class="banner-content">
+                                    <span class="banner-label">KEYWORD</span>
+                                    <span class="banner-value" id="banner-keyword-value">-</span>
+                                </div>
+                            </div>
+                            <div class="banner-participants">
+                                <span class="banner-icon">👥</span>
+                                <div class="banner-content">
+                                    <span class="banner-label">PARTICIPANTS</span>
+                                    <span class="banner-value" id="banner-participants-value">0</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="statusText">Kliknij "Start Collecting", aby aktywować system.</div>
+
+                        <!-- Główna karta z kafelkami uczestników -->
+                        <div class="card" style="flex: 1; min-height: 300px; display: flex; flex-direction: column;">
+                            <div class="card-body" style="flex: 1; display: flex; flex-direction: column;">
+                                <ul class="participant-list" id="participant-list">
+                                    <div id="emptyMessage" style="text-align: center; color: #4b5563; font-style: italic; margin-top: 50px; font-size: 14px; width: 100%;">
+                                        Napisz hasło na czacie, aby dołączyć...
+                                    </div>
+                                </ul>
+
+                                <!-- Dolny pasek akcji losowania -->
+                                <div class="giveaway-actions">
+                                    <div class="giveaway-actions-center">
+                                        <button onclick="startTextLottery()" class="btn btn-red btn-small" style="font-size:14px; padding: 10px 20px;">Wylosuj zwycięzców</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </main>
+
+                <!-- ========================================== -->
+                <!-- PRAWA KOLUMNA: ZWYCIĘZCY (Klon Sedrona)   -->
+                <!-- ========================================== -->
+                <aside class="winners-panel">
+                    <div class="card" style="border:none; padding:0; background:none; height:100%; display:flex; flex-direction:column;">
+                        <div class="card-header">
+                            <div class="winners-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                                <h2 class="card-title" style="margin:0; border:none; padding:0;">Winners</h2>
+                                <span class="winners-count" id="winners-count" style="background:var(--kick-green); color:black; font-weight:bold; font-size:12px; padding:2px 8px; border-radius:10px;">0</span>
+                            </div>
+                        </div>
+
+                        <div class="card-body" style="flex:1; display:flex; flex-direction:column;">
+                            <div class="winners-list-container" id="winners-list">
+                                <div class="empty-winners">Czekam na losowanie...</div>
+                            </div>
+                            <div class="winners-actions" style="margin-top:auto;">
+                                <button onclick="resetAllData()" class="btn btn-clear">Clear All Data</button>
+                            </div>
+                        </div>
+                    </div>
+                </aside>
+
+            </div>
+
+            <!-- Stopka autorska -->
+            <footer class="app-footer" style="background:#111622; text-align:center; padding:10px; font-size:12px; color:#4b5563; border-top:1px solid var(--border-color);">
+                <span>Created by</span>&nbsp;<a href="https://kick.com" target="_blank" style="color:var(--kick-green); text-decoration:none; font-weight:bold;">KICK.COM/SEDRON</a>
+            </footer>
+
+        </div>
     </div>
+    <!-- ========================================== -->
+    <!-- SILNIK LOGIKI: INTEGRACJA WEBSOCKET KICK   -->
+    <!-- ========================================== -->
     <script>
         let players = [];
         let socketInstance = null;
-        const MY_CHATROOM_ID = 2791851; 
+        const MY_CHATROOM_ID = 2791851; // Twój stały identyfikator czatu Kick
 
+        // Funkcja bramy logowania
+        function handleLogin() {
+            const channelInput = document.getElementById("channel-input").value.trim();
+            if (!channelInput) return alert("Please enter a channel name!");
+
+            document.getElementById("login-screen").style.display = "none";
+            document.getElementById("main-screen").classList.remove("hidden");
+            document.getElementById("connected-channel-name").innerText = channelInput;
+        }
+
+        // Otwarcie stabilnej i czystej linii WebSocket z uwierzytelnieniem serwera Kick
         function connectAndListen() {
-            const command = document.getElementById("chatCommand").value.trim().toLowerCase();
-            document.getElementById("summaryPrize").innerText = document.getElementById("prizeText").value;
-            document.getElementById("summaryKeyword").innerText = command;
+            const command = document.getElementById("keyword-input").value.trim().toLowerCase();
+            document.getElementById("banner-prize-value").innerText = document.getElementById("prize-input").value;
+            document.getElementById("banner-keyword-value").innerText = command;
             
             const statusBox = document.getElementById("statusText");
-            statusBox.innerText = "Łączenie z czatem Kick...";
+            statusBox.innerText = "Ustanawianie połączenia z serwerem czatu Kick (WebSocket)...";
             statusBox.style.color = "#ffff55";
             
             players = [];
-            document.getElementById("count").innerText = "0";
-            document.getElementById("viewerList").innerHTML = '<div id="emptyMessage">Napisz hasło na czacie, aby dołączyć...</div>';
-            document.getElementById("winnersList").innerHTML = '<div class="empty-winners">Czekam na losowanie...</div>';
+            document.getElementById("banner-participants-value").innerText = "0";
+            document.getElementById("participant-list").innerHTML = '<div id="emptyMessage" style="text-align: center; color: #4b5563; font-style: italic; margin-top: 50px; font-size: 14px; width: 100%;">Napisz hasło na czacie, aby dołączyć...</div>';
+            document.getElementById("winners-list").innerHTML = '<div class="empty-winners">Czekam na losowanie...</div>';
+            document.getElementById("winners-count").innerText = "0";
 
             if (socketInstance) socketInstance.close();
             
-            // Poprawiony pełny link z protokołem, parametrami klienta i TLS wymagany przez serwery Kicka
+            // Bezpośrednia linia sieciowa z wymaganiami TLS i parametrami klienta dla serwerów Kicka
             socketInstance = new WebSocket("wss://://pusher.com");
 
             socketInstance.onopen = function() {
@@ -136,10 +279,12 @@
                         const name = msgData.sender.username;
                         if (!players.includes(name)) {
                             players.push(name);
-                            document.getElementById("count").innerText = players.length;
+                            document.getElementById("banner-participants-value").innerText = players.length;
+                            
                             const empty = document.getElementById("emptyMessage");
                             if (empty) empty.remove();
-                            document.getElementById("viewerList").innerHTML += `<div class="viewer-tag">${name}</div>`;
+                            
+                            document.getElementById("participant-list").innerHTML += `<li class="viewer-tag">${name}</li>`;
                         }
                     }
                 }
@@ -149,18 +294,13 @@
                 statusBox.innerText = "❌ Połączenie z czatem zostało przerwane.";
                 statusBox.style.color = "#ff3333";
             };
-            
-            socketInstance.onclose = function() {
-                if (statusBox.innerText === "Łączenie z czatem Kick...") {
-                    statusBox.innerText = "❌ Błąd protokołu sieciowego. Spróbuj ponownie.";
-                    statusBox.style.color = "#ff3333";
-                }
-            };
         }
 
+        // Algorytm wyboru zwycięzców (Zwycięzcy tekstowi)
         function startTextLottery() {
-            if (players.length === 0) return alert("Nikt się ne zapisał!");
-            const targetCount = parseInt(document.getElementById("winnersCount").value);
+            if (players.length === 0) return alert("Nikt się nie zapisał!");
+            const targetCount = parseInt(document.getElementById("winner-count-input").value);
+            
             let pool = [...players];
             let luckyWinners = [];
             for (let i = 0; i < Math.min(targetCount, pool.length); i++) {
@@ -168,21 +308,27 @@
                 luckyWinners.push(pool[rIdx]);
                 pool.splice(rIdx, 1);
             }
-            const winnersContainer = document.getElementById("winnersList");
-            winnersContainer.innerHTML = "";
-            luckyWinners.forEach(w => winnersContainer.innerHTML += `<div class="winner-tag">🏆 ${w}</div>`);
             
+            const winnersContainer = document.getElementById("winners-list");
+            winnersContainer.innerHTML = "";
+            luckyWinners.forEach(w => {
+                winnersContainer.innerHTML += `<div class="winner-item">🏆 ${w}</div>`;
+            });
+            
+            document.getElementById("winners-count").innerText = luckyWinners.length;
             const statusBox = document.getElementById("statusText");
             statusBox.innerText = "🎉 Losowanie zakończone! Zwycięzcy wybrani.";
             statusBox.style.color = "#00e701";
         }
 
+        // Przywracanie stanu początkowego (Reset)
         function resetAllData() {
             players = [];
             if (socketInstance) socketInstance.close();
-            document.getElementById("count").innerText = "0";
-            document.getElementById("viewerList").innerHTML = '<div id="emptyMessage">Napisz hasło na czacie, aby dołączyć...</div>';
-            document.getElementById("winnersList").innerHTML = '<div class="empty-winners">Czekam na losowanie...</div>';
+            document.getElementById("banner-participants-value").innerText = "0";
+            document.getElementById("participant-list").innerHTML = '<div id="emptyMessage" style="text-align: center; color: #4b5563; font-style: italic; margin-top: 50px; font-size: 14px; width: 100%;">Napisz hasło na czacie, aby dołączyć...</div>';
+            document.getElementById("winners-list").innerHTML = '<div class="empty-winners">Czekam na losowanie...</div>';
+            document.getElementById("winners-count").innerText = "0";
             
             const statusBox = document.getElementById("statusText");
             statusBox.innerText = "Wyczyszczono dane.";
@@ -191,3 +337,5 @@
     </script>
 </body>
 </html>
+
+                    
