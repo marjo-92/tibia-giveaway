@@ -1,94 +1,77 @@
-const canvas = document.getElementById("gameCanvas");
-const ctx = canvas.getContext("2d");
-
-let players = [];
-let boss = { x: 400, y: 240, hp: 1000, maxHp: 1000, size: 36, isDead: false, name: "Ferumbras" };
-let damageTexts = [];
-let visualEffects = [];
-let gameActive = false;
+let players = []; // Tablica przechowująca unikalne nicki zapisanych osób
 let registrationOpen = false;
-let killTimer = 0;
-let killInterval = 60;
 let socketInstance = null;
+let currentChatroomId = null;
+let currentChannelName = "";
 
-const MY_CHATROOM_ID = 2791851; 
+// 🟢 KROK 1: Autoryzacja i pobranie ID z oficjalnego API platformy Kick
+async function handleLogin() {
+    const channelInput = document.getElementById("channelInput").value.trim();
+    const statusDiv = document.getElementById("loginStatus");
+    if (!channelInput) { statusDiv.innerText = "Wpisz nazwę kanału!"; return; }
 
-const playerColors = ["#ff5555", "#55ff55", "#5555ff", "#ffff55", "#ff55ff", "#55ffff"];
+    statusDiv.style.color = "#ffff55";
+    statusDiv.innerText = "Łączenie z bazą danych Kick...";
 
-class Player {
-    constructor(name, color) {
-        this.name = name;
-        this.x = Math.random() > 0.5 ? Math.random() * 100 + 40 : Math.random() * 100 + 660;
-        this.y = Math.random() > 0.5 ? Math.random() * 100 + 40 : Math.random() * 100 + 340;
-        this.color = color;
-        this.speed = 1.5 + Math.random() * 1.2;
-        this.isDead = false;
-    }
-    update() {
-        if (this.isDead || boss.isDead) return;
-        let dx = boss.x - this.x;
-        let dy = boss.y - this.y;
-        let distance = Math.sqrt(dx * dx + dy * dy);
-
-        if (distance > 60) {
-            this.x += (dx / distance) * this.speed;
-            this.y += (dy / distance) * this.speed;
-        } else if (gameActive) {
-            this.x += (Math.random() * 4 - 2);
-            this.y += (Math.random() * 4 - 2);
-            if (Math.random() < 0.05) {
-                let dmg = Math.floor(Math.random() * 90) + 10;
-                damageTexts.push({ x: boss.x + (Math.random()*40-20), y: boss.y - 35, text: `-${dmg}`, color: "#ff0000", timer: 20 });
-            }
-        }
-    }
-    draw() {
-        if (this.isDead) return;
-        ctx.fillStyle = this.color; ctx.fillRect(this.x - 12, this.y - 12, 24, 24);
-        ctx.fillStyle = "#ffdbac"; ctx.fillRect(this.x - 6, this.y - 22, 12, 12);
-        ctx.fillStyle = "#ffffff"; ctx.font = "bold 11px monospace"; ctx.textAlign = "center";
-        ctx.fillText(this.name, this.x, this.y - 27);
+    try {
+        const response = await fetch(`https://kick.com{channelInput.toLowerCase()}`);
+        if (!response.ok) throw new Error();
+        const data = await response.json();
+        
+        currentChatroomId = data.chatroom.id;
+        currentChannelName = data.slug;
+        
+        // Przejście do głównego pulpitu
+        document.getElementById("loginView").style.display = "none";
+        document.getElementById("mainInterface").style.display = "flex";
+        document.getElementById("connectedChannel").innerText = currentChannelName;
+        
+        updateSummaryLayout();
+    } catch (err) {
+        statusDiv.style.color = "#ff3333";
+        statusDiv.innerText = "Nie znaleziono takiego kanału na Kicku!";
     }
 }
 
+function updateSummaryLayout() {
+    document.getElementById("summaryPrize").innerText = document.getElementById("prizeText").value;
+    document.getElementById("summaryKeyword").innerText = document.getElementById("chatCommand").value;
+}
+
+// 🟢 KROK 2: Otwarcie linii WebSocket i nasłuchiwanie słowa kluczowego na czacie
 function connectAndListen() {
     const command = document.getElementById("chatCommand").value.trim().toLowerCase();
     if (!command) return alert("Wpisz hasło do zapisu!");
+    if (!currentChatroomId) return alert("Błąd sesji. Zaloguj się ponownie.");
 
-    document.getElementById("statusText").innerText = "Ustanawianie połączenia sieciowego...";
+    updateSummaryLayout();
+    document.getElementById("statusText").innerText = "Ustanawianie połączenia z serwerem czatu Kick (WebSocket)...";
     document.getElementById("statusText").style.color = "#ffff55";
-    document.getElementById("lootMessage").innerText = "";
     
     players = [];
-    gameActive = false;
-    boss.isDead = false;
-    boss.hp = boss.maxHp;
-    
-    document.getElementById("registrationView").style.display = "block";
-    document.getElementById("arenaView").style.display = "none";
-    document.getElementById("listTitle").innerText = "LISTA ZAPISANYCH GRACZY (0):";
-    document.getElementById("viewerList").innerHTML = '<div id="emptyMessage">Napisz hasło na czacie, aby dołączyć do rajdu...</div>';
+    document.getElementById("count").innerText = "0";
+    document.getElementById("viewerList").innerHTML = '<div id="emptyMessage">Napisz hasło na czacie, aby dołączyć...</div>';
+    document.getElementById("winnersList").innerHTML = '<div class="empty-winners">Brak zwycięzców. Czekam na losowanie...</div>';
 
     if (socketInstance) socketInstance.close();
     
-    // Zaktualizowany adres WebSocket ze wszystkimi wymaganiami autoryzacji Kicka
+    // Połączenie z serwerem nadawczym
     socketInstance = new WebSocket("wss://://pusher.com");
 
     socketInstance.onopen = function() {
-        // Poprawny pakiet subskrypcji kanału, który omija zabezpieczenia
         const msg = {
             event: "pusher:subscribe",
-            data: { channel: `chatrooms.${MY_CHATROOM_ID}.v2` }
+            data: { channel: `chatrooms.${currentChatroomId}.v2` }
         };
         socketInstance.send(JSON.stringify(msg));
         
         registrationOpen = true;
-        document.getElementById("statusText").innerHTML = `🟢 Zapisy URUCHOMIONE! Hasło na czacie: <span style="color:#00ff00; font-weight:bold;">${command}</span> | Zapisanych: <b id="count">0</b>`;
-        document.getElementById("statusText").style.color = "#00ff00";
+        document.getElementById("statusText").innerHTML = `🟢 Zapisy URUCHOMIONE! Czat kanału: <b>${currentChannelName}</b> | Słowo: <b style="color:#00e701">${command}</b>`;
+        document.getElementById("statusText").style.color = "#00e701";
     };
 
     socketInstance.onmessage = function(event) {
-        if (!registrationOpen || gameActive) return;
+        if (!registrationOpen) return;
         
         const response = JSON.parse(event.data);
         if (response.event === "App\\Events\\ChatMessageEvent") {
@@ -97,135 +80,71 @@ function connectAndListen() {
             const senderName = msgData.sender.username;
 
             if (messageText === command) {
-                const exists = players.some(p => p.name.toLowerCase() === senderName.toLowerCase());
+                const exists = players.some(name => name.toLowerCase() === senderName.toLowerCase());
                 if (!exists) {
-                    const randomColor = playerColors[Math.floor(Math.random() * playerColors.length)];
-                    players.push(new Player(senderName, randomColor));
+                    players.push(senderName);
                     
                     document.getElementById("count").innerText = players.length;
-                    document.getElementById("listTitle").innerText = `LISTA ZAPISANYCH GRACZY (${players.length}):`;
                     
                     const emptyMsg = document.getElementById("emptyMessage");
                     if (emptyMsg) emptyMsg.remove();
                     
                     const listContainer = document.getElementById("viewerList");
-                    listContainer.innerHTML += `<div class="viewer-tag" style="color: ${randomColor}">> ${senderName}</div>`;
+                    listContainer.innerHTML += `<div class="viewer-tag">${senderName}</div>`;
                 }
             }
         }
     };
 
     socketInstance.onerror = function(err) {
-        document.getElementById("statusText").innerText = "❌ Nie udało się połączyć. Serwer Kick odrzucił sesję.";
+        document.getElementById("statusText").innerText = "❌ Połączenie sieciowe przerwane.";
         document.getElementById("statusText").style.color = "#ff3333";
     };
 }
-function startBossFight() {
+
+// 🟢 KROK 3: Bezpieczne losowanie tekstowe zadanej liczby zwycięzców
+function startTextLottery() {
     if (players.length === 0) return alert("Nikt jeszcze nie zapisał się na losowanie!");
     
-    const targetWinners = parseInt(document.getElementById("winnersCount").value);
-    if (players.length <= targetWinners) return alert("Masz za mało zapisanych osób w stosunku do liczby zwycięzców!");
+    const targetCount = parseInt(document.getElementById("winnersCount").value);
+    if (players.length < targetCount) return alert("Masz mniej zapisanych osób niż wybrana liczba zwycięzców!");
 
     registrationOpen = false;
-    
-    // Przełączamy okna: ukrywamy listę, odpalamy arenę
-    document.getElementById("registrationView").style.display = "none";
-    document.getElementById("arenaView").style.display = "block";
-    
-    gameActive = true;
-    boss.hp = boss.maxHp;
-    boss.isDead = false;
-    
-    document.getElementById("statusText").innerText = "⚔️ WALKA W TOKU! Ferumbras rzuca czary obszarowe!";
-    document.getElementById("statusText").style.color = "#ff3333";
-    document.getElementById("lootMessage").innerText = "Ferumbras: The world will tremble before my power!";
-    
-    killInterval = Math.max(18, Math.floor(240 / players.length));
-    killTimer = 0;
-}
+    document.getElementById("statusText").innerText = "🏁 Zapisy zamknięte. Trwa wybór ocalałych...";
+    document.getElementById("statusText").style.color = "#ffff55";
 
-function executeBossAttack() {
-    let alivePlayers = players.filter(p => !p.isDead);
-    const targetWinners = parseInt(document.getElementById("winnersCount").value);
+    // Klonujemy tablicę, aby losować bez powtórzeń
+    let pool = [...players];
+    let luckyWinners = [];
 
-    if (alivePlayers.length <= targetWinners) {
-        boss.hp = 0; boss.isDead = true; gameActive = false;
-        damageTexts.push({ x: boss.x, y: boss.y, text: "-99999!!!", color: "#ffff00", timer: 70 });
-        
-        let prize = document.getElementById("prizeText").value;
-        let winnersNames = alivePlayers.map(p => `<span style="color:#ffffff;">${p.name}</span>`).join(", ");
-        
-        document.getElementById("statusText").innerText = "🏁 KONIEC LOSOWANIA!";
-        document.getElementById("statusText").style.color = "#ffff55";
-        document.getElementById("lootMessage").innerHTML = `
-            <span style="color: #ffaa00;">Ferumbras dies.</span><br>
-            Loot of Ferumbras: You see <span style="color:#ff55ff; text-decoration: underline;">${prize}</span>.<br>
-            Gratulacje dla ocalałych: ${winnersNames}!
-        `;
-        return;
+    for (let i = 0; i < targetCount; i++) {
+        let randomIndex = Math.floor(Math.random() * pool.length);
+        luckyWinners.push(pool[randomIndex]);
+        pool.splice(randomIndex, 1); // Usuwamy, by ta sama osoba nie wygrała dwa razy
     }
 
-    if (alivePlayers.length > targetWinners) {
-        let victim = alivePlayers[Math.floor(Math.random() * alivePlayers.length)];
-        victim.isDead = true;
+    // Wyświetlenie wyników w prawej kolumnie
+    const winnersContainer = document.getElementById("winnersList");
+    winnersContainer.innerHTML = "";
+    
+    luckyWinners.forEach(winner => {
+        winnersContainer.innerHTML += `<div class="winner-tag">🏆 ${winner}</div>`;
+    });
 
-        visualEffects.push({ type: 'ue', x: boss.x, y: boss.y, radius: 10, maxRadius: 350, color: "rgba(255, 30, 30, 0.4)", timer: 20 });
-        visualEffects.push({ type: 'beam', x1: boss.x, y1: boss.y, x2: victim.x, y2: victim.y, timer: 12 });
-        damageTexts.push({ x: victim.x, y: victim.y - 15, text: "-DODGE OR DIE", color: "#ff3333", timer: 35 });
-        visualEffects.push({ type: 'puff', x: victim.x, y: victim.y, radius: 4, maxRadius: 18, color: "rgba(220,220,220,0.5)", timer: 15 });
-    }
+    let prize = document.getElementById("prizeText").value;
+    document.getElementById("statusText").innerHTML = `🎉 Losowanie zakończone! Nagroda: <b>${prize}</b> trafiła do wybranych osób!`;
+    document.getElementById("statusText").style.color = "#00e701";
 }
 
-function gameLoop() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+// 🟢 KROK 4: Pełne czyszczenie bazy danych na żądanie
+function resetAllData() {
+    players = [];
+    registrationOpen = false;
+    if (socketInstance) socketInstance.close();
     
-    if (gameActive === true) {
-        ctx.strokeStyle = "#474747"; ctx.lineWidth = 1;
-        for(let x=0; x<canvas.width; x+=32) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke(); }
-        for(let y=0; y<canvas.height; y+=32) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke(); }
-
-        if (!boss.isDead) {
-            killTimer++;
-            if (killTimer >= killInterval) { executeBossAttack(); killTimer = 0; }
-            let aliveCount = players.filter(p => !p.isDead).length;
-            let targetWinners = parseInt(document.getElementById("winnersCount").value);
-            if (boss.hp > 10 && aliveCount > targetWinners) boss.hp -= 0.6;
-        }
-
-        if (!boss.isDead) {
-            ctx.fillStyle = "#7a0099"; ctx.fillRect(boss.x - boss.size/2, boss.y - boss.size/2, boss.size, boss.size);
-            ctx.fillStyle = "#ffaa00"; ctx.fillRect(boss.x - 10, boss.y - boss.size/2 - 8, 20, 8);
-            ctx.fillStyle = "#ff3333"; ctx.font = "bold 14px monospace"; ctx.textAlign = "center"; ctx.fillText(boss.name, boss.x, boss.y - 42);
-            
-            let barWidth = 80; let hpPercent = Math.max(0, boss.hp / boss.maxHp);
-            ctx.fillStyle = "#000000"; ctx.fillRect(boss.x - barWidth/2, boss.y - 34, barWidth, 6);
-            ctx.fillStyle = hpPercent > 0.25 ? "#00ff00" : "#ff0000"; ctx.fillRect(boss.x - barWidth/2, boss.y - 34, barWidth * hpPercent, 6);
-        } else {
-            ctx.fillStyle = "#4a005c"; ctx.fillRect(boss.x - 18, boss.y - 8, 36, 16);
-        }
-
-        players.forEach(p => { p.update(); p.draw(); });
-
-        for (let i = visualEffects.length - 1; i >= 0; i--) {
-            let fx = visualEffects[i];
-            if (fx.type === 'beam') {
-                ctx.strokeStyle = "#ff3333"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(fx.x1, fx.y1); ctx.lineTo(fx.x2, fx.y2); ctx.stroke();
-            } else if (fx.type === 'ue') {
-                ctx.fillStyle = fx.color; ctx.beginPath(); ctx.arc(fx.x, fx.y, fx.radius, 0, Math.PI * 2); ctx.fill();
-                fx.radius += (fx.maxRadius - fx.radius) * 0.15;
-            } else {
-                ctx.strokeStyle = fx.color; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(fx.x, fx.y, fx.radius, 0, Math.PI * 2); ctx.stroke();
-                fx.radius += (fx.maxRadius - fx.radius) * 0.2;
-            }
-            fx.timer--; if (fx.timer <= 0) visualEffects.splice(i, 1);
-        }
-
-        for (let i = damageTexts.length - 1; i >= 0; i--) {
-            let dt = damageTexts[i]; ctx.fillStyle = dt.color; ctx.font = "bold 14px monospace"; ctx.textAlign = "center";
-            ctx.fillText(dt.text, dt.x, dt.y); dt.y -= 0.6; dt.timer--; if (dt.timer <= 0) damageTexts.splice(i, 1);
-        }
-    }
-    
-    requestAnimationFrame(gameLoop);
+    document.getElementById("count").innerText = "0";
+    document.getElementById("statusText").innerText = "Status: Dane wyczyszczone. Podaj parametry i otwórz zapisy.";
+    document.getElementById("statusText").style.color = "#a1a1aa";
+    document.getElementById("viewerList").innerHTML = '<div id="emptyMessage">Napisz hasło na czacie, aby dołączyć...</div>';
+    document.getElementById("winnersList").innerHTML = '<div class="empty-winners">Brak zwycięzców. Czekam na losowanie...</div>';
 }
-gameLoop();
