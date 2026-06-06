@@ -36,8 +36,19 @@
         </div>
     </div>
 
-    <!-- Arena do rysowania -->
-    <canvas id="gameCanvas" width="800" height="480"></canvas>
+    <!-- EKRAN 1: OKNO ZAPISÓW (WŁĄCZONE NA START) -->
+    <div id="registrationView">
+        <div id="listTitle">LISTA ZAPISANYCH GRACZY (0):</div>
+        <div id="viewerList">
+            <div id="emptyMessage">Napisz hasło na czacie, aby dołączyć do rajdu...</div>
+        </div>
+    </div>
+
+    <!-- EKRAN 2: ARENA DO WALK (UKRYTA DZIĘKI STYLE="DISPLAY:NONE") -->
+    <div id="arenaView" style="display: none;">
+        <canvas id="gameCanvas" width="800" height="480"></canvas>
+    </div>
+
     <div id="lootMessage"></div>
 
     <script src="script.js"></script>
