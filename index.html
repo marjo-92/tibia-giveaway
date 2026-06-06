@@ -1,55 +1,106 @@
-<!DOCTYPE html>
+<<!DOCTYPE html>
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>Tibia Kick Raid Lottery</title>
-    <link rel="stylesheet" href="style.css?v=4">
+    <title>Tibia Kick Raffle System</title>
+    <!-- Łączenie ze stylem z parametrem odświeżania cache -->
+    <link rel="stylesheet" href="style.css?v=10">
 </head>
 <body>
 
-    <h1>FERUMBRAS LIVE RAID</h1>
-    <div id="statusText">Status: Podaj dane i kliknij Otwórz zapisy</div>
-
-    <div id="setupPanel">
-        <div class="input-group">
-            <label>Hasło na czat</label>
-            <input type="text" id="chatCommand" value="!losowanie" style="width: 100px;">
-        </div>
-        <div class="input-group">
-            <label>Nagroda</label>
-            <input type="text" id="prizeText" value="250 TC" style="width: 90px;">
-        </div>
-        <div class="input-group">
-            <label>Ilu wygrywa?</label>
-            <select id="winnersCount" style="width: 80px;">
-                <option value="1">1 osoba</option>
-                <option value="2">2 osoby</option>
-                <option value="3">3 osoby</option>
-                <option value="4">4 osoby</option>
-                <option value="5">5 osób</option>
-            </select>
-        </div>
-        <div style="display: flex; gap: 8px; margin-top: 15px;">
-            <button onclick="connectAndListen()" style="background: #00e701; color: black; border-color: #00e701;">OTWÓRZ ZAPISY</button>
-            <button onclick="startBossFight()" style="background: #990000; border-color: #cc0000; color: white;">START RAJD!</button>
+    <!-- ================================================================= -->
+    <!-- EKRAN STARTOWY: PANEL LOGOWANIA                                   -->
+    <!-- ================================================================= -->
+    <div id="loginView">
+        <div id="loginBox">
+            <h2>KICK RAFFLE SYSTEM</h2>
+            <p>Wprowadź nazwę swojego kanału</p>
+            <input type="text" id="channelInput" placeholder="Np. marjo-92">
+            <button onclick="handleLogin()">Połącz</button>
+            <div id="loginStatus"></div>
+            <div class="footer-credit">Stworzone przez ://kick.com</div>
         </div>
     </div>
 
-    <!-- EKRAN 1: OKNO ZAPISÓW -->
-    <div id="registrationView">
-        <div id="listTitle">LISTA ZAPISANYCH GRACZY (0):</div>
-        <div id="viewerList">
-            <div id="emptyMessage">Napisz hasło na czacie, aby dołączyć do rajdu...</div>
+    <!-- ================================================================= -->
+    <!-- GŁÓWNY INTERFEJS SYSTEMU (Ukryty przed zalogowaniem)             -->
+    <!-- ================================================================= -->
+    <div id="mainInterface" style="display: none;">
+        
+        <!-- Górna belka statusu -->
+        <header id="topBar">
+            <div class="brand">KICK RAFFLE SYSTEM <span class="badge">ZAPISY ACTIVE</span></div>
+            <div id="connectionStatus">Połączono z: <span id="connectedChannel">---</span></div>
+        </header>
+
+        <div id="dashboardLayout">
+            
+            <!-- 📁 LEWA KOLUMNA: USTAWIENIA -->
+            <aside id="leftPanel">
+                <div class="panel-section">
+                    <h3>Ustawienia</h3>
+                    
+                    <div class="input-group">
+                        <label>Słowo kluczowe (Hasło):</label>
+                        <input type="text" id="chatCommand" value="!losowanie">
+                    </div>
+
+                    <div class="input-group">
+                        <label>Co losujesz (Nagroda):</label>
+                        <input type="text" id="prizeText" value="250 TC">
+                    </div>
+
+                    <div class="input-group">
+                        <label>Liczba zwycięzców:</label>
+                        <select id="winnersCount">
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                        </select>
+                    </div>
+
+                    <div class="button-actions">
+                        <button id="btnOpen" onclick="connectAndListen()" class="btn-green">Rozpocznij zapisy</button>
+                        <button id="btnStart" onclick="startTextLottery()" class="btn-red">Wylosuj zwycięzców</button>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- 🖥️ ŚRODEK: REJESTRACJA I POKAZYWANIE UCZESTNIKÓW -->
+            <main id="centerPanel">
+                <div id="statsSummary">
+                    <div class="stat-card">🎁 <span class="label">NAGRODA</span> <span id="summaryPrize">-</span></div>
+                    <div class="stat-card">🔑 <span class="label">HASŁO</span> <span id="summaryKeyword">-</span></div>
+                    <div class="stat-card">👥 <span class="label">UCZESTNIKÓW</span> <span id="count">0</span></div>
+                </div>
+
+                <div id="statusText">Status: Podaj dane i kliknij Otwórz zapisy</div>
+
+                <div id="registrationView">
+                    <div id="listTitle">LISTA ZAPISANYCH UCZESTNIKÓW:</div>
+                    <div id="viewerList">
+                        <div id="emptyMessage">Napisz hasło na czacie, aby dołączyć...</div>
+                    </div>
+                </div>
+            </main>
+
+            <!-- 🏆 PRAWA KOLUMNA: LISTA ZWYCIĘZCÓW -->
+            <aside id="rightPanel">
+                <div class="panel-section" style="height: 100%; display: flex; flex-direction: column;">
+                    <h3>Zwycięzcy</h3>
+                    <div id="winnersList">
+                        <div class="empty-winners">Brak zwycięzców. Czekam na losowanie...</div>
+                    </div>
+                    <button onclick="resetAllData()" class="btn-clear">Wyczyść wszystkie dane</button>
+                </div>
+            </aside>
+
         </div>
     </div>
 
-    <!-- EKRAN 2: ARENA DO WALK -->
-    <div id="arenaView">
-        <canvas id="gameCanvas" width="800" height="480"></canvas>
-    </div>
-
-    <div id="lootMessage"></div>
-
-    <script src="script.js?v=4"></script>
+    <!-- Łączenie ze skryptem z parametrem odświeżania cache -->
+    <script src="script.js?v=10"></script>
 </body>
 </html>
