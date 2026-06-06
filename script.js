@@ -9,7 +9,7 @@ let gameActive = false;
 let registrationOpen = false;
 let killTimer = 0;
 let killInterval = 60;
-let socketInstance = null; // Zmiana na czysty WebSocket
+let socketInstance = null; 
 
 // Twój stały identyfikator czatu Kick wyciągnięty ze zdjęcia profilu:
 const MY_CHATROOM_ID = 2791851; 
@@ -52,7 +52,6 @@ class Player {
     }
 }
 
-// 🟢 Nowa, stabilna funkcja łącząca z czatem przez oficjalne WebSockety Kicka
 function connectAndListen() {
     const command = document.getElementById("chatCommand").value.trim().toLowerCase();
     if (!command) return alert("Wpisz hasło do zapisu!");
@@ -73,11 +72,9 @@ function connectAndListen() {
 
     if (socketInstance) socketInstance.close();
     
-    // Łączymy się bezpośrednio z głównym serwerem transmisji wiadomości Kicka
     socketInstance = new WebSocket("wss://://pusher.com");
 
     socketInstance.onopen = function() {
-        // Wysyłamy prośbę o subskrybowanie Twojego pokoju czatowego
         const subscribeMessage = {
             event: "pusher:subscribe",
             data: { channel: `chatrooms.${MY_CHATROOM_ID}.v2` }
@@ -120,7 +117,6 @@ function connectAndListen() {
     socketInstance.onerror = function(err) {
         document.getElementById("statusText").innerText = "❌ Błąd połączenia z serwerem czatu.";
         document.getElementById("statusText").style.color = "#ff3333";
-        console.error(err);
     };
 }
 
@@ -132,6 +128,7 @@ function startBossFight() {
 
     registrationOpen = false;
     
+    // Przełączamy okna: ukrywamy listę, odpalamy arenę
     document.getElementById("registrationView").style.display = "none";
     document.getElementById("arenaView").style.display = "block";
     
@@ -209,6 +206,26 @@ function gameLoop() {
 
         players.forEach(p => { p.update(); p.draw(); });
 
-        for (let i = visualEffects.length - 1; i >= 0; i--) {let fx = visualEffects[i];if (fx.type === 'beam') {ctx.strokeStyle = "#ff3333"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(fx.x1, fx.y1); ctx.lineTo(fx.x2, fx.y2); ctx.stroke();} else if (fx.type === 'ue') {ctx.fillStyle = fx.color; ctx.beginPath(); ctx.arc(fx.x, fx.y, fx.radius, 0, Math.PI * 2); ctx.fill();fx.radius += (fx.maxRadius - fx.radius) * 0.15;} else {ctx.strokeStyle = fx.color; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(fx.x, fx.y, fx.radius, 0, Math.PI * 2); ctx.stroke();fx.radius += (fx.maxRadius - fx.radius) * 0.2;}fx.timer--; if (fx.timer <= 0) visualEffects.splice(i, 1);}for (let i = damageTexts.length - 1; i >= 0; i--) {let dt = damageTexts[i]; ctx.fillStyle = dt.color; ctx.font = "bold 14px monospace"; ctx.textAlign = "center";ctx.fillText(dt.text, dt.x, dt.y); dt.y -= 0.6; dt.timer--; if (dt.timer <= 0) damageTexts.splice(i, 1);}}requestAnimationFrame(gameLoop);}gameLoop();
+        for (let i = visualEffects.length - 1; i >= 0; i--) {
+            let fx = visualEffects[i];
+            if (fx.type === 'beam') {
+                ctx.strokeStyle = "#ff3333"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(fx.x1, fx.y1); ctx.lineTo(fx.x2, fx.y2); ctx.stroke();
+            } else if (fx.type === 'ue') {
+                ctx.fillStyle = fx.color; ctx.beginPath(); ctx.arc(fx.x, fx.y, fx.radius, 0, Math.PI * 2); ctx.fill();
+                fx.radius += (fx.maxRadius - fx.radius) * 0.15;
+            } else {
+                ctx.strokeStyle = fx.color; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(fx.x, fx.y, fx.radius, 0, Math.PI * 2); ctx.stroke();
+                fx.radius += (fx.maxRadius - fx.radius) * 0.2;
+            }
+            fx.timer--; if (fx.timer <= 0) visualEffects.splice(i, 1);
+        }
 
-
+        for (let i = damageTexts.length - 1; i >= 0; i--) {
+            let dt = damageTexts[i]; ctx.fillStyle = dt.color; ctx.font = "bold 14px monospace"; ctx.textAlign = "center";
+            ctx.fillText(dt.text, dt.x, dt.y); dt.y -= 0.6; dt.timer--; if (dt.timer <= 0) damageTexts.splice(i, 1);
+        }
+    }
+    
+    requestAnimationFrame(gameLoop);
+}
+gameLoop();
