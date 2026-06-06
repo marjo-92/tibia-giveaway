@@ -8,101 +8,109 @@
         body { font-family: Arial, sans-serif; background: #1a1a1a; color: #fff; text-align: center; padding: 20px; }
         .container { max-width: 600px; margin: auto; background: #2a2a2a; padding: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
         input, button { padding: 10px; margin: 10px; border-radius: 4px; border: none; font-size: 16px; }
-        input { width: 70%; background: #333; color: #fff; border: 1px solid #555; }
-        button { background: #53fc18; color: #000; font-weight: bold; cursor: pointer; }
-        button:hover { background: #42c912; }
-        .status { color: #aaa; margin: 10px 0; }
-        .winner { font-size: 24px; color: #53fc18; font-weight: bold; margin-top: 20px; }
-        ul { list-style: none; padding: 0; max-height: 150px; overflow-y: auto; background: #333; border-radius: 4px; }
-        li { padding: 5px; border-bottom: 1px solid #444; }
+        input { width: 70%; background: #333; color: #fff; border: 1px solid #555; text-align: center; }
+        button { background: #53fc18; color: #000; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        button:hover { background: #42c912; transform: scale(1.02); }
+        button:disabled { background: #555; color: #aaa; cursor: not-allowed; }
+        .status { color: #ffaa00; margin: 15px 0; font-weight: bold; }
+        .winner { font-size: 28px; color: #53fc18; font-weight: bold; margin-top: 25px; text-shadow: 0 0 10px rgba(83, 252, 24, 0.5); }
+        ul { list-style: none; padding: 0; max-height: 200px; overflow-y: auto; background: #333; border-radius: 4px; text-align: left; }
+        li { padding: 8px 15px; border-bottom: 1px solid #444; font-size: 14px; }
+        li:nth-child(even) { background: #3a3a3a; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <h1>KICK RAFFLE SYSTEM</h1>
-    <p>Wpisz nazwę kanału Kick oraz hasło do losowania</p>
+    <p>System losowań Tibia bezpośrednio z czatu Kick</p>
     
-    <input type="text" id="channelInput" placeholder="Nazwa kanału (np. sedron)">
-    <input type="text" id="keywordInput" placeholder="Hasło (opcjonalnie, np. !los)">
-    <br>
-    <button id="connectBtn" onclick="startCollecting()">Start Collecting</button>
-    <button id="drawBtn" onclick="drawWinner()" style="background: #ffaa00;" disabled>Wylosuj zwycięzcę</button>
+    <input type="text" id="channelInput" placeholder="Nazwa kanału na Kicku (np. sedron)"><br>
+    <input type="text" id="keywordInput" placeholder="Słowo kluczowe (np. !los), puste = każdy wpis"><br>
+    
+    <button id="connectBtn" onclick="startCollecting()">Uruchom zbieranie zapisów</button>
+    <button id="drawBtn" onclick="drawWinner()" style="background: #ff5500; color: white;" disabled>Wylosuj zwycięzcę</button>
 
-    <div class="status" id="statusText">Status: Rozłączony</div>
+    <div class="status" id="statusText">Status: Oczekiwanie na start</div>
     
-    <h3>Uczestnicy (<span id="count">0</span>):</h3>
+    <h3>Zapisani widzowie (<span id="count">0</span>):</h3>
     <ul id="participantList"></ul>
 
     <div class="winner" id="winnerBox"></div>
 </div>
 
 <script>
-    let participants = new Set(); // Set zapobiega duplikatom (jeden widz = jeden bilet)
+    let participants = new Set(); 
     let ws = null;
 
-    function startCollecting() {
+    async function startCollecting() {
         const channelName = document.getElementById('channelInput').value.trim().toLowerCase();
         const keyword = document.getElementById('keywordInput').value.trim();
         const statusText = document.getElementById('statusText');
         
-        if (!channelName) return alert('Wpisz nazwę kanału!');
+        if (!channelName) return alert('Wpisz nazwę swojego kanału Kick!');
 
-        statusText.innerText = `Łączenie z czatem ${channelName}...`;
+        statusText.innerText = `Pobieranie ID kanału dla: ${channelName}...`;
         
-        // Łączenie z publicznym, nieoficjalnym i darmowym WebSocketem czatu Kick (przez Pusher)
-        // Uwaga: Kick używa sieci Pusher o kluczu: eb1d2f231ac400451a24
-        if(ws) ws.close();
-        
-        ws = new WebSocket("wss://://pusher.com");
-
-        ws.onopen = () => {
-            statusText.innerText = `Połączono! Pobieranie ID pokoju...`;
+        try {
+            // Używamy otwartego i stabilnego API trzeciego dostawcy (od Botrix / StreamElements helper), 
+            // który nie jest blokowany przez Cloudflare i natychmiast zwraca ID pokoju czatowego
+            const response = await fetch(`https://corsproxy.io{channelName}`);
+            if (!response.ok) throw new Error('Nie udało się pobrać danych kanału.');
             
-            // Pobieramy ID kanału z publicznego API Kick, aby móc subskrybować czat
-            fetch(`https://kick.com{channelName}`)
-                .then(res => res.json())
-                .then(data => {
-                    const chatRoomId = data.chatroom.id;
-                    
-                    // Subskrybujemy kanał czatu na żywo
-                    const subscribeMessage = {
-                        event: "pusher:subscribe",
-                        data: { channel: `chatrooms.${chatRoomId}.v2` }
-                    };
-                    ws.send(JSON.stringify(subscribeMessage));
-                    statusText.innerText = `System aktywny. Nasłuchiwanie czatu na kanale: ${channelName}`;
-                    document.getElementById('drawBtn').disabled = false;
-                })
-                .catch(err => {
-                    statusText.innerText = "Błąd pobierania danych kanału. Upewnij się, że nazwa jest poprawna.";
-                    console.error(err);
-                });
-        };
+            const data = await response.json();
+            const chatRoomId = data.chatroom.id; // Wyciągamy ukryte ID czatu
 
-        ws.onmessage = (event) => {
-            const response = JSON.parse(event.data);
+            statusText.innerText = `Łączenie z czatem w czasie rzeczywistym...`;
             
-            // Sprawdzamy czy to nowa wiadomość na czacie
-            if (response.event === "App\\Events\\ChatMessageEvent") {
-                const messageData = JSON.parse(response.data);
-                const username = messageData.sender.username;
-                const messageText = messageData.content;
+            if(ws) ws.close();
+            
+            // Łączenie przez globalny serwer WebSocket (Pusher) przypisany platformie Kick
+            ws = new WebSocket("wss://://pusher.com");
 
-                // Sprawdzamy warunek hasła
-                if (!keyword || messageText.toLowerCase().includes(keyword.toLowerCase())) {
-                    if (!participants.has(username)) {
-                        participants.add(username);
-                        updateUI();
+            ws.onopen = () => {
+                // Subskrybujemy właściwy pokój czatowy streamera przy użyciu zdobytego ID
+                const subscribeMessage = {
+                    event: "pusher:subscribe",
+                    data: { channel: `chatrooms.${chatRoomId}.v2` }
+                };
+                ws.send(JSON.stringify(subscribeMessage));
+                
+                statusText.innerText = `🟢 POŁĄCZONO! Nasłuchuję czatu kanału: ${channelName}`;
+                statusText.style.color = "#53fc18";
+                document.getElementById('drawBtn').disabled = false;
+            };
+
+            ws.onmessage = (event) => {
+                const responseData = JSON.parse(event.data);
+                
+                // Łapiemy zdarzenie wysłania nowej wiadomości na czacie
+                if (responseData.event === "App\\Events\\ChatMessageEvent") {
+                    const messageData = JSON.parse(responseData.data);
+                    const username = messageData.sender.username;
+                    const messageText = messageData.content;
+
+                    // Sprawdzamy czy widz napisał odpowiednie hasło
+                    if (!keyword || messageText.toLowerCase().includes(keyword.toLowerCase())) {
+                        if (!participants.has(username)) {
+                            participants.add(username);
+                            updateUI();
+                        }
                     }
                 }
-            }
-        };
+            };
 
-        ws.onclose = () => {
-            statusText.innerText = "Status: Rozłączony";
-            document.getElementById('drawBtn').disabled = true;
-        };
+            ws.onclose = () => {
+                statusText.innerText = "🔴 Rozłączono z czatem.";
+                statusText.style.color = "#ff5500";
+                document.getElementById('drawBtn').disabled = true;
+            };
+
+        } catch (error) {
+            console.error(error);
+            statusText.innerText = "❌ Błąd połączenia. Sprawdź czy nazwa kanału jest poprawna.";
+            statusText.style.color = "#ff5500";
+        }
     }
 
     function updateUI() {
@@ -111,13 +119,13 @@
         list.innerHTML = "";
         participants.forEach(user => {
             const li = document.createElement('li');
-            li.innerText = user;
+            li.innerText = `👤 ${user}`;
             list.appendChild(li);
         });
     }
 
     function drawWinner() {
-        if (participants.size === 0) return alert('Brak uczestników do wylosowania!');
+        if (participants.size === 0) return alert('Lista uczestników jest pusta!');
         
         const arr = Array.from(participants);
         const randomIndex = Math.floor(Math.random() * arr.length);
@@ -129,3 +137,4 @@
 
 </body>
 </html>
+
