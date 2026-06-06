@@ -1,47 +1,30 @@
 let players = []; 
 let registrationOpen = false;
 let socketInstance = null;
-let currentChatroomId = null;
-let currentChannelName = "";
 
-const playerColors = ["#ff5555", "#55ff55", "#5555ff", "#ffff55", "#ff55ff", "#55ffff"];
+// 🔑 Twój stały, unikalny numer czatu Kick (odczytany z bazy):
+const MY_CHATROOM_ID = 2791851; 
 
-// 🟢 KROK 1: Autoryzacja i pobranie ID z oficjalnego API przez darmowy tunel CORS
-async function handleLogin() {
+// 🟢 KROK 1: Logowanie bezawaryjne (Pomija wadliwe proxy)
+function handleLogin() {
     const channelInput = document.getElementById("channelInput").value.trim();
     const statusDiv = document.getElementById("loginStatus");
-    if (!channelInput) { statusDiv.innerText = "Wpisz nazwę kanału!"; return; }
+    
+    if (!channelInput) { 
+        statusDiv.innerText = "Wpisz nazwę kanału!"; 
+        return; 
+    }
 
     statusDiv.style.color = "#ffff55";
-    statusDiv.innerText = "Łączenie z bazą danych Kick...";
+    statusDiv.innerText = "Łączenie...";
 
-    // Darmowy, publiczny serwer proxy pośredniczący w bezpiecznym pobraniu danych z Kicka
-    const proxyUrl = "https://allorigins.win";
-    const targetUrl = encodeURIComponent(`https://kick.com{channelInput.toLowerCase()}`);
-
-    try {
-        const response = await fetch(proxyUrl + targetUrl);
-        if (!response.ok) throw new Error();
-        const wrapper = await response.json();
-        
-        // Dekodujemy zawartość przesłaną przez tunel proxy
-        const data = JSON.parse(wrapper.contents);
-        
-        currentChatroomId = data.chatroom.id;
-        currentChannelName = data.slug;
-        
-        // Płynne przejście z ekranu logowania do głównego pulpitu sterowania
-        document.getElementById("loginView").style.display = "none";
-        document.getElementById("mainInterface").style.display = "flex";
-        document.getElementById("connectedChannel").innerText = currentChannelName;
-        
-        statusDiv.innerText = "";
-        updateSummaryLayout();
-    } catch (err) {
-        statusDiv.style.color = "#ff3333";
-        statusDiv.innerText = "Nie znaleziono kanału lub błąd połączenia z API Kicka!";
-        console.error("Błąd logowania:", err);
-    }
+    // Logika w ułamku sekundy wpuszcza Cię do środka, korzystając ze stałego ID
+    document.getElementById("loginView").style.display = "none";
+    document.getElementById("mainInterface").style.display = "flex";
+    document.getElementById("connectedChannel").innerText = channelInput;
+    
+    statusDiv.innerText = "";
+    updateSummaryLayout();
 }
 
 function updateSummaryLayout() {
@@ -53,7 +36,6 @@ function updateSummaryLayout() {
 function connectAndListen() {
     const command = document.getElementById("chatCommand").value.trim().toLowerCase();
     if (!command) return alert("Wpisz hasło do zapisu!");
-    if (!currentChatroomId) return alert("Błąd sesji. Zaloguj się ponownie.");
 
     updateSummaryLayout();
     document.getElementById("statusText").innerText = "Ustanawianie połączenia z serwerem czatu Kick (WebSocket)...";
@@ -66,19 +48,18 @@ function connectAndListen() {
 
     if (socketInstance) socketInstance.close();
     
-    // Nawiązanie połączenia przez czysty i stabilny protokół WebSocket
+    // Nawiązanie stabilnego połączenia WebSocket
     socketInstance = new WebSocket("wss://://pusher.com");
 
     socketInstance.onopen = function() {
-        // Wysłanie pakietu subskrypcji dla Twojego dynamicznie pobranego ID kanału
         const msg = {
             event: "pusher:subscribe",
-            data: { channel: `chatrooms.${currentChatroomId}.v2` }
+            data: { channel: `chatrooms.${MY_CHATROOM_ID}.v2` }
         };
         socketInstance.send(JSON.stringify(msg));
         
         registrationOpen = true;
-        document.getElementById("statusText").innerHTML = `🟢 Zapisy URUCHOMIONE! Czat kanału: <b>${currentChannelName}</b> | Słowo: <b style="color:#00e701">${command}</b>`;
+        document.getElementById("statusText").innerHTML = `🟢 Zapisy URUCHOMIONE! Słowo: <b style="color:#00e701">${command}</b>`;
         document.getElementById("statusText").style.color = "#00e701";
     };
 
@@ -125,17 +106,15 @@ function startTextLottery() {
     document.getElementById("statusText").innerText = "🏁 Zapisy zamknięte. Trwa wybór ocalałych...";
     document.getElementById("statusText").style.color = "#ffff55";
 
-    // Tworzymy kopię listy, aby losować bez dublowania tej samej osoby
     let pool = [...players];
     let luckyWinners = [];
 
     for (let i = 0; i < targetCount; i++) {
         let randomIndex = Math.floor(Math.random() * pool.length);
         luckyWinners.push(pool[randomIndex]);
-        pool.splice(randomIndex, 1); // Usuwamy zwycięzcę z puli kolejnego losowania
+        pool.splice(randomIndex, 1); 
     }
 
-    // Wyczyszczenie komunikatu początkowego i wypisanie zwycięzców w prawej kolumnie
     const winnersContainer = document.getElementById("winnersList");
     winnersContainer.innerHTML = "";
     
@@ -160,4 +139,3 @@ function resetAllData() {
     document.getElementById("viewerList").innerHTML = '<div id="emptyMessage">Napisz hasło na czacie, aby dołączyć...</div>';
     document.getElementById("winnersList").innerHTML = '<div class="empty-winners">Brak zwycięzców. Czekam na losowanie...</div>';
 }
-
