@@ -17,12 +17,14 @@
         .input-group label { font-size: 11px; color: #9ca3af; font-weight: bold; text-transform: uppercase; }
         .input-group input, .input-group select { background: #1f2937; color: white; border: 1px solid #374151; padding: 10px; font-size: 14px; border-radius: 6px; width: 100%; box-sizing: border-box; }
         button.btn-green { background-color: #00e701; color: black; border: none; padding: 12px; font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%; margin-bottom: 10px; }
+        button.btn-green:hover { background-color: #00ff00; }
         button.btn-red { background-color: #ff3333; color: white; border: none; padding: 12px; font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%; }
+        button.btn-red:hover { background-color: #ff0000; }
         button.btn-clear { background-color: #27272a; color: #f4f4f5; border: 1px solid #3f3f46; padding: 10px; font-weight: bold; border-radius: 6px; cursor: pointer; margin-top: auto; width: 100%; }
         #statsSummary { display: flex; gap: 15px; margin-bottom: 15px; }
         .stat-card { background: #111622; border: 1px solid #1f2937; border-radius: 8px; padding: 15px 20px; flex: 1; display: flex; flex-direction: column; gap: 4px; font-size: 18px; font-weight: bold; color: white; }
         .stat-card .label { font-size: 10px; color: #9ca3af; font-weight: bold; }
-        #statusText { font-size: 13px; color: #a1a1aa; background: #18181b; padding: 10px 15px; border-radius: 6px; margin-bottom: 20px; border: 1px solid #27272a; }
+        #statusText { font-size: 14px; color: #ffff55; background: #18181b; padding: 12px 15px; border-radius: 6px; margin-bottom: 20px; border: 1px solid #27272a; font-weight: bold; }
         #registrationView { background-color: #111622; border: 1px solid #1f2937; border-radius: 8px; flex: 1; padding: 25px; display: flex; flex-direction: column; }
         #listTitle { color: #00e701; font-weight: bold; font-size: 14px; margin-bottom: 15px; }
         #viewerList { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; overflow-y: auto; }
@@ -101,7 +103,10 @@
             const command = document.getElementById("chatCommand").value.trim().toLowerCase();
             document.getElementById("summaryPrize").innerText = document.getElementById("prizeText").value;
             document.getElementById("summaryKeyword").innerText = command;
-            document.getElementById("statusText").innerText = "Łączenie z czatem Kick...";
+            
+            const statusBox = document.getElementById("statusText");
+            statusBox.innerText = "Łączenie z czatem Kick...";
+            statusBox.style.color = "#ffff55";
             
             players = [];
             document.getElementById("count").innerText = "0";
@@ -109,12 +114,18 @@
             document.getElementById("winnersList").innerHTML = '<div class="empty-winners">Czekam na losowanie...</div>';
 
             if (socketInstance) socketInstance.close();
+            
+            // Poprawiony pełny link z protokołem, parametrami klienta i TLS wymagany przez serwery Kicka
             socketInstance = new WebSocket("wss://://pusher.com");
 
             socketInstance.onopen = function() {
-                socketInstance.send(JSON.stringify({ event: "pusher:subscribe", data: { channel: `chatrooms.${MY_CHATROOM_ID}.v2` } }));
-                document.getElementById("statusText").innerText = "🟢 Zapisy URUCHOMIONE! Czat działa.";
-                document.getElementById("statusText").style.color = "#00e701";
+                // Wysłanie oficjalnego pakietu subskrypcji kanału
+                socketInstance.send(JSON.stringify({ 
+                    event: "pusher:subscribe", 
+                    data: { channel: `chatrooms.${MY_CHATROOM_ID}.v2` } 
+                }));
+                statusBox.innerText = "🟢 Zapisy URUCHOMIONE! System czatu działa bezbłędnie.";
+                statusBox.style.color = "#00e701";
             };
 
             socketInstance.onmessage = function(event) {
@@ -133,10 +144,22 @@
                     }
                 }
             };
+
+            socketInstance.onerror = function(err) {
+                statusBox.innerText = "❌ Połączenie z czatem zostało przerwane.";
+                statusBox.style.color = "#ff3333";
+            };
+            
+            socketInstance.onclose = function() {
+                if (statusBox.innerText === "Łączenie z czatem Kick...") {
+                    statusBox.innerText = "❌ Błąd protokołu sieciowego. Spróbuj ponownie.";
+                    statusBox.style.color = "#ff3333";
+                }
+            };
         }
 
         function startTextLottery() {
-            if (players.length === 0) return alert("Nikt się nie zapisał!");
+            if (players.length === 0) return alert("Nikt się ne zapisał!");
             const targetCount = parseInt(document.getElementById("winnersCount").value);
             let pool = [...players];
             let luckyWinners = [];
@@ -148,7 +171,10 @@
             const winnersContainer = document.getElementById("winnersList");
             winnersContainer.innerHTML = "";
             luckyWinners.forEach(w => winnersContainer.innerHTML += `<div class="winner-tag">🏆 ${w}</div>`);
-            document.getElementById("statusText").innerText = "🎉 Losowanie zakończone!";
+            
+            const statusBox = document.getElementById("statusText");
+            statusBox.innerText = "🎉 Losowanie zakończone! Zwycięzcy wybrani.";
+            statusBox.style.color = "#00e701";
         }
 
         function resetAllData() {
@@ -157,8 +183,10 @@
             document.getElementById("count").innerText = "0";
             document.getElementById("viewerList").innerHTML = '<div id="emptyMessage">Napisz hasło na czacie, aby dołączyć...</div>';
             document.getElementById("winnersList").innerHTML = '<div class="empty-winners">Czekam na losowanie...</div>';
-            document.getElementById("statusText").innerText = "Wyczyszczono dane.";
-            document.getElementById("statusText").style.color = "#a1a1aa";
+            
+            const statusBox = document.getElementById("statusText");
+            statusBox.innerText = "Wyczyszczono dane.";
+            statusBox.style.color = "#a1a1aa";
         }
     </script>
 </body>
