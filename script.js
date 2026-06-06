@@ -5,21 +5,22 @@ let players = [];
 let boss = { x: 400, y: 240, hp: 1000, maxHp: 1000, size: 36, isDead: false, name: "Ferumbras" };
 let damageTexts = [];
 let visualEffects = [];
-let gameActive = false; // Czy trwa animacja walki?
+let gameActive = false;
 let registrationOpen = false;
 let killTimer = 0;
 let killInterval = 60;
 let pusherInstance = null;
 
-// 🔑 Twój stały numer czatu Kick z obrazka:
 const MY_CHATROOM_ID = 2791851; 
 
+const playerColors = ["#ff5555", "#55ff55", "#5555ff", "#ffff55", "#ff55ff", "#55ffff"];
+
 class Player {
-    constructor(name) {
+    constructor(name, color) {
         this.name = name;
         this.x = Math.random() > 0.5 ? Math.random() * 100 + 40 : Math.random() * 100 + 660;
         this.y = Math.random() > 0.5 ? Math.random() * 100 + 40 : Math.random() * 100 + 340;
-        this.color = ["#ff5555", "#55ff55", "#5555ff", "#ffff55", "#ff55ff", "#55ffff"][Math.floor(Math.random() * 6)];
+        this.color = color;
         this.speed = 1.5 + Math.random() * 1.2;
         this.isDead = false;
     }
@@ -58,10 +59,15 @@ function connectAndListen() {
     document.getElementById("statusText").style.color = "#ffff55";
     document.getElementById("lootMessage").innerText = "";
     
+    // Reset widoków i danych
     players = [];
-    gameActive = false; // Na start wymuszamy widok czarnej listy uczestników
+    gameActive = false;
     boss.isDead = false;
     boss.hp = boss.maxHp;
+    document.getElementById("registrationView").style.display = "block";
+    document.getElementById("arenaView").style.display = "none";
+    document.getElementById("listTitle").innerText = "LISTA ZAPISANYCH GRACZY (0):";
+    document.getElementById("viewerList").innerHTML = '<div id="emptyMessage">Napisz hasło na czacie, aby dołączyć do rajdu...</div>';
 
     if (pusherInstance) pusherInstance.disconnect();
     
@@ -81,8 +87,19 @@ function connectAndListen() {
         if (messageText === command) {
             const exists = players.some(p => p.name.toLowerCase() === senderName.toLowerCase());
             if (!exists) {
-                players.push(new Player(senderName));
+                const randomColor = playerColors[Math.floor(Math.random() * playerColors.length)];
+                players.push(new Player(senderName, randomColor));
+                
                 document.getElementById("count").innerText = players.length;
+                document.getElementById("listTitle").innerText = `LISTA ZAPISANYCH GRACZY (${players.length}):`;
+                
+                // Usuwamy komunikat o braku graczy przy pierwszym zapisie
+                const emptyMsg = document.getElementById("emptyMessage");
+                if (emptyMsg) emptyMsg.remove();
+                
+                // Wstrzykujemy nick bezpośrednio do okna na stronie
+                const listContainer = document.getElementById("viewerList");
+                listContainer.innerHTML += `<div class="viewer-tag" style="color: ${randomColor}">> ${senderName}</div>`;
             }
         }
     });
@@ -95,7 +112,12 @@ function startBossFight() {
     if (players.length <= targetWinners) return alert("Masz za mało zapisanych osób w stosunku do liczby zwycięzców!");
 
     registrationOpen = false;
-    gameActive = true; // Przełączamy ekran na arenę z potworem
+    
+    // PRZEŁĄCZENIE EKRANÓW: Ukrywamy czarną listę, pokazujemy arenę z bossem
+    document.getElementById("registrationView").style.display = "none";
+    document.getElementById("arenaView").style.display = "block";
+    
+    gameActive = true;
     boss.hp = boss.maxHp;
     boss.isDead = false;
     
@@ -142,51 +164,7 @@ function executeBossAttack() {
 function gameLoop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    if (gameActive === false) {
-        // -------------------------------------------------------------
-        // EKRAN 1: CZARNA LISTA UCZESTNIKÓW (Przed kliknięciem START)
-        // -------------------------------------------------------------
-        ctx.fillStyle = "#16161a"; 
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        
-        ctx.fillStyle = "#00e701";
-        ctx.font = "bold 18px monospace";
-        ctx.textAlign = "left";
-        ctx.fillText(`LISTA ZAPISANYCH GRACZY (${players.length}):`, 40, 50);
-        
-        let startX = 40;
-        let startY = 100;
-        let colWidth = 180;
-        let rowHeight = 28;
-        
-        ctx.font = "bold 14px monospace";
-        players.forEach((p, index) => {
-            let col = Math.floor(index / 12);
-            let row = index % 12;
-            
-            let x = startX + col * colWidth;
-            let y = startY + row * rowHeight;
-            
-            if (x < canvas.width - 40) {
-                ctx.fillStyle = p.color;
-                ctx.fillText(`> ${p.name}`, x, y);
-            }
-        });
-
-        if (players.length === 0) {
-            ctx.fillStyle = "#636366";
-            ctx.font = "italic 15px monospace";
-            ctx.textAlign = "center";
-            ctx.fillText("Napisz hasło na czacie, aby dołączyć do rajdu...", canvas.width / 2, canvas.height / 2);
-        }
-        
-    } else {
-        // -------------------------------------------------------------
-        // EKRAN 2: ARENA WALKI (Uruchamiana dopiero po kliknięciu START)
-        // -------------------------------------------------------------
-        ctx.fillStyle = "#3b3b3b";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
+    if (gameActive === true) {
         ctx.strokeStyle = "#474747"; ctx.lineWidth = 1;
         for(let x=0; x<canvas.width; x+=32) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke(); }
         for(let y=0; y<canvas.height; y+=32) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke(); }
@@ -218,4 +196,13 @@ function gameLoop() {
             if (fx.type === 'beam') {
                 ctx.strokeStyle = "#ff3333"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(fx.x1, fx.y1); ctx.lineTo(fx.x2, fx.y2); ctx.stroke();
             } else if (fx.type === 'ue') {
-ctx.fillStyle = fx.color; ctx.beginPath(); ctx.arc(fx.x, fx.y, fx.radius, 0, Math.PI * 2); ctx.fill();fx.radius += (fx.maxRadius - fx.radius) * 0.15;} else {ctx.strokeStyle = fx.color; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(fx.x, fx.y, fx.radius, 0, Math.PI * 2); ctx.stroke();fx.radius += (fx.maxRadius - fx.radius) * 0.2;}fx.timer--; if (fx.timer <= 0) visualEffects.splice(i, 1);}for (let i = damageTexts.length - 1; i >= 0; i--) {let dt = damageTexts[i]; ctx.fillStyle = dt.color; ctx.font = "bold 14px monospace"; ctx.textAlign = "center";ctx.fillText(dt.text, dt.x, dt.y); dt.y -= 0.6; dt.timer--; if (dt.timer <= 0) damageTexts.splice(i, 1);}}requestAnimationFrame(gameLoop);}gameLoop();
+                ctx.fillStyle = fx.color; ctx.beginPath(); ctx.arc(fx.x, fx.y, fx.radius, 0, Math.PI * 2); ctx.fill();
+                fx.radius += (fx.maxRadius - fx.radius) * 0.15;
+            } else {
+                ctx.strokeStyle = fx.color; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(fx.x, fx.y, fx.radius, 0, Math.PI * 2); ctx.stroke();
+                fx.radius += (fx.maxRadius - fx.radius) * 0.2;
+            }
+            fx.timer--; if (fx.timer <= 0) visualEffects.splice(i, 1);
+        }
+
+for (let i = damageTexts.length - 1; i >= 0; i--) {let dt = damageTexts[i]; ctx.fillStyle = dt.color; ctx.font = "bold 14px monospace"; ctx.textAlign = "center";ctx.fillText(dt.text, dt.x, dt.y); dt.y -= 0.6; dt.timer--; if (dt.timer <= 0) damageTexts.splice(i, 1);}}requestAnimationFrame(gameLoop);}gameLoop();
