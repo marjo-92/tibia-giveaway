@@ -9,8 +9,9 @@ let gameActive = false;
 let registrationOpen = false;
 let killTimer = 0;
 let killInterval = 60;
-let pusherInstance = null;
+let socketInstance = null; // Zmiana na czysty WebSocket
 
+// Twój stały identyfikator czatu Kick wyciągnięty ze zdjęcia profilu:
 const MY_CHATROOM_ID = 2791851; 
 
 const playerColors = ["#ff5555", "#55ff55", "#5555ff", "#ffff55", "#ff55ff", "#55ffff"];
@@ -51,58 +52,76 @@ class Player {
     }
 }
 
+// 🟢 Nowa, stabilna funkcja łącząca z czatem przez oficjalne WebSockety Kicka
 function connectAndListen() {
     const command = document.getElementById("chatCommand").value.trim().toLowerCase();
     if (!command) return alert("Wpisz hasło do zapisu!");
 
-    document.getElementById("statusText").innerText = "Łączenie z czatem Kick...";
+    document.getElementById("statusText").innerText = "Łączenie z czatem Kick (WebSocket)...";
     document.getElementById("statusText").style.color = "#ffff55";
     document.getElementById("lootMessage").innerText = "";
     
-    // Reset widoków i danych
     players = [];
     gameActive = false;
     boss.isDead = false;
     boss.hp = boss.maxHp;
+    
     document.getElementById("registrationView").style.display = "block";
     document.getElementById("arenaView").style.display = "none";
     document.getElementById("listTitle").innerText = "LISTA ZAPISANYCH GRACZY (0):";
     document.getElementById("viewerList").innerHTML = '<div id="emptyMessage">Napisz hasło na czacie, aby dołączyć do rajdu...</div>';
 
-    if (pusherInstance) pusherInstance.disconnect();
+    if (socketInstance) socketInstance.close();
     
-    pusherInstance = new Pusher('32cbd69e4b950bf97679', { cluster: 'us2', forceTLS: true });
-    const channel = pusherInstance.subscribe(`chatrooms.${MY_CHATROOM_ID}.v2`);
-    
-    registrationOpen = true;
-    document.getElementById("statusText").innerHTML = `🟢 Zapisy URUCHOMIONE! Hasło na czacie: <span style="color:#00ff00; font-weight:bold;">${command}</span> | Zapisanych: <b id="count">0</b>`;
-    document.getElementById("statusText").style.color = "#00ff00";
+    // Łączymy się bezpośrednio z głównym serwerem transmisji wiadomości Kicka
+    socketInstance = new WebSocket("wss://://pusher.com");
 
-    channel.bind('App\\Events\\ChatMessageEvent', function(msg) {
+    socketInstance.onopen = function() {
+        // Wysyłamy prośbę o subskrybowanie Twojego pokoju czatowego
+        const subscribeMessage = {
+            event: "pusher:subscribe",
+            data: { channel: `chatrooms.${MY_CHATROOM_ID}.v2` }
+        };
+        socketInstance.send(JSON.stringify(subscribeMessage));
+        
+        registrationOpen = true;
+        document.getElementById("statusText").innerHTML = `🟢 Zapisy URUCHOMIONE! Hasło na czacie: <span style="color:#00ff00; font-weight:bold;">${command}</span> | Zapisanych: <b id="count">0</b>`;
+        document.getElementById("statusText").style.color = "#00ff00";
+    };
+
+    socketInstance.onmessage = function(event) {
         if (!registrationOpen || gameActive) return;
         
-        const messageText = msg.content.trim().toLowerCase();
-        const senderName = msg.sender.username;
+        const rawData = JSON.parse(event.data);
+        if (rawData.event === "App\\Events\\ChatMessageEvent") {
+            const msg = JSON.parse(rawData.data);
+            const messageText = msg.content.trim().toLowerCase();
+            const senderName = msg.sender.username;
 
-        if (messageText === command) {
-            const exists = players.some(p => p.name.toLowerCase() === senderName.toLowerCase());
-            if (!exists) {
-                const randomColor = playerColors[Math.floor(Math.random() * playerColors.length)];
-                players.push(new Player(senderName, randomColor));
-                
-                document.getElementById("count").innerText = players.length;
-                document.getElementById("listTitle").innerText = `LISTA ZAPISANYCH GRACZY (${players.length}):`;
-                
-                // Usuwamy komunikat o braku graczy przy pierwszym zapisie
-                const emptyMsg = document.getElementById("emptyMessage");
-                if (emptyMsg) emptyMsg.remove();
-                
-                // Wstrzykujemy nick bezpośrednio do okna na stronie
-                const listContainer = document.getElementById("viewerList");
-                listContainer.innerHTML += `<div class="viewer-tag" style="color: ${randomColor}">> ${senderName}</div>`;
+            if (messageText === command) {
+                const exists = players.some(p => p.name.toLowerCase() === senderName.toLowerCase());
+                if (!exists) {
+                    const randomColor = playerColors[Math.floor(Math.random() * playerColors.length)];
+                    players.push(new Player(senderName, randomColor));
+                    
+                    document.getElementById("count").innerText = players.length;
+                    document.getElementById("listTitle").innerText = `LISTA ZAPISANYCH GRACZY (${players.length}):`;
+                    
+                    const emptyMsg = document.getElementById("emptyMessage");
+                    if (emptyMsg) emptyMsg.remove();
+                    
+                    const listContainer = document.getElementById("viewerList");
+                    listContainer.innerHTML += `<div class="viewer-tag" style="color: ${randomColor}">> ${senderName}</div>`;
+                }
             }
         }
-    });
+    };
+
+    socketInstance.onerror = function(err) {
+        document.getElementById("statusText").innerText = "❌ Błąd połączenia z serwerem czatu.";
+        document.getElementById("statusText").style.color = "#ff3333";
+        console.error(err);
+    };
 }
 
 function startBossFight() {
@@ -113,7 +132,6 @@ function startBossFight() {
 
     registrationOpen = false;
     
-    // PRZEŁĄCZENIE EKRANÓW: Ukrywamy czarną listę, pokazujemy arenę z bossem
     document.getElementById("registrationView").style.display = "none";
     document.getElementById("arenaView").style.display = "block";
     
@@ -191,18 +209,6 @@ function gameLoop() {
 
         players.forEach(p => { p.update(); p.draw(); });
 
-        for (let i = visualEffects.length - 1; i >= 0; i--) {
-            let fx = visualEffects[i];
-            if (fx.type === 'beam') {
-                ctx.strokeStyle = "#ff3333"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(fx.x1, fx.y1); ctx.lineTo(fx.x2, fx.y2); ctx.stroke();
-            } else if (fx.type === 'ue') {
-                ctx.fillStyle = fx.color; ctx.beginPath(); ctx.arc(fx.x, fx.y, fx.radius, 0, Math.PI * 2); ctx.fill();
-                fx.radius += (fx.maxRadius - fx.radius) * 0.15;
-            } else {
-                ctx.strokeStyle = fx.color; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(fx.x, fx.y, fx.radius, 0, Math.PI * 2); ctx.stroke();
-                fx.radius += (fx.maxRadius - fx.radius) * 0.2;
-            }
-            fx.timer--; if (fx.timer <= 0) visualEffects.splice(i, 1);
-        }
+        for (let i = visualEffects.length - 1; i >= 0; i--) {let fx = visualEffects[i];if (fx.type === 'beam') {ctx.strokeStyle = "#ff3333"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(fx.x1, fx.y1); ctx.lineTo(fx.x2, fx.y2); ctx.stroke();} else if (fx.type === 'ue') {ctx.fillStyle = fx.color; ctx.beginPath(); ctx.arc(fx.x, fx.y, fx.radius, 0, Math.PI * 2); ctx.fill();fx.radius += (fx.maxRadius - fx.radius) * 0.15;} else {ctx.strokeStyle = fx.color; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(fx.x, fx.y, fx.radius, 0, Math.PI * 2); ctx.stroke();fx.radius += (fx.maxRadius - fx.radius) * 0.2;}fx.timer--; if (fx.timer <= 0) visualEffects.splice(i, 1);}for (let i = damageTexts.length - 1; i >= 0; i--) {let dt = damageTexts[i]; ctx.fillStyle = dt.color; ctx.font = "bold 14px monospace"; ctx.textAlign = "center";ctx.fillText(dt.text, dt.x, dt.y); dt.y -= 0.6; dt.timer--; if (dt.timer <= 0) damageTexts.splice(i, 1);}}requestAnimationFrame(gameLoop);}gameLoop();
 
-for (let i = damageTexts.length - 1; i >= 0; i--) {let dt = damageTexts[i]; ctx.fillStyle = dt.color; ctx.font = "bold 14px monospace"; ctx.textAlign = "center";ctx.fillText(dt.text, dt.x, dt.y); dt.y -= 0.6; dt.timer--; if (dt.timer <= 0) damageTexts.splice(i, 1);}}requestAnimationFrame(gameLoop);}gameLoop();
+
