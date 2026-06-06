@@ -1,10 +1,8 @@
-<!DOCTYPE html>
+<<!DOCTYPE html>
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
     <title>Tibia Ferumbras Raid Lottery</title>
-    <!-- Biblioteka Pusher do łączenia z czatem Kick -->
-    <script src="https://pusher.com"></script>
     <style>
         body {
             background-color: #0d0f12; color: #d1d5db; font-family: 'Courier New', Courier, monospace;
@@ -12,24 +10,22 @@
         }
         h1 { color: #ff3333; text-shadow: 0 0 10px rgba(255,51,51,0.4); margin-bottom: 5px; }
         #controls { margin: 15px; display: flex; gap: 10px; align-items: center; }
-        input, button {
+        button {
             background: #1f2937; color: white; border: 2px solid #374151;
-            padding: 8px 15px; font-size: 14px; font-weight: bold; cursor: pointer;
+            padding: 10px 25px; font-size: 16px; font-weight: bold; cursor: pointer;
         }
         button:hover { background: #ff3333; color: white; border-color: #ff3333; }
         #gameCanvas { background-color: #404040; border: 4px solid #1a1a1a; box-shadow: 0 10px 25px rgba(0,0,0,0.7); image-rendering: pixelated; }
         #lootMessage { margin-top: 15px; font-size: 18px; color: #00e701; min-height: 50px; font-weight: bold; text-align: center; line-height: 1.5; }
-        .status { color: #888; font-size: 12px; margin-bottom: 10px; }
+        .info { color: #888; font-size: 12px; margin-bottom: 10px; }
     </style>
 </head>
 <body>
 
-    <h1>FERUMBRAS KICK RAID</h1>
-    <div class="status" id="connStatus">Status czatu: Rozłączony. Podaj nick i kliknij Połącz.</div>
+    <h1>FERUMBRAS RAID</h1>
+    <div class="info">Lista widzów wczytana z kodu gry. Kliknij przycisk, aby rozpocząć rzeź!</div>
 
     <div id="controls">
-        <input type="text" id="kickChannel" placeholder="Twój nick na Kicku..." value="marjo-92">
-        <button onclick="connectToKick()" style="background: #00e701; color: black; border-color: #00e701;">POŁĄCZ Z CZATEM</button>
         <button onclick="startBossFight()" style="background: #990000; border-color: #cc0000; color: white;">ODPAL RAJD!</button>
     </div>
 
@@ -40,6 +36,9 @@
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
 
+        // 📝 TUTAJ WPISZ NICKI SWOICH WIDZÓW NA SZTYWNO:
+        let viewerNames = ["Widz1", "Widz2", "Widz3", "Mod_Tomek", "Kamil99", "TibiaFan", "Krecik", "Gamer3000", "StreamViewer"];
+
         let players = [];
         let boss = { x: 400, y: 250, hp: 1000, maxHp: 1000, size: 36, isDead: false, name: "Ferumbras" };
         let damageTexts = [];
@@ -47,7 +46,6 @@
         let gameActive = false;
         let killTimer = 0;
         let killInterval = 60;
-        let pusherInstance = null;
 
         class Player {
             constructor(name) {
@@ -85,53 +83,18 @@
             }
         }
 
-        async function connectToKick() {
-            const channelName = document.getElementById("kickChannel").value.trim().toLowerCase();
-            if (!channelName) return alert("Wpisz nazwę kanału!");
-
-            document.getElementById("connStatus").innerText = "Pobieranie danych kanału...";
-
-            try {
-                const response = await fetch(`https://kick.com{channelName}`);
-                if (!response.ok) throw new Error("Nie znaleziono kanału.");
-                const data = await response.json();
-                const chatroomId = data.chatroom.id;
-
-                if (pusherInstance) pusherInstance.disconnect();
-                
-                pusherInstance = new Pusher('32cbd69e4b950bf97679', {
-                    cluster: 'us2',
-                    forceTLS: true
-                });
-
-                const channel = pusherInstance.subscribe(`chatrooms.${chatroomId}.v2`);
-                
-                document.getElementById("connStatus").innerText = `Połączono z czatem: ${channelName}! Widzowie mogą pisać !join`;
-                document.getElementById("connStatus").style.color = "#00e701";
-
-                channel.bind('App\\Events\\ChatMessageEvent', function(msg) {
-                    const messageText = msg.content.trim().toLowerCase();
-                    const senderName = msg.sender.username;
-
-                    if (messageText === '!join' || messageText === '!losowanie') {
-                        const exists = players.some(p => p.name.toLowerCase() === senderName.toLowerCase());
-                        if (!exists && !gameActive) {
-                            players.push(new Player(senderName));
-                            damageTexts.push({ x: 400, y: 100, text: `+ ${senderName} dołącza!`, color: "#00ff00", timer: 40 });
-                        }
-                    }
-                });
-
-            } catch (err) {
-                document.getElementById("connStatus").innerText = "Błąd połączenia. Upewnij się, że nazwa kanału jest poprawna.";
-                document.getElementById("connStatus").style.color = "#ff3333";
-                console.error(err);
-            }
+        // Automatyczne dodawanie osób wpisanych na sztywno zaraz po odpaleniu strony
+        function initPlayers() {
+            players = [];
+            viewerNames.forEach(name => {
+                players.push(new Player(name));
+            });
         }
 
         function startBossFight() {
+            initPlayers(); // Odradzamy wszystkich na start walki
             let alivePlayers = players.filter(p => !p.isDead);
-            if (alivePlayers.length === 0) return alert("Nikt jeszcze nie dołączył do rajdu! Niech widzowie wpiszą !join na czacie.");
+            if (alivePlayers.length === 0) return alert("Brak graczy na liście kodu!");
             
             boss.hp = boss.maxHp; boss.isDead = false;
             document.getElementById("lootMessage").innerText = "Ferumbras: The world will tremble before my power!";
@@ -187,24 +150,29 @@
             players.forEach(p => { p.update(); p.draw(); });
 
             for (let i = visualEffects.length - 1; i >= 0; i--) {
-            let fx = visualEffects[i];
-              if (fx.type === 'beam') {
-                ctx.strokeStyle = "#ff3333"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(fx.x1, fx.y1); ctx.lineTo(fx.x2, fx.y2); ctx.stroke();
-              } else {
-                ctx.strokeStyle = fx.color; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(fx.x, fx.y, fx.radius, 0, Math.PI * 2); ctx.stroke();
-                fx.radius += (fx.maxRadius - fx.radius) * 0.2;
+                let fx = visualEffects[i];
+                if (fx.type === 'beam') {
+                    ctx.strokeStyle = "#ff3333"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(fx.x1, fx.y1); ctx.lineTo(fx.x2, fx.y2); ctx.stroke();
+                } else {
+                    ctx.strokeStyle = fx.color; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(fx.x, fx.y, fx.radius, 0, Math.PI * 2); ctx.stroke();
+                    fx.radius += (fx.maxRadius - fx.radius) * 0.2;
+                }
+                fx.timer--; if (fx.timer <= 0) visualEffects.splice(i, 1);
             }
-          fx.timer--; if (fx.timer <= 0) visualEffects.splice(i, 1);
+
+            for (let i = damageTexts.length - 1; i >= 0; i--) {
+                let dt = damageTexts[i]; ctx.fillStyle = dt.color; ctx.font = "bold 15px monospace"; ctx.textAlign = "center";
+                ctx.fillText(dt.text, dt.x, dt.y); dt.y -= 0.6; dt.timer--; if (dt.timer <= 0) damageTexts.splice(i, 1);
+            }
+            requestAnimationFrame(gameLoop);
         }
 
-          for (let i = damageTexts.length - 1; i >= 0; i--) {let dt = damageTexts[i]; ctx.fillStyle = dt.color; ctx.font = "bold 15px monospace";
-           ctx.textAlign = "center";ctx.fillText(dt.text, dt.x, dt.y); dt.y -= 0.6; dt.timer--; if (dt.timer <= 0) damageTexts.splice(i, 1);
-              }
-          requestAnimationFrame(gameLoop);
-        }
-           gameLoop();
-
-
+        // Pierwsze załadowanie postaci na mapę
+        initPlayers();
+        gameLoop();
+    </script>
+</body>
+</html>
 
 
 
