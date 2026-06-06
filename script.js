@@ -5,13 +5,13 @@ let players = [];
 let boss = { x: 400, y: 240, hp: 1000, maxHp: 1000, size: 36, isDead: false, name: "Ferumbras" };
 let damageTexts = [];
 let visualEffects = [];
-let gameActive = false; // Czy trwa walka (faza gry)
+let gameActive = false; // Czy trwa animacja walki?
 let registrationOpen = false;
 let killTimer = 0;
 let killInterval = 60;
 let pusherInstance = null;
 
-// 🔑 Twój unikalny numer czatu Kick wpisany na sztywno:
+// 🔑 Twój stały numer czatu Kick z obrazka:
 const MY_CHATROOM_ID = 2791851; 
 
 class Player {
@@ -57,8 +57,9 @@ function connectAndListen() {
     document.getElementById("statusText").innerText = "Łączenie z czatem Kick...";
     document.getElementById("statusText").style.color = "#ffff55";
     document.getElementById("lootMessage").innerText = "";
+    
     players = [];
-    gameActive = false; // Wymuszenie widoku listy uczestników
+    gameActive = false; // Na start wymuszamy widok czarnej listy uczestników
     boss.isDead = false;
     boss.hp = boss.maxHp;
 
@@ -94,7 +95,7 @@ function startBossFight() {
     if (players.length <= targetWinners) return alert("Masz za mało zapisanych osób w stosunku do liczby zwycięzców!");
 
     registrationOpen = false;
-    gameActive = true; // Przełączenie ekranu na walkę z bossem
+    gameActive = true; // Przełączamy ekran na arenę z potworem
     boss.hp = boss.maxHp;
     boss.isDead = false;
     
@@ -141,48 +142,51 @@ function executeBossAttack() {
 function gameLoop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    if (!gameActive) {
+    if (gameActive === false) {
         // -------------------------------------------------------------
-        // EKRAN 1: RYSOWANIE LISTY UCZESTNIKÓW (Przed kliknięciem START)
+        // EKRAN 1: CZARNA LISTA UCZESTNIKÓW (Przed kliknięciem START)
         // -------------------------------------------------------------
-        ctx.fillStyle = "#1e1e24"; 
+        ctx.fillStyle = "#16161a"; 
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         
-        ctx.fillStyle = "#ffaa00";
+        ctx.fillStyle = "#00e701";
         ctx.font = "bold 18px monospace";
         ctx.textAlign = "left";
-        ctx.fillText(`LISTA UCZESTNIKÓW RAIDU (${players.length}):`, 30, 40);
+        ctx.fillText(`LISTA ZAPISANYCH GRACZY (${players.length}):`, 40, 50);
         
-        let startX = 30;
-        let startY = 80;
+        let startX = 40;
+        let startY = 100;
         let colWidth = 180;
-        let rowHeight = 25;
+        let rowHeight = 28;
         
-        ctx.font = "14px monospace";
+        ctx.font = "bold 14px monospace";
         players.forEach((p, index) => {
-            let col = Math.floor(index / 14);
-            let row = index % 14;
+            let col = Math.floor(index / 12);
+            let row = index % 12;
             
             let x = startX + col * colWidth;
             let y = startY + row * rowHeight;
             
-            if (x < canvas.width - 50) {
+            if (x < canvas.width - 40) {
                 ctx.fillStyle = p.color;
-                ctx.fillText(`• ${p.name}`, x, y);
+                ctx.fillText(`> ${p.name}`, x, y);
             }
         });
 
         if (players.length === 0) {
-            ctx.fillStyle = "#888888";
-            ctx.font = "italic 16px monospace";
+            ctx.fillStyle = "#636366";
+            ctx.font = "italic 15px monospace";
             ctx.textAlign = "center";
-            ctx.fillText("Oczekiwanie na pierwszych śmiałków... (Napisz komendę na czacie)", canvas.width / 2, canvas.height / 2);
+            ctx.fillText("Napisz hasło na czacie, aby dołączyć do rajdu...", canvas.width / 2, canvas.height / 2);
         }
         
     } else {
         // -------------------------------------------------------------
-        // EKRAN 2: ARENA WALKI (Po kliknięciu START)
+        // EKRAN 2: ARENA WALKI (Uruchamiana dopiero po kliknięciu START)
         // -------------------------------------------------------------
+        ctx.fillStyle = "#3b3b3b";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
         ctx.strokeStyle = "#474747"; ctx.lineWidth = 1;
         for(let x=0; x<canvas.width; x+=32) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke(); }
         for(let y=0; y<canvas.height; y+=32) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke(); }
@@ -214,6 +218,4 @@ function gameLoop() {
             if (fx.type === 'beam') {
                 ctx.strokeStyle = "#ff3333"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(fx.x1, fx.y1); ctx.lineTo(fx.x2, fx.y2); ctx.stroke();
             } else if (fx.type === 'ue') {
-                ctx.fillStyle = fx.color; ctx.beginPath(); ctx.arc(fx.x, fx.y, fx.radius, 0, Math.PI * 2); ctx.fill();
-fx.radius += (fx.maxRadius - fx.radius) * 0.15;} else {ctx.strokeStyle = fx.color; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(fx.x, fx.y, fx.radius, 0, Math.PI * 2); ctx.stroke();fx.radius += (fx.maxRadius - fx.radius) * 0.2;}fx.timer--; if (fx.timer <= 0) visualEffects.splice(i, 1);}for (let i = damageTexts.length - 1; i >= 0; i--) {let dt = damageTexts[i]; ctx.fillStyle = dt.color; ctx.font = "bold 14px monospace"; ctx.textAlign = "center";ctx.fillText(dt.text, dt.x, dt.y); dt.y -= 0.6; dt.timer--; if (dt.timer <= 0) damageTexts.splice(i, 1);}}requestAnimationFrame(gameLoop);}gameLoop();
-
+ctx.fillStyle = fx.color; ctx.beginPath(); ctx.arc(fx.x, fx.y, fx.radius, 0, Math.PI * 2); ctx.fill();fx.radius += (fx.maxRadius - fx.radius) * 0.15;} else {ctx.strokeStyle = fx.color; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(fx.x, fx.y, fx.radius, 0, Math.PI * 2); ctx.stroke();fx.radius += (fx.maxRadius - fx.radius) * 0.2;}fx.timer--; if (fx.timer <= 0) visualEffects.splice(i, 1);}for (let i = damageTexts.length - 1; i >= 0; i--) {let dt = damageTexts[i]; ctx.fillStyle = dt.color; ctx.font = "bold 14px monospace"; ctx.textAlign = "center";ctx.fillText(dt.text, dt.x, dt.y); dt.y -= 0.6; dt.timer--; if (dt.timer <= 0) damageTexts.splice(i, 1);}}requestAnimationFrame(gameLoop);}gameLoop();
