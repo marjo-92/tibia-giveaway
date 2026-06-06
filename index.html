@@ -3,9 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Tibia Kick Raid Lottery</title>
-    <!-- Łączymy z osobnym plikiem CSS -->
     <link rel="stylesheet" href="style.css">
-    <!-- Biblioteka Pusher do czatu Kick -->
     <script src="https://pusher.com"></script>
 </head>
 <body>
@@ -14,10 +12,6 @@
     <div id="statusText">Status: Podaj dane i kliknij Otwórz zapisy</div>
 
     <div id="setupPanel">
-        <div class="input-group">
-            <label>Twój Nick Kick</label>
-            <input type="text" id="kickChannel" value="marjo-92" style="width: 120px;">
-        </div>
         <div class="input-group">
             <label>Hasło na czat</label>
             <input type="text" id="chatCommand" value="!tc" style="width: 100px;">
@@ -45,7 +39,6 @@
     <canvas id="gameCanvas" width="800" height="480"></canvas>
     <div id="lootMessage"></div>
 
-    <!-- Łączymy z osobnym plikiem JavaScript -->
     <script src="script.js"></script>
 </body>
 </html>
