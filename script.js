@@ -5,7 +5,7 @@ let players = [];
 let boss = { x: 400, y: 240, hp: 1000, maxHp: 1000, size: 36, isDead: false, name: "Ferumbras" };
 let damageTexts = [];
 let visualEffects = [];
-let gameActive = false;
+let gameActive = false; // Czy trwa walka
 let registrationOpen = false;
 let killTimer = 0;
 let killInterval = 60;
@@ -17,7 +17,6 @@ const MY_CHATROOM_ID = 2791851;
 class Player {
     constructor(name) {
         this.name = name;
-        // Rozrzucenie postaci po bokach mapy
         this.x = Math.random() > 0.5 ? Math.random() * 100 + 40 : Math.random() * 100 + 660;
         this.y = Math.random() > 0.5 ? Math.random() * 100 + 40 : Math.random() * 100 + 340;
         this.color = ["#ff5555", "#55ff55", "#5555ff", "#ffff55", "#ff55ff", "#55ffff"][Math.floor(Math.random() * 6)];
@@ -51,7 +50,6 @@ class Player {
     }
 }
 
-// 🟢 Automatyczne i bezpośrednie łączenie z Twoim czatem Kick
 function connectAndListen() {
     const command = document.getElementById("chatCommand").value.trim().toLowerCase();
     if (!command) return alert("Wpisz hasło do zapisu!");
@@ -60,13 +58,12 @@ function connectAndListen() {
     document.getElementById("statusText").style.color = "#ffff55";
     document.getElementById("lootMessage").innerText = "";
     players = [];
-    gameActive = false;
+    gameActive = false; // Resetujemy do widoku listy
     boss.isDead = false;
     boss.hp = boss.maxHp;
 
     if (pusherInstance) pusherInstance.disconnect();
     
-    // Połączenie z serwerem czatu przez oficjalny klucz Kicka i Twoje ID
     pusherInstance = new Pusher('32cbd69e4b950bf97679', { cluster: 'us2', forceTLS: true });
     const channel = pusherInstance.subscribe(`chatrooms.${MY_CHATROOM_ID}.v2`);
     
@@ -85,7 +82,6 @@ function connectAndListen() {
             if (!exists) {
                 players.push(new Player(senderName));
                 document.getElementById("count").innerText = players.length;
-                damageTexts.push({ x: Math.random()*600+100, y: Math.random()*300+80, text: `+ ${senderName}`, color: "#00ff00", timer: 40 });
             }
         }
     });
@@ -98,7 +94,7 @@ function startBossFight() {
     if (players.length <= targetWinners) return alert("Masz za mało zapisanych osób w stosunku do liczby zwycięzców!");
 
     registrationOpen = false;
-    gameActive = true;
+    gameActive = true; // URUCHOMIENIE GRY: Przełączamy ekran na arenę z bossem
     boss.hp = boss.maxHp;
     boss.isDead = false;
     
@@ -142,54 +138,95 @@ function executeBossAttack() {
     }
 }
 
+// Główna pętla rysująca ekran
 function gameLoop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    ctx.strokeStyle = "#474747"; ctx.lineWidth = 1;
-    for(let x=0; x<canvas.width; x+=32) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke(); }
-    for(let y=0; y<canvas.height; y+=32) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke(); }
-
-    if (gameActive && !boss.isDead) {
-        killTimer++;
-        if (killTimer >= killInterval) { executeBossAttack(); killTimer = 0; }
-        let aliveCount = players.filter(p => !p.isDead).length;
-        let targetWinners = parseInt(document.getElementById("winnersCount").value);
-        if (boss.hp > 10 && aliveCount > targetWinners) boss.hp -= 0.6;
-    }
-
-    if (!boss.isDead) {
-        ctx.fillStyle = "#7a0099"; ctx.fillRect(boss.x - boss.size/2, boss.y - boss.size/2, boss.size, boss.size);
-        ctx.fillStyle = "#ffaa00"; ctx.fillRect(boss.x - 10, boss.y - boss.size/2 - 8, 20, 8);
-        ctx.fillStyle = "#ff3333"; ctx.font = "bold 14px monospace"; ctx.textAlign = "center"; ctx.fillText(boss.name, boss.x, boss.y - 42);
+    if (!gameActive && !boss.isDead) {
+        // -------------------------------------------------------------
+        // EKRAN 1: RYSOWANIE ESTETYCZNEJ LISTY GRACZY (Gdy trwają zapisy)
+        // -------------------------------------------------------------
+        ctx.fillStyle = "#1e1e24"; // Tło listy
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
         
-        let barWidth = 80; let hpPercent = Math.max(0, boss.hp / boss.maxHp);
-        ctx.fillStyle = "#000000"; ctx.fillRect(boss.x - barWidth/2, boss.y - 34, barWidth, 6);
-        ctx.fillStyle = hpPercent > 0.25 ? "#00ff00" : "#ff0000"; ctx.fillRect(boss.x - barWidth/2, boss.y - 34, barWidth * hpPercent, 6);
-    } else {
-        ctx.fillStyle = "#4a005c"; ctx.fillRect(boss.x - 18, boss.y - 8, 36, 16);
-    }
+        ctx.fillStyle = "#ffaa00";
+        ctx.font = "bold 18px monospace";
+        ctx.textAlign = "left";
+        ctx.fillText(`LISTA UCZESTNIKÓW RAIDU (${players.length}):`, 30, 40);
+        
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "14px monospace";
+        
+        // Rysowanie nicków w kilku kolumnach, żeby pomieścić wielu widzów
+        let startX = 30;
+        let startY = 80;
+        let colWidth = 180;
+        let rowHeight = 25;
+        
+        players.forEach((p, index) => {
+            let col = Math.floor(index / 14); // Maksymalnie 14 nicków w pionie na kolumnę
+            let row = index % 14;
+            
+            let x = startX + col * colWidth;
+            let y = startY + row * rowHeight;
+            
+            if (x < canvas.width - 50) {
+                ctx.fillStyle = p.color; // Każdy widz ma swój losowy kolor tekstu
+                ctx.fillText(`• ${p.name}`, x, y);
+            }
+        });
 
-    players.forEach(p => { p.update(); p.draw(); });
-
-    for (let i = visualEffects.length - 1; i >= 0; i--) {
-        let fx = visualEffects[i];
-        if (fx.type === 'beam') {
-            ctx.strokeStyle = "#ff3333"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(fx.x1, fx.y1); ctx.lineTo(fx.x2, fx.y2); ctx.stroke();
-        } else if (fx.type === 'ue') {
-            ctx.fillStyle = fx.color; ctx.beginPath(); ctx.arc(fx.x, fx.y, fx.radius, 0, Math.PI * 2); ctx.fill();
-            fx.radius += (fx.maxRadius - fx.radius) * 0.15;
-        } else {
-            ctx.strokeStyle = fx.color; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(fx.x, fx.y, fx.radius, 0, Math.PI * 2); ctx.stroke();
-            fx.radius += (fx.maxRadius - fx.radius) * 0.2;
+        if (players.length === 0) {
+            ctx.fillStyle = "#888888";
+            ctx.font = "italic 16px monospace";
+            ctx.textAlign = "center";
+            ctx.fillText("Oczekiwanie na pierwszych śmiałków... (Napisz komendę na czacie)", canvas.width / 2, canvas.height / 2);
         }
-        fx.timer--; if (fx.timer <= 0) visualEffects.splice(i, 1);
-    }
+        
+    } else {
+        // -------------------------------------------------------------
+        // EKRAN 2: RYSOWANIE ARENY Z POTWORAMI (Po kliknięciu przycisku)
+        // -------------------------------------------------------------
+        ctx.strokeStyle = "#474747"; ctx.lineWidth = 1;
+        for(let x=0; x<canvas.width; x+=32) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke(); }
+        for(let y=0; y<canvas.height; y+=32) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke(); }
 
-    for (let i = damageTexts.length - 1; i >= 0; i--) {
-        let dt = damageTexts[i]; ctx.fillStyle = dt.color; ctx.font = "bold 14px monospace"; ctx.textAlign = "center";
-        ctx.fillText(dt.text, dt.x, dt.y); dt.y -= 0.6; dt.timer--; if (dt.timer <= 0) damageTexts.splice(i, 1);
+        if (gameActive && !boss.isDead) {
+            killTimer++;
+            if (killTimer >= killInterval) { executeBossAttack(); killTimer = 0; }
+            let aliveCount = players.filter(p => !p.isDead).length;
+            let targetWinners = parseInt(document.getElementById("winnersCount").value);
+            if (boss.hp > 10 && aliveCount > targetWinners) boss.hp -= 0.6;
+        }
+
+        if (!boss.isDead) {
+            ctx.fillStyle = "#7a0099"; ctx.fillRect(boss.x - boss.size/2, boss.y - boss.size/2, boss.size, boss.size);
+            ctx.fillStyle = "#ffaa00"; ctx.fillRect(boss.x - 10, boss.y - boss.size/2 - 8, 20, 8);
+            ctx.fillStyle = "#ff3333"; ctx.font = "bold 14px monospace"; ctx.textAlign = "center"; ctx.fillText(boss.name, boss.x, boss.y - 42);
+            
+            let barWidth = 80; let hpPercent = Math.max(0, boss.hp / boss.maxHp);
+            ctx.fillStyle = "#000000"; ctx.fillRect(boss.x - barWidth/2, boss.y - 34, barWidth, 6);
+            ctx.fillStyle = hpPercent > 0.25 ? "#00ff00" : "#ff0000"; ctx.fillRect(boss.x - barWidth/2, boss.y - 34, barWidth * hpPercent, 6);
+        } else {
+            ctx.fillStyle = "#4a005c"; ctx.fillRect(boss.x - 18, boss.y - 8, 36, 16);
+        }
+
+        players.forEach(p => { p.update(); p.draw(); });
+
+        for (let i = visualEffects.length - 1; i >= 0; i--) {
+            let fx = visualEffects[i];
+            if (fx.type === 'beam') {
+        ctx.strokeStyle = "#ff3333"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(fx.x1, fx.y1); ctx.lineTo(fx.x2, fx.y2); ctx.stroke();
+        } else if (fx.type === 'ue') {
+        ctx.fillStyle = fx.color; ctx.beginPath(); ctx.arc(fx.x, fx.y, fx.radius, 0, Math.PI * 2); ctx.fill();fx.radius += (fx.maxRadius - fx.radius) * 0.15;    
+        } else {
+         ctx.strokeStyle = fx.color; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(fx.x, fx.y, fx.radius, 0, Math.PI * 2); ctx.stroke();fx.radius += (fx.maxRadius - fx.radius) * 0.2;
+        }
+            fx.timer--; if (fx.timer <= 0) visualEffects.splice(i, 1);
+        }    
+        for (let i = damageTexts.length - 1; i >= 0; i--) {let dt = damageTexts[i]; ctx.fillStyle = dt.color; ctx.font = "bold 14px monospace"; ctx.textAlign = "center";ctx.fillText(dt.text, dt.x, dt.y); dt.y -= 0.6; dt.timer--; if (dt.timer <= 0) damageTexts.splice(i, 1);
+        }
     }
     requestAnimationFrame(gameLoop);
 }
-gameLoop();
-
+gameLoop();    
