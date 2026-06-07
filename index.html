@@ -74,7 +74,7 @@
             <div class="form-group">
                 <label>ID Czatu Kick (Chatroom ID):</label>
                 <div style="display: flex; gap: 5px;">
-                    <input type="text" id="chatroom-input" placeholder="Np. 2405122">
+                    <input type="text" id="chatroom-input" placeholder="Np. 70864923">
                     <button class="btn btn-secondary" style="padding: 10px;" onclick="connectToKick()">Połącz</button>
                 </div>
                 <span id="kick-status" class="status-text status-disconnected">🔴 Status: Rozłączono</span>
@@ -134,6 +134,10 @@
         let game, phaserScene, boss, bossHPBar, playerGroup;
         let bossHP = 100;
         let isFighting = false;
+        
+        let kickWs = null;
+        let currentKeyword = "!losuj";
+        const ignoredBots = ['botrix', 'kickbot', 'streamelements', 'nightbot'];
 
         const config = {
             type: Phaser.AUTO, parent: 'game-container', width: 750, height: 440, backgroundColor: '#0b0c10',
@@ -175,12 +179,68 @@
             if(phaserScene && phaserScene.bossText) phaserScene.bossText.setText(name);
         }
 
-        // --- OBSŁUGA SOCKET.IO ---
+        // --- BEZPOŚREDNIE POŁĄCZENIE Z KICKEM PRZEZ PRZEGLĄDARKĘ ---
+        function startKickBrowserConnection(chatroomId) {
+            if (kickWs) { try { kickWs.close(); } catch(e){} }
+
+            const statusEl = document.getElementById('kick-status');
+            statusEl.className = "status-text status-connecting";
+            statusEl.innerText = "🟡 Łączenie z Kick z przeglądarki...";
+
+            const kickPusherKey = "eb1d5f2830e9ce97b905";
+            const wsUrl = `wss://ws-us2.pusher.com/app/${kickPusherKey}?protocol=7&client=js&version=7.4.0&flash=false`;
+
+            kickWs = new WebSocket(wsUrl);
+
+            kickWs.onopen = () => {
+                const subscribeMessage = {
+                    event: "pusher:subscribe",
+                    data: { channel: `chatrooms.${chatroomId}.v2` }
+                };
+                kickWs.send(JSON.stringify(subscribeMessage));
+                statusEl.className = "status-text status-connected";
+                statusEl.innerText = "🟢 Połączono stabilnie!";
+                logBattle("🟢 Sukces: Przeglądarka podpięła się pod czat Kick!");
+            };
+
+            kickWs.onmessage = (event) => {
+                try {
+                    const msg = JSON.parse(event.data);
+                    
+                    if (msg.event === "pusher:ping") {
+                        kickWs.send(JSON.stringify({ event: "pusher:pong" }));
+                        return;
+                    }
+
+                    if (msg.event === "App\\Events\\ChatMessageEvent") {
+                        const chatData = JSON.parse(msg.data);
+                        const sender = chatData.sender.username;
+                        const content = chatData.content;
+                        
+                        if (ignoredBots.includes(sender.toLowerCase())) return;
+
+                        if (content.toLowerCase().includes(currentKeyword.toLowerCase())) {
+                            socket.emit('addPlayer', sender);
+                        }
+                    }
+                } catch(e) {}
+            };
+
+            kickWs.onclose = () => {
+                statusEl.className = "status-text status-disconnected";
+                statusEl.innerText = "🔴 Rozłączono z Kick";
+                setTimeout(() => startKickBrowserConnection(chatroomId), 5000);
+            };
+        }
+
+        // --- OBSŁUGA SOCKET.IO (STAN SERWERA) ---
         socket.on('init', (data) => {
+            currentKeyword = data.keyword;
             document.getElementById('keyword-input').value = data.keyword;
             document.getElementById('stat-keyword').innerText = data.keyword.toUpperCase();
             if (data.chatroomId) {
                 document.getElementById('chatroom-input').value = data.chatroomId;
+                startKickBrowserConnection(data.chatroomId);
             }
             data.participants.forEach(user => { if(!participantList.includes(user)) { participantList.push(user); spawnPlayer(user); } });
             document.getElementById('stat-count').innerText = participantList.length;
@@ -191,23 +251,17 @@
                 participantList.push(username);
                 document.getElementById('stat-count').innerText = participantList.length;
                 spawnPlayer(username);
-                logBattle(`⚔️ ${username} gotowy do walki!`);
+                logBattle(`⚔️ ${username} dołączył do raidu!`);
             }
         });
 
-        socket.on('kickStatus', (data) => {
-            const statusEl = document.getElementById('kick-status');
-            if (data.status === 'connected') {
-                statusEl.className = "status-text status-connected";
-                statusEl.innerText = "🟢 Połączono z czatem Kick";
-                logBattle("🟢 Sukces: Serwer czyta teraz Twój czat Kick bezpośrednio!");
-            } else if (data.status === 'connecting') {
-                statusEl.className = "status-text status-connecting";
-                statusEl.innerText = "🟡 Łączenie z Kick...";
-            } else {
-                statusEl.className = "status-text status-disconnected";
-                statusEl.innerText = "🔴 Rozłączono z Kick";
-            }
+        socket.on('keywordChanged', (newKeyword) => {
+            currentKeyword = newKeyword;
+            document.getElementById('stat-keyword').innerText = newKeyword.toUpperCase();
+        });
+
+        socket.on('chatroomIdUpdated', (chatroomId) => {
+            startKickBrowserConnection(chatroomId);
         });
 
         socket.on('participantsReset', () => {
@@ -217,13 +271,13 @@
             bossHP = 100; drawBossHP(100); isFighting = false;
             if(boss) boss.setAlpha(1).setScale(1);
             document.getElementById('winner-banner').style.display = 'none';
-            logBattle("🔄 Raid wyczyszczony. Czekam na nowe wpisy na czacie.");
+            logBattle("🔄 Raid wyczyszczony. Czekam na graczy.");
         });
 
         function connectToKick() {
-            const id = document.getElementById('chatroom-input').value;
+            const id = document.getElementById('chatroom-input').value.trim();
             if(!id) return alert("Wpisz swoje ID czatu!");
-            socket.emit('changeChatroom', id);
+            socket.emit('saveChatroomId', id);
         }
 
         function spawnPlayer(username) {
@@ -282,7 +336,6 @@
         }
         function updateKeyword() {
             const val = document.getElementById('keyword-input').value;
-            document.getElementById('stat-keyword').innerText = val ? val.toUpperCase() : "BRAK HASŁA";
             socket.emit('updateKeyword', val);
         }
         function resetRaffle() { socket.emit('resetParticipants'); }
