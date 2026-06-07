@@ -32,19 +32,19 @@ function connectToKickChat(chatroomId) {
     console.log(`[KICK] Łączenie z czatem o ID: ${currentChatroomId}`);
     io.emit('kickStatus', { status: 'connecting' });
     
-    // Oficjalny klucz Pushera używany przez platformę Kick
+    // Oficjalny klucz Pushera i POPRAWNY KLUSTER (ws-us2) używany przez platformę Kick
     const kickPusherKey = "eb1d5f2830e9ce97b905"; 
-    const wsUrl = `wss://ws-mt1.pusher.com/app/${kickPusherKey}?protocol=7&client=js&version=7.4.0&flash=false`;
+    const wsUrl = `wss://ws-us2.pusher.com/app/${kickPusherKey}?protocol=7&client=js&version=7.4.0&flash=false`;
 
     kickWs = new WebSocket(wsUrl);
 
     kickWs.on('open', () => {
         console.log('[KICK] Połączono z serwerem. Subskrybuję kanał czatu...');
         
+        // Czysta subskrypcja (bez auth: ""), aby Kick nie odrzucał połączenia publicznego
         const subscribeMessage = {
             event: "pusher:subscribe",
             data: {
-                auth: "",
                 channel: `chatrooms.${currentChatroomId}.v2`
             }
         };
@@ -57,6 +57,12 @@ function connectToKickChat(chatroomId) {
         try {
             const msg = JSON.parse(data.toString());
             
+            // SYSTEM PING-PONG - Odpowiadamy Kickowi, żeby utrzymać stałe połączenie na stałe
+            if (msg.event === "pusher:ping") {
+                kickWs.send(JSON.stringify({ event: "pusher:pong" }));
+                return;
+            }
+
             // Wyłapujemy event nowej wiadomości na czacie
             if (msg.event === "App\\Events\\ChatMessageEvent") {
                 const chatData = JSON.parse(msg.data);
@@ -74,7 +80,7 @@ function connectToKickChat(chatroomId) {
         console.log('[KICK] Połączenie z czatem zostało zamknięte.');
         io.emit('kickStatus', { status: 'disconnected' });
         
-        // Auto-reconnect: próba ponownego połączenia za 5 sekund w razie rozłączenia
+        // Auto-reconnect: próba ponownego połączenia za 5 sekund w razie przypadkowego rozłączenia
         setTimeout(() => {
             if (currentChatroomId === chatroomId) {
                 connectToKickChat(chatroomId);
@@ -103,7 +109,6 @@ function handleKickMessage(sender, content) {
 }
 
 io.on('connection', (socket) => {
-    // Wysyłamy aktualny stan po wejściu na stronę
     socket.emit('init', {
         participants: Array.from(participants),
         keyword: currentKeyword,
