@@ -3,138 +3,289 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kick Tibia Raffle System</title>
+    <title>KICK BOSS RAFFLE - LIVE CHAT</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; background: #1a1a1a; color: #fff; text-align: center; padding: 20px; }
-        .container { max-width: 600px; margin: auto; background: #2a2a2a; padding: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
-        input, button { padding: 10px; margin: 10px; border-radius: 4px; border: none; font-size: 16px; }
-        input { width: 70%; background: #333; color: #fff; border: 1px solid #555; text-align: center; }
-        button { background: #53fc18; color: #000; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        button:hover { background: #42c912; transform: scale(1.02); }
-        button:disabled { background: #555; color: #aaa; cursor: not-allowed; }
-        .status { color: #ffaa00; margin: 15px 0; font-weight: bold; }
-        .winner { font-size: 28px; color: #53fc18; font-weight: bold; margin-top: 25px; text-shadow: 0 0 10px rgba(83, 252, 24, 0.5); }
-        ul { list-style: none; padding: 0; max-height: 200px; overflow-y: auto; background: #333; border-radius: 4px; text-align: left; }
-        li { padding: 8px 15px; border-bottom: 1px solid #444; font-size: 14px; }
-        li:nth-child(even) { background: #3a3a3a; }
+        :root {
+            --bg-main: #0e0f14;
+            --bg-card: #181922;
+            --bg-input: #212431;
+            --kick-green: #00e701;
+            --kick-green-hover: #00b301;
+            --text-main: #ffffff;
+            --text-muted: #8e92a4;
+            --danger: #ea4335;
+            --warning: #f1c40f;
+        }
+
+        body {
+            margin: 0; padding: 20px; background-color: var(--bg-main);
+            color: var(--text-main); font-family: 'Segoe UI', sans-serif; box-sizing: border-box;
+        }
+
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        header h1 { font-size: 24px; font-weight: 800; margin: 0; }
+        header h1 span { color: var(--kick-green); }
+
+        .dashboard-grid { display: grid; grid-template-columns: 300px 1fr 300px; gap: 20px; align-items: start; }
+        .card { background-color: var(--bg-card); border-radius: 12px; padding: 20px; border: 1px solid #222531; }
+        .card-title { font-size: 14px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 15px; font-weight: 700; }
+        
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 6px; }
+        input[type="text"] { width: 100%; padding: 10px; background-color: var(--bg-input); border: 1px solid #2e3245; border-radius: 6px; color: white; box-sizing: border-box; }
+
+        #game-container { width: 100%; height: 440px; background-color: #0b0c10; border-radius: 12px; border: 2px solid #1f222e; overflow: hidden; }
+        
+        .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px; }
+        .stat-mini-card { background: var(--bg-card); padding: 15px; border-radius: 10px; border: 1px solid #222531; }
+        .stat-mini-card .label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; }
+        .stat-mini-card .value { font-size: 18px; font-weight: bold; margin-top: 5px; }
+
+        .actions-row { display: flex; gap: 10px; margin-top: 20px; }
+        button.btn { padding: 12px 24px; font-size: 14px; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; transition: 0.2s; }
+        .btn-primary { background: var(--kick-green); color: black; }
+        .btn-secondary { background: #2e3245; color: white; }
+        .btn-danger { background: var(--danger); color: white; }
+
+        .winner-display {
+            background: rgba(0, 231, 1, 0.1); border: 1px solid var(--kick-green);
+            padding: 12px; border-radius: 6px; text-align: center; font-weight: bold;
+            color: var(--kick-green); font-size: 18px; margin-top: 20px; display: none;
+        }
+
+        .status-text { font-size: 12px; font-weight: bold; margin-top: 5px; display: block; }
+        .status-disconnected { color: var(--danger); }
+        .status-connecting { color: var(--warning); }
+        .status-connected { color: var(--kick-green); }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h1>KICK RAFFLE SYSTEM</h1>
-    <p>System losowań Tibia bezpośrednio z czatu Kick</p>
-    
-    <input type="text" id="channelInput" placeholder="Nazwa kanału na Kicku (np. sedron)"><br>
-    <input type="text" id="keywordInput" placeholder="Słowo kluczowe (np. !los), puste = każdy wpis"><br>
-    
-    <button id="connectBtn" onclick="startCollecting()">Uruchom zbieranie zapisów</button>
-    <button id="drawBtn" onclick="drawWinner()" style="background: #ff5500; color: white;" disabled>Wylosuj zwycięzcę</button>
+    <header>
+        <h1>KICK <span>BOSS RAFFLE LIVE</span></h1>
+    </header>
 
-    <div class="status" id="statusText">Status: Oczekiwanie na start</div>
-    
-    <h3>Zapisani widzowie (<span id="count">0</span>):</h3>
-    <ul id="participantList"></ul>
-
-    <div class="winner" id="winnerBox"></div>
-</div>
-
-<script>
-    let participants = new Set(); 
-    let ws = null;
-
-    async function startCollecting() {
-        const channelName = document.getElementById('channelInput').value.trim().toLowerCase();
-        const keyword = document.getElementById('keywordInput').value.trim();
-        const statusText = document.getElementById('statusText');
-        
-        if (!channelName) return alert('Wpisz nazwę swojego kanału Kick!');
-
-        statusText.innerText = `Pobieranie ID kanału dla: ${channelName}...`;
-        
-        try {
-            // Używamy otwartego i stabilnego API trzeciego dostawcy (od Botrix / StreamElements helper), 
-            // który nie jest blokowany przez Cloudflare i natychmiast zwraca ID pokoju czatowego
-            const response = await fetch(`https://corsproxy.io{channelName}`);
-            if (!response.ok) throw new Error('Nie udało się pobrać danych kanału.');
+    <div class="dashboard-grid">
+        <aside class="card">
+            <div class="card-title">Ustawienia Walki</div>
             
-            const data = await response.json();
-            const chatRoomId = data.chatroom.id; // Wyciągamy ukryte ID czatu
+            <div class="form-group">
+                <label>ID Czatu Kick (Chatroom ID):</label>
+                <div style="display: flex; gap: 5px;">
+                    <input type="text" id="chatroom-input" placeholder="Np. 2405122">
+                    <button class="btn btn-secondary" style="padding: 10px;" onclick="connectToKick()">Połącz</button>
+                </div>
+                <span id="kick-status" class="status-text status-disconnected">🔴 Status: Rozłączono</span>
+            </div>
 
-            statusText.innerText = `Łączenie z czatem w czasie rzeczywistym...`;
+            <div class="form-group">
+                <label>Nazwa Bossa (Streamer):</label>
+                <input type="text" id="boss-name" value="STREAMER BOSS" oninput="updateBossName()">
+            </div>
             
-            if(ws) ws.close();
+            <div class="form-group">
+                <label>Słowo kluczowe (Czat):</label>
+                <input type="text" id="keyword-input" value="!losuj" oninput="updateKeyword()">
+            </div>
             
-            // Łączenie przez globalny serwer WebSocket (Pusher) przypisany platformie Kick
-            ws = new WebSocket("wss://://pusher.com");
+            <button class="btn btn-primary" style="width: 100%; padding: 14px; margin-top: 10px;" onclick="triggerBossFight()">URUCHOM ATAK NA BOSSA</button>
+            
+            <div class="winner-display" id="winner-banner">
+                ZWYCIĘZCA: <br><span id="winner-name">-</span>
+            </div>
+        </aside>
 
-            ws.onopen = () => {
-                // Subskrybujemy właściwy pokój czatowy streamera przy użyciu zdobytego ID
-                const subscribeMessage = {
-                    event: "pusher:subscribe",
-                    data: { channel: `chatrooms.${chatRoomId}.v2` }
-                };
-                ws.send(JSON.stringify(subscribeMessage));
-                
-                statusText.innerText = `🟢 POŁĄCZONO! Nasłuchuję czatu kanału: ${channelName}`;
-                statusText.style.color = "#53fc18";
-                document.getElementById('drawBtn').disabled = false;
-            };
+        <main>
+            <div class="stats-row">
+                <div class="stat-mini-card">
+                    <span class="label">👿 Boss</span>
+                    <span class="value" id="stat-boss-name">STREAMER BOSS</span>
+                </div>
+                <div class="stat-mini-card">
+                    <span class="label">🔑 Hasło czatu</span>
+                    <span class="value" id="stat-keyword">!LOSUJ</span>
+                </div>
+                <div class="stat-mini-card">
+                    <span class="label">⚔️ Wojowników</span>
+                    <span class="value" id="stat-count">0</span>
+                </div>
+            </div>
 
-            ws.onmessage = (event) => {
-                const responseData = JSON.parse(event.data);
-                
-                // Łapiemy zdarzenie wysłania nowej wiadomości na czacie
-                if (responseData.event === "App\\Events\\ChatMessageEvent") {
-                    const messageData = JSON.parse(responseData.data);
-                    const username = messageData.sender.username;
-                    const messageText = messageData.content;
+            <div id="game-container"></div>
 
-                    // Sprawdzamy czy widz napisał odpowiednie hasło
-                    if (!keyword || messageText.toLowerCase().includes(keyword.toLowerCase())) {
-                        if (!participants.has(username)) {
-                            participants.add(username);
-                            updateUI();
-                        }
-                    }
-                }
-            };
+            <div class="actions-row">
+                <button class="btn btn-danger" onclick="resetRaffle()">Resetuj Raid</button>
+            </div>
+        </main>
 
-            ws.onclose = () => {
-                statusText.innerText = "🔴 Rozłączono z czatem.";
-                statusText.style.color = "#ff5500";
-                document.getElementById('drawBtn').disabled = true;
-            };
+        <aside class="card">
+            <div class="card-title">Logi bitwy</div>
+            <div id="battle-logs" style="font-size: 12px; color: var(--text-muted); display:flex; flex-direction:column; gap:5px; height: 350px; overflow-y:auto;">
+                <div>Oczekiwanie na połączenie z czatem...</div>
+            </div>
+        </aside>
+    </div>
 
-        } catch (error) {
-            console.error(error);
-            statusText.innerText = "❌ Błąd połączenia. Sprawdź czy nazwa kanału jest poprawna.";
-            statusText.style.color = "#ff5500";
+    <script>
+        const socket = io();
+        let participantList = [];
+        let game, phaserScene, boss, bossHPBar, playerGroup;
+        let bossHP = 100;
+        let isFighting = false;
+
+        const config = {
+            type: Phaser.AUTO, parent: 'game-container', width: 750, height: 440, backgroundColor: '#0b0c10',
+            physics: { default: 'arcade', arcade: { gravity: { y: 0 }, debug: false } },
+            scene: { preload: preload, create: create, update: update }
+        };
+
+        game = new Phaser.Game(config);
+        function preload() {}
+
+        function create() {
+            phaserScene = this;
+            playerGroup = this.physics.add.group();
+            boss = this.add.circle(600, 220, 50, 0xea4335);
+            this.physics.add.existing(boss);
+            boss.body.setImmovable(true);
+
+            this.bossText = this.add.text(600, 140, 'STREAMER BOSS', { font: 'bold 16px Arial', fill: '#ffffff' }).setOrigin(0.5);
+            bossHPBar = this.add.graphics();
+            drawBossHP(100);
         }
-    }
 
-    function updateUI() {
-        document.getElementById('count').innerText = participants.size;
-        const list = document.getElementById('participantList');
-        list.innerHTML = "";
-        participants.forEach(user => {
-            const li = document.createElement('li');
-            li.innerText = `👤 ${user}`;
-            list.appendChild(li);
+        function update() {
+            playerGroup.getChildren().forEach(player => {
+                player.nameTag.x = player.x;
+                player.nameTag.y = player.y - 25;
+            });
+        }
+
+        function drawBossHP(hp) {
+            bossHPBar.clear();
+            bossHPBar.fillStyle(0x333333, 1); bossHPBar.fillRect(500, 110, 200, 15);
+            bossHPBar.fillStyle(0x00e701, 1); bossHPBar.fillRect(500, 110, 200 * (hp / 100), 15);
+        }
+
+        function updateBossName() {
+            const name = document.getElementById('boss-name').value;
+            document.getElementById('stat-boss-name').innerText = name.toUpperCase();
+            if(phaserScene && phaserScene.bossText) phaserScene.bossText.setText(name);
+        }
+
+        // --- OBSŁUGA SOCKET.IO ---
+        socket.on('init', (data) => {
+            document.getElementById('keyword-input').value = data.keyword;
+            document.getElementById('stat-keyword').innerText = data.keyword.toUpperCase();
+            if (data.chatroomId) {
+                document.getElementById('chatroom-input').value = data.chatroomId;
+            }
+            data.participants.forEach(user => { if(!participantList.includes(user)) { participantList.push(user); spawnPlayer(user); } });
+            document.getElementById('stat-count').innerText = participantList.length;
         });
-    }
 
-    function drawWinner() {
-        if (participants.size === 0) return alert('Lista uczestników jest pusta!');
-        
-        const arr = Array.from(participants);
-        const randomIndex = Math.floor(Math.random() * arr.length);
-        const winner = arr[randomIndex];
-        
-        document.getElementById('winnerBox').innerText = `🎉 Zwycięzca: ${winner} 🎉`;
-    }
-</script>
+        socket.on('newParticipant', (username) => {
+            if(!participantList.includes(username)) {
+                participantList.push(username);
+                document.getElementById('stat-count').innerText = participantList.length;
+                spawnPlayer(username);
+                logBattle(`⚔️ ${username} gotowy do walki!`);
+            }
+        });
 
+        socket.on('kickStatus', (data) => {
+            const statusEl = document.getElementById('kick-status');
+            if (data.status === 'connected') {
+                statusEl.className = "status-text status-connected";
+                statusEl.innerText = "🟢 Połączono z czatem Kick";
+                logBattle("🟢 Sukces: Serwer czyta teraz Twój czat Kick bezpośrednio!");
+            } else if (data.status === 'connecting') {
+                statusEl.className = "status-text status-connecting";
+                statusEl.innerText = "🟡 Łączenie z Kick...";
+            } else {
+                statusEl.className = "status-text status-disconnected";
+                statusEl.innerText = "🔴 Rozłączono z Kick";
+            }
+        });
+
+        socket.on('participantsReset', () => {
+            participantList = [];
+            document.getElementById('stat-count').innerText = 0;
+            playerGroup.clear(true, true);
+            bossHP = 100; drawBossHP(100); isFighting = false;
+            if(boss) boss.setAlpha(1).setScale(1);
+            document.getElementById('winner-banner').style.display = 'none';
+            logBattle("🔄 Raid wyczyszczony. Czekam na nowe wpisy na czacie.");
+        });
+
+        function connectToKick() {
+            const id = document.getElementById('chatroom-input').value;
+            if(!id) return alert("Wpisz swoje ID czatu!");
+            socket.emit('changeChatroom', id);
+        }
+
+        function spawnPlayer(username) {
+            if (!phaserScene) return;
+            const x = Phaser.Math.Between(50, 250); const y = Phaser.Math.Between(80, 380);
+            const playerBlob = phaserScene.add.circle(x, y, 14, 0x00e701);
+            phaserScene.physics.add.existing(playerBlob);
+            playerBlob.username = username;
+            playerBlob.nameTag = phaserScene.add.text(x, y - 25, username, { font: '11px Arial', fill: '#ffffff' }).setOrigin(0.5);
+            playerGroup.add(playerBlob);
+        }
+
+        function triggerBossFight() {
+            if (participantList.length === 0 || isFighting) return;
+            isFighting = true;
+            logBattle("🏹 SZARŻA! Drużyna rusza na bossa!");
+            const winnerName = participantList[Math.floor(Math.random() * participantList.length)];
+
+            playerGroup.getChildren().forEach(player => {
+                phaserScene.physics.moveToObject(player, boss, 200 + Phaser.Math.Between(-50, 50));
+                phaserScene.physics.add.overlap(player, boss, () => {
+                    player.body.setVelocity(Phaser.Math.Between(-150, -50), Phaser.Math.Between(-100, 100));
+                    if (bossHP > 5) { bossHP -= 2; drawBossHP(bossHP); }
+                });
+            });
+
+            setTimeout(() => { finishBoss(winnerName); }, 4000);
+        }
+
+        function finishBoss(winnerName) {
+            bossHP = 0; drawBossHP(0);
+            logBattle(`💥 BOSS POKONANY!`);
+            logBattle(`🏆 Zwycięzca raidu: ${winnerName}!`);
+
+            playerGroup.getChildren().forEach(player => {
+                player.body.setVelocity(0, 0);
+                if (player.username === winnerName) {
+                    player.setFillStyle(0xf1c40f).setScale(2);
+                    player.nameTag.setStyle({ font: 'bold 16px Arial', fill: '#f1c40f' });
+                    player.x = boss.x; player.y = boss.y;
+                } else {
+                    player.setAlpha(0.2); player.nameTag.setAlpha(0.2);
+                }
+            });
+
+            phaserScene.tweens.add({ targets: boss, alpha: 0, scale: 0, duration: 500 });
+            document.getElementById('winner-name').innerText = winnerName;
+            document.getElementById('winner-banner').style.display = 'block';
+        }
+
+        function logBattle(text) {
+            const logs = document.getElementById('battle-logs');
+            const entry = document.createElement('div');
+            entry.innerText = `[${new Date().toLocaleTimeString()}] ${text}`;
+            logs.appendChild(entry); logs.scrollTop = logs.scrollHeight;
+        }
+        function updateKeyword() {
+            const val = document.getElementById('keyword-input').value;
+            document.getElementById('stat-keyword').innerText = val ? val.toUpperCase() : "BRAK HASŁA";
+            socket.emit('updateKeyword', val);
+        }
+        function resetRaffle() { socket.emit('resetParticipants'); }
+    </script>
 </body>
 </html>
-
