@@ -8,40 +8,31 @@ const io = new Server(server, { cors: { origin: "*" } });
 
 app.use(express.json());
 
-// Obsługa CORS
+// Ręczne nagłówki CORS
 app.use((req, res, next) => {
     res.header("Access-Control-Allow-Origin", "*");
     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
     next();
 });
 
-// STANY SYSTEMU TRZYMANE NA SERWERZE (Zabezpieczenie przed odświeżeniem)
 let participants = new Set(); 
-let winnersList = []; // Przechowuje { nick, status, prize }
 let currentKeyword = "a";
-let activeVerificationWinner = null;
 
 app.get('/', (req, res) => res.sendFile(__dirname + '/index.html'));
 
 app.post('/new-message', (req, res) => {
+    console.log("Dane odebrane przez serwer:", req.body);
     const { sender, content } = req.body;
     
     if (sender && content) {
-        const cleanSender = sender.trim();
-        const cleanContent = content.trim();
-
-        // Przesyłamy surowy czat do frontendu dla okienka weryfikacji
-        io.emit('newChat', { sender: cleanSender, content: cleanContent });
+        // Przesyłamy czat dalej
+        io.emit('newChat', { sender, content });
         
-        // Logika dołączania do losowania
-        if (cleanContent.toLowerCase() === currentKeyword.toLowerCase()) {
-            if (!participants.has(cleanSender)) {
-                // Sprawdzamy czy użytkownik już nie wygrał wcześniej
-                const alreadyWon = winnersList.some(w => w.nick.toLowerCase() === cleanSender.toLowerCase() && w.status === 'verified');
-                if (!alreadyWon) {
-                    participants.add(cleanSender);
-                    io.emit('newParticipant', cleanSender);
-                }
+        // Twoja sprawdzona logika porównywania
+        if (content.toLowerCase().trim() === currentKeyword.toLowerCase().trim()) {
+            if (!participants.has(sender)) {
+                participants.add(sender);
+                io.emit('newParticipant', sender);
             }
         }
     }
@@ -49,41 +40,20 @@ app.post('/new-message', (req, res) => {
 });
 
 io.on('connection', (socket) => {
-    // Wysyłamy komplet danych przy połączeniu/odświeżeniu
-    socket.emit('init', { 
-        participants: Array.from(participants), 
-        keyword: currentKeyword,
-        winnersList: winnersList,
-        activeWinner: activeVerificationWinner
-    });
+    socket.emit('init', { participants: Array.from(participants), keyword: currentKeyword });
     
     socket.on('updateKeyword', (kw) => { 
-        currentKeyword = kw ? kw.trim() : ""; 
-        io.emit('keywordChanged', currentKeyword); 
+        currentKeyword = kw; 
+        io.emit('keywordChanged', kw); 
     });
     
-    // Serwer informuje wszystkich o starcie losowania
     socket.on('startFight', () => io.emit('triggerFight'));
-
-    // Serwer synchronizuje wylosowanego użytkownika
-    socket.on('setWinner', (winnerNick) => {
-        activeVerificationWinner = winnerNick;
-        io.emit('winnerSelected', winnerNick);
-    });
-
-    // Serwer aktualizuje listę zwycięzców
-    socket.on('updateWinners', (updatedList) => {
-        winnersList = updatedList;
-        io.emit('winnersUpdated', winnersList);
-    });
-    
     socket.on('reset', () => { 
         participants.clear(); 
-        winnersList = [];
-        activeVerificationWinner = null;
         io.emit('participantsReset'); 
     });
 });
 
+// Ta zmiana pozwoli Renderowi poprawnie uruchomić serwer na dowolnym porcie
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, '0.0.0.0', () => console.log(`Serwer działa na porcie: ${PORT}`));
