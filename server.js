@@ -9,7 +9,7 @@ const io = new Server(server, { cors: { origin: "*" } });
 app.use(express.json());
 
 let participants = new Set(); 
-let currentKeyword = "a"; // Twoje hasło ustawione na sztywno
+let currentKeyword = "a";
 
 app.get('/', (req, res) => {
     res.sendFile(__dirname + '/index.html');
@@ -19,14 +19,14 @@ app.get('/', (req, res) => {
 app.post('/new-message', (req, res) => {
     const { sender, content } = req.body;
     
-    console.log(`Log z serwera: Otrzymano od ${sender} treść: ${content}`);
+    // Przesyłamy treść czatu do przeglądarki (do nowego panelu)
+    io.emit('newChat', { sender, content });
     
     if (content && sender) {
         if (content.toLowerCase().includes(currentKeyword.toLowerCase())) {
             if (!participants.has(sender)) {
                 participants.add(sender);
                 io.emit('newParticipant', sender);
-                console.log(`Sukces: Dodano gracza ${sender}`);
             }
         }
     }
@@ -35,21 +35,10 @@ app.post('/new-message', (req, res) => {
 
 io.on('connection', (socket) => {
     socket.emit('init', { participants: Array.from(participants), keyword: currentKeyword });
-
-    socket.on('updateKeyword', (newKeyword) => {
-        currentKeyword = newKeyword;
-        io.emit('keywordChanged', currentKeyword);
-    });
-
+    socket.on('updateKeyword', (kw) => { currentKeyword = kw; io.emit('keywordChanged', kw); });
     socket.on('startFight', () => io.emit('triggerFight'));
-    
-    socket.on('reset', () => {
-        participants.clear();
-        io.emit('participantsReset');
-    });
+    socket.on('reset', () => { participants.clear(); io.emit('participantsReset'); });
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-    console.log(`Serwer działa na porcie: ${PORT}`);
-});
+server.listen(PORT, () => { console.log(`Serwer działa na porcie: ${PORT}`); });
