@@ -499,9 +499,9 @@
             const randomIndex = Math.floor(Math.random() * available.length);
             const winner = available[randomIndex];
 
-            const itemWidth = 170; const targetIndex = 26; const totalItems = 34;
+            const itemWidth = 170; const targetIndex = 45; const totalItems = 55; // Więcej elementów zwiększa rozbujanie prędkości
             
-            // CAŁKOWITY RESET STYLÓW PRZED KOLEJNYM LOSOWANIEM
+            // CAŁKOWITY RESET STYLÓW
             ribbon.style.transition = "none"; 
             ribbon.style.transform = "translateX(0px)";
             ribbon.innerHTML = ""; 
@@ -521,19 +521,19 @@
             
             wrapper.style.display = 'block';
             
-            // KROK DOKŁADNEGO CELOWANIA: Matematyczne wyrównanie na środek okna
-            const halfWrapper = wrapper.offsetWidth / 2;
-            const halfItem = itemWidth / 2;
-            const stopPosition = (targetIndex * itemWidth) + halfItem - halfWrapper;
+            // KLUCZOWA POPRAWKA MATEMATYCZNA: Dynamicznie pobieramy szerokość okna w milisekundzie startu
+            const wrapperCenterPoint = wrapper.offsetWidth / 2;
+            const itemCenterPoint = itemWidth / 2;
+            const stopPosition = (targetIndex * itemWidth) + itemCenterPoint - wrapperCenterPoint;
 
             setTimeout(() => {
-                // SYSTEMATYCZNE, PŁYNNE WYTRACANIE PRĘDKOŚCI (Perfekcyjna krzywa Beziera dla emocji)
-                ribbon.style.transition = `transform ${drawDurationSeconds}s cubic-bezier(0.15, 0.85, 0.35, 1)`;
+                // NOWA KRZYWA BEZIERA: Ekstremalny hiper-start (rozmazanie) i bardzo, bardzo długie wytracanie prędkości
+                ribbon.style.transition = `transform ${drawDurationSeconds}s cubic-bezier(0, 1.3, 0.05, 1)`;
                 ribbon.style.transform = `translateX(-${stopPosition}px)`;
             }, 50);
 
             setTimeout(() => {
-                // LOCK POSITION: Po skończonym losowaniu przeglądarka płynnie zamraża transformację
+                // LOCK POSITION: Blokujemy pasek na wyliczonych pikselach środka kontenera
                 ribbon.style.transition = "none";
                 ribbon.style.transform = `translateX(-${stopPosition}px)`;
 
