@@ -22,18 +22,14 @@
             <div class="section-title">Ustawienia</div>
             
             <div class="form-group">
-                <label>Słowo kluczowe (opcjonalne):</label>
-                <input id="keyword-input" placeholder="Wpisz hasło i kliknij zapisz">
+                <label>Słowo kluczowe:</label>
+                <input id="keyword-input" placeholder="Wpisz hasło">
             </div>
             <button class="btn-secondary" onclick="saveKeyword()" style="margin-bottom: 15px;">ZAPISZ HASŁO</button>
             
             <div class="form-group">
                 <label>Liczba zwycięzców:</label>
                 <input type="number" value="1" min="1">
-            </div>
-            <div class="form-group">
-                <label>Czas trwania animacji (sekundy):</label>
-                <input type="range" min="1" max="30" value="8">
             </div>
 
             <button class="btn-primary" onclick="triggerStartFight()">Rozpocznij losowanie</button>
@@ -52,7 +48,7 @@
                     <div class="widget-icon">🔑</div>
                     <div class="widget-info">
                         <span class="widget-label">Hasło</span>
-                        <span class="widget-value" id="password-display">BRAK HASŁA</span>
+                        <span class="widget-value" id="password-display">A</span>
                     </div>
                 </div>
                 <div class="widget">
@@ -79,7 +75,6 @@
                 <span class="badge" id="winners-count">0</span>
             </div>
             <div class="winners-list" id="winners-box"></div>
-            <button class="btn-secondary btn-danger" style="margin-top:15px;" onclick="triggerReset()">Wyczyść wszystkie dane</button>
         </div>
 
     </div>
@@ -90,27 +85,23 @@
         const countDisplay = document.getElementById('count-display');
         const passwordDisplay = document.getElementById('password-display');
 
-        // Obsługa inicjalizacji
         socket.on('init', (data) => {
             grid.innerHTML = "";
-            passwordDisplay.innerText = data.keyword ? data.keyword.toUpperCase() : "BRAK HASŁA";
+            passwordDisplay.innerText = data.keyword ? data.keyword.toUpperCase() : "A";
             document.getElementById('keyword-input').value = data.keyword;
             data.participants.forEach(p => renderParticipant(p));
             updateCounter();
         });
 
-        // Nasłuchiwanie na nowego uczestnika (Twoje sprawdzone wydarzenie)
         socket.on('newParticipant', (sender) => {
             renderParticipant(sender);
             updateCounter();
         });
 
-        // Nasłuchiwanie na zmianę hasła ze strony serwera
         socket.on('keywordChanged', (kw) => {
             passwordDisplay.innerText = kw ? kw.toUpperCase() : "BRAK HASŁA";
         });
 
-        // Nasłuchiwanie na reset
         socket.on('participantsReset', () => {
             grid.innerHTML = "";
             updateCounter();
