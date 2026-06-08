@@ -102,19 +102,7 @@
             background-color: var(--bg-panel); border: 1px solid var(--border-card); padding: 14px 10px; border-radius: 8px; text-align: center; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; font-weight: 600; color: var(--text-main); word-break: break-all; transition: all 0.3s ease;
         }
 
-        /* ANIMACJA MIGAJĄCEGO, FIOLETOWEGO NEONU DLA ZWYCIĘZCY */
-        @keyframes neonPulse {
-            0% { border-color: #b624ff; box-shadow: 0 0 5px rgba(182, 36, 255, 0.4), inset 0 0 5px rgba(182, 36, 255, 0.2); }
-            50% { border-color: #d67cff; box-shadow: 0 0 18px rgba(182, 36, 255, 0.8), inset 0 0 10px rgba(182, 36, 255, 0.4); }
-            100% { border-color: #b624ff; box-shadow: 0 0 5px rgba(182, 36, 255, 0.4), inset 0 0 5px rgba(182, 36, 255, 0.2); }
-        }
-
-        .p-card.winner-active { 
-            animation: neonPulse 1.5s infinite ease-in-out !important;
-            background-color: rgba(182, 36, 255, 0.15) !important; 
-            color: #e5b3ff !important; 
-            font-weight: 700;
-        }
+        .p-card.winner-active { border-color: var(--accent-glow) !important; background-color: rgba(182, 36, 255, 0.15) !important; color: var(--accent-glow) !important; box-shadow: 0 0 12px rgba(182, 36, 255, 0.4); }
         .p-card.winner-disqualified { border-color: var(--danger-red) !important; background-color: rgba(230, 57, 70, 0.1) !important; color: var(--danger-red) !important; text-decoration: line-through; opacity: 0.6; }
 
         .arena::-webkit-scrollbar { width: 6px; }
@@ -143,7 +131,6 @@
         .ticker-pointer::after { content: ''; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); border-left: 10px solid transparent; border-right: 10px solid transparent; border-bottom: 10px solid var(--accent-glow); }
         .ticker-ribbon { display: flex; position: absolute; left: 0; top: 0; height: 100%; will-change: transform; }
         
-        /* ZMIANA: NICKI ZAWIJAJĄ SIĘ W KILKA LINII (TAK JAK W KAFELKACH) ZAMIAST SIĘ UCINAĆ */
         .ticker-item {
             min-width: 170px; max-width: 170px; height: 100%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.9rem; border-right: 1px solid rgba(255,255,255,0.04); color: var(--text-main); box-sizing: border-box; background: linear-gradient(180deg, #1d1430 0%, #130d21 100%);
             padding: 5px 12px;
@@ -151,6 +138,22 @@
             word-break: break-all;
             line-height: 1.2;
             overflow: hidden;
+            border-top: 2px solid transparent;
+            border-bottom: 2px solid transparent;
+        }
+
+        /* ANIMACJA MIGAJĄCEGO FIOLETOWEGO NEONU BEZPOŚREDNIO NA ELEMENT BĘBNA */
+        @keyframes tickerNeonPulse {
+            0% { border-top-color: #b624ff; border-bottom-color: #b624ff; box-shadow: inset 0 0 8px rgba(182, 36, 255, 0.5); background: linear-gradient(180deg, #321654 0%, #130d21 100%); }
+            50% { border-top-color: #e2abff; border-bottom-color: #e2abff; box-shadow: inset 0 0 20px rgba(182, 36, 255, 0.9); background: linear-gradient(180deg, #4d1d85 0%, #1a0f30 100%); }
+            100% { border-top-color: #b624ff; border-bottom-color: #b624ff; box-shadow: inset 0 0 8px rgba(182, 36, 255, 0.5); background: linear-gradient(180deg, #321654 0%, #130d21 100%); }
+        }
+
+        #winning-ticker-cell {
+            animation: tickerNeonPulse 1.2s infinite ease-in-out !important;
+            color: #fff !important;
+            font-weight: 800;
+            font-size: 1rem;
         }
 
         /* PANEL WERYFIKACJI */
@@ -170,16 +173,16 @@
         .chat-line { color: #fff; word-break: break-all; font-weight: 600; }
         .chat-line strong { color: var(--accent-glow); }
         
-        /* FOOTER I PRZYCISKI AKCJI WYŚRODKOWANE */
+        /* WYŚRODKOWANY UKŁAD ELEMENTÓW STOPKI */
         .verify-footer-actions {
-            display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; text-align: center;
+            display: flex; justify-content: center; gap: 15px; margin-top: 15px; width: 100%; box-sizing: border-box;
         }
         .btn-action-ok {
-            background-color: var(--success-green); color: #fff; width: 100%; box-shadow: 0 0 10px rgba(42, 157, 143, 0.3); text-align: center; display: flex; align-items: center; justify-content: center;
+            background-color: var(--success-green); color: #fff; flex: 1; max-width: 240px; padding: 12px; font-weight: 700; box-shadow: 0 0 10px rgba(42, 157, 143, 0.3); display: flex; align-items: center; justify-content: center;
         }
         .btn-action-ok:hover { filter: brightness(1.2); }
         .btn-action-draw {
-            background-color: var(--danger-red); color: #fff; width: 100%; box-shadow: 0 0 10px rgba(230, 57, 70, 0.3); text-align: center; display: flex; align-items: center; justify-content: center;
+            background-color: var(--danger-red); color: #fff; flex: 1; max-width: 240px; padding: 12px; font-weight: 700; box-shadow: 0 0 10px rgba(230, 57, 70, 0.3); display: flex; align-items: center; justify-content: center;
         }
         .btn-action-draw:hover { filter: brightness(1.2); }
     </style>
@@ -370,7 +373,6 @@
             tr.innerHTML = `<td>${activeVerificationWinner}</td><td class="td-tc">${tcValue} TC</td>`;
             winnersTableBody.appendChild(tr);
 
-            applyWinnerStyle(activeVerificationWinner, 'verified');
             statusDisplay.innerText = `Nagroda przyznana dla @${activeVerificationWinner}!`;
             
             closeVerificationPanel();
@@ -385,8 +387,6 @@
             tr.className = 'tr-disqualified';
             tr.innerHTML = `<td>${activeVerificationWinner} (POMINIĘTY)</td><td class="td-tc">${tcInput.value || 0} TC</td>`;
             winnersTableBody.appendChild(tr);
-
-            applyWinnerStyle(activeVerificationWinner, 'disqualified');
             
             closeVerificationPanel();
             startCinematicDraw();
@@ -436,7 +436,7 @@
             socket.emit('reset'); 
         }
         
-        function triggerStartFight() { startCinematicDraw(); }
+        function triggerStartFight() { triggerReset(); startCinematicDraw(); }
 
         function shuffleParticipants() {
             if (localParticipants.length < 2) return;
@@ -447,18 +447,7 @@
             grid.innerHTML = "";
             localParticipants.forEach(p => {
                 renderParticipant(p);
-                const winnerObj = winnersList.find(w => w.nick === p);
-                if (winnerObj) applyWinnerStyle(p, winnerObj.status);
             });
-        }
-
-        function applyWinnerStyle(winnerNick, status) {
-            const card = document.getElementById('p-' + winnerNick);
-            if (card) {
-                card.className = 'p-card';
-                if (status === 'verified') card.classList.add('winner-active');
-                if (status === 'disqualified') card.classList.add('winner-disqualified');
-            }
         }
 
         function startCinematicDraw() {
@@ -468,6 +457,7 @@
             if (available.length === 0) {
                 statusDisplay.innerText = "Brak dostępnych nowych uczestników do wylosowania!";
                 alert("Wszyscy uczestnicy zostali już wylosowani lub pominięci!");
+                grid.style.display = 'grid'; // Awaryjnie przywracamy siatkę nicków
                 return;
             }
 
@@ -503,6 +493,9 @@
             verificationTimeLeft = 60;
             hasPlayerResponded = false;
             
+            // UKRYWANIE NICKÓW NA DOLE ARENY PO WYLOSOWANIU
+            grid.style.display = 'none';
+            
             verifyNick.innerText = winnerNick;
             verifyTimer.innerText = "60s";
             verifyTimer.style.color = "var(--danger-red)";
@@ -512,11 +505,11 @@
             
             btnVerifyConfirm.style.display = 'none';
             btnVerifyReroll.style.display = 'block';
+            btnVerifyReroll.style.maxWidth = '240px';
             btnVerifyReroll.className = 'btn-action-draw';
             btnVerifyReroll.innerText = "❌ Pomiń / Losuj Ponownie";
             
             verifyPanel.style.display = 'block';
-            applyWinnerStyle(winnerNick, 'verified');
 
             verificationTimerInterval = setInterval(() => {
                 verificationTimeLeft--;
@@ -535,7 +528,7 @@
             btnVerifyConfirm.style.display = 'none';
             
             btnVerifyReroll.className = 'btn-action-draw';
-            btnVerifyReroll.style.gridColumn = '1 / span 2'; 
+            btnVerifyReroll.style.maxWidth = '100%'; // Rozciągamy wyśrodkowany przycisk na pełną szerokość
             btnVerifyReroll.innerText = "❌ Czas minął! Losuj kolejną osobę";
         }
 
@@ -543,18 +536,13 @@
             if (verificationTimerInterval) clearInterval(verificationTimerInterval);
             verificationTimerInterval = null; 
             
-            // Przy zamykaniu okna usuwamy podświetlenie z karty, jeśli gracz został odrzucony
-            if (activeVerificationWinner) {
-                const stillValid = winnersList.find(w => w.nick === activeVerificationWinner);
-                if (!stillValid || stillValid.status !== 'verified') {
-                    applyWinnerStyle(activeVerificationWinner, 'normal');
-                }
-            }
-
             activeVerificationWinner = null; 
             hasPlayerResponded = false;
             verifyPanel.style.display = 'none';
-            btnVerifyReroll.style.gridColumn = 'auto';
+            
+            // PRZYWRACANIE WIDOCZNOŚCI SIATKI NICKÓW PO ZAKOŃCZENIU WERYFIKACJI
+            grid.style.display = 'grid';
+            btnVerifyReroll.style.maxWidth = '240px';
         }
     </script>
 </body>
