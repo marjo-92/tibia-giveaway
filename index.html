@@ -296,36 +296,58 @@
         });
 
         socket.on('newParticipant', (sender) => {
-            if (!localParticipants.includes(sender)) {
-                localParticipants.push(sender);
-                renderParticipant(sender);
+            // Bezpieczne wyciąganie stringa z eventu zapisu
+            let cleanSender = (typeof sender === 'object') ? (sender.username || sender.name || "") : sender;
+            if(!cleanSender) return;
+            cleanSender = String(cleanSender).trim();
+
+            if (!localParticipants.includes(cleanSender)) {
+                localParticipants.push(cleanSender);
+                renderParticipant(cleanSender);
                 updateCounter();
                 grid.scrollTop = grid.scrollHeight;
             }
-            // Zabezpieczenie: Ponowne wpisanie hasła też liczy się jako aktywność
-            handleIncomingUserActivity(sender, "Wpisał słowo kluczowe na czacie.");
+            handleIncomingUserActivity(cleanSender, "Wpisał słowo kluczowe na czacie.");
         });
 
-        // ==================== ZAAWANSOWANE NASŁUCHIWANIE CZATU ====================
+        // ==================== ZAAWANSOWANY I BEZPIECZNY PARSER CZATU ====================
         socket.on('chatMessage', (data) => {
             console.log("Otrzymano event chatMessage z serwera:", data);
             if (!data) return;
 
-            // Wyciąganie nicku z różnych możliwych struktur obiektów
-            let sender = data.sender || data.username || data.user || data.nickname;
-            let message = data.message || data.text || data.msg || "";
+            let sender = "";
+            let message = "";
 
-            // Jeśli serwer wysłał czysty ciąg znaków w formacie "Nick: Wiadomość"
+            // Przypadek 1: Serwer przesyła surowy ciąg tekstowy "Nick: wiadomość"
             if (typeof data === 'string') {
                 const splitIdx = data.indexOf(':');
                 if (splitIdx !== -1) {
                     sender = data.substring(0, splitIdx).trim();
                     message = data.substring(splitIdx + 1).trim();
+                } else {
+                    message = data;
+                }
+            } else {
+                // Przypadek 2: Serwer przesyła obiekt (obsługa zagnieżdżonych struktur typu data.sender.username)
+                if (data.sender) {
+                    sender = (typeof data.sender === 'object') ? (data.sender.username || data.sender.name || data.sender.slug) : data.sender;
+                } else if (data.user) {
+                    sender = (typeof data.user === 'object') ? (data.user.username || data.user.name || data.user.nickname) : data.user;
+                } else {
+                    sender = data.username || data.nickname || data.slug || "";
+                }
+
+                // Bezpieczne wyciąganie treści wiadomości
+                if (data.message) {
+                    message = (typeof data.message === 'object') ? (data.message.content || data.message.text) : data.message;
+                } else {
+                    message = data.content || data.text || data.msg || "";
                 }
             }
 
+            // Jeśli pomyślnie wyciągnięto tekstowy nick nadawcy, przekaż do systemu weryfikacji
             if (sender) {
-                handleIncomingUserActivity(sender, message);
+                handleIncomingUserActivity(String(sender).trim(), String(message).trim());
             }
         });
 
@@ -449,8 +471,6 @@
 
                 statusDisplay.innerText = `Wylosowano: ${winner}! Czekam na czat...`;
                 startVerificationStage(winner);
-                
-                // POPRAWKA: Usunięto całkowicie usuwanie elementu 'wrapper', bęben NIE znika.
             }, 4550);
         }
 
@@ -460,7 +480,7 @@
             
             verifyNick.innerText = winnerNick;
             verifyTimer.innerText = "60s";
-            verifyChatBox.innerHTML = `<div style="color: #55486e; font-style: italic;">Oczekiwanie na dowolną wiadomość od @${winnerNick}...</div>`;
+            verifyChatBox.innerHTML = `<div id="chat-placeholder" style="color: #55486e; font-style: italic;">Oczekiwanie na dowolną wiadomość od @${winnerNick}...</div>`;
             btnReroll.style.display = 'none';
             verifyPanel.style.display = 'block';
 
@@ -475,9 +495,15 @@
         }
 
         function handleIncomingUserActivity(sender, message) {
-            if (!activeVerificationWinner || sender.toLowerCase() !== activeVerificationWinner.toLowerCase()) return;
+            if (!activeVerificationWinner) return;
 
-            // Jeśli to pierwsza wiadomość, zatrzymaj zegar i zapisz nagrodę
+            // Pancerne porównanie: rzutowanie na String, obcięcie spacji, małe litery
+            const cleanSender = String(sender).trim().toLowerCase();
+            const cleanWinner = String(activeVerificationWinner).trim().toLowerCase();
+
+            if (cleanSender !== cleanWinner) return;
+
+            // Gdy gracz napisze po raz pierwszy: zatrzymaj odliczanie czasu i przypisz nagrodę
             if (verificationTimerInterval !== null) {
                 clearInterval(verificationTimerInterval);
                 verificationTimerInterval = null;
@@ -488,30 +514,36 @@
                 statusDisplay.innerText = `@${sender} potwierdził obecność!`;
 
                 const tcValue = tcInput.value || "0";
-                winnersList.push({ nick: sender, status: 'verified' });
+                winnersList.push({ nick: activeVerificationWinner, status: 'verified' });
 
                 const tr = document.createElement('tr');
-                tr.id = `table-winner-${sender}`;
-                tr.innerHTML = `<td>${sender}</td><td class="td-tc">${tcValue} TC</td>`;
+                tr.id = `table-winner-${activeVerificationWinner}`;
+                tr.innerHTML = `<td>${activeVerificationWinner}</td><td class="td-tc">${tcValue} TC</td>`;
                 winnersTableBody.appendChild(tr);
 
-                applyWinnerStyle(sender, 'verified');
-                verifyChatBox.innerHTML = ""; // Czyść tekst powitalny
+                applyWinnerStyle(activeVerificationWinner, 'verified');
+                
+                // Usuń informację o oczekiwaniu
+                const placeholder = document.getElementById('chat-placeholder');
+                if (placeholder) placeholder.remove();
             }
 
-            // POPRAWKA: Wypisywanie wiadomości live do okienka (obsługuje wielokrotne pisanie)
+            // Wypisuj kolejne wiadomości użytkownika na bieżąco w polu tekstowym
             const div = document.createElement('div');
             div.className = 'chat-line';
-            div.innerHTML = `<strong>${sender}:</strong> ${message}`;
+            div.innerHTML = `<strong>${activeVerificationWinner}:</strong> ${message}`;
             verifyChatBox.appendChild(div);
             verifyChatBox.scrollTop = verifyChatBox.scrollHeight;
 
-            // Zwiń sam panel sprawdzania po 5 sekundach od sukcesu (bęben zostaje!)
+            // Ukryj panel sprawdzania (zielone OK) po 5 sekundach od wysłania wiadomości (bęben zostaje)
             setTimeout(() => {
-                if (activeVerificationWinner === sender && verificationTimerInterval === null) {
+                if (activeVerificationWinner === winnerNickFromScope && verificationTimerInterval === null) {
                     verifyPanel.style.display = 'none';
                 }
             }, 5000);
+            
+            // Zmienna pomocnicza do upewnienia się w timeoutach scope
+            const winnerNickFromScope = activeVerificationWinner;
         }
 
         function handleVerificationTimeout() {
@@ -549,7 +581,6 @@
             verifyPanel.style.display = 'none';
             verifyTimer.style.color = "var(--danger-red)";
             verifyTimer.style.borderColor = "rgba(230, 57, 70, 0.2)";
-            // POPRAWKA: Ticker (bęben) nie jest tu chowany, dzięki czemu nie znika do nowego rolla.
         }
     </script>
 </body>
