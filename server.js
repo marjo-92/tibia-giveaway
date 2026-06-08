@@ -8,18 +8,26 @@ const io = new Server(server, { cors: { origin: "*" } });
 
 app.use(express.json());
 
-let participants = new Set();
-let currentKeyword = "!losuj";
+let participants = new Set(); 
+let currentKeyword = "a"; // Twoje hasło ustawione na sztywno
 
-app.get('/', (req, res) => res.sendFile(__dirname + '/index.html'));
+app.get('/', (req, res) => {
+    res.sendFile(__dirname + '/index.html');
+});
 
-// Endpoint dla StreamElements
+// Furtka dla StreamElements
 app.post('/new-message', (req, res) => {
     const { sender, content } = req.body;
-    if (content && content.toLowerCase().includes(currentKeyword.toLowerCase())) {
-        if (!participants.has(sender)) {
-            participants.add(sender);
-            io.emit('newParticipant', sender);
+    
+    console.log(`Log z serwera: Otrzymano od ${sender} treść: ${content}`);
+    
+    if (content && sender) {
+        if (content.toLowerCase().includes(currentKeyword.toLowerCase())) {
+            if (!participants.has(sender)) {
+                participants.add(sender);
+                io.emit('newParticipant', sender);
+                console.log(`Sukces: Dodano gracza ${sender}`);
+            }
         }
     }
     res.status(200).send('OK');
@@ -28,9 +36,20 @@ app.post('/new-message', (req, res) => {
 io.on('connection', (socket) => {
     socket.emit('init', { participants: Array.from(participants), keyword: currentKeyword });
 
-    socket.on('updateKeyword', (kw) => { currentKeyword = kw; io.emit('keywordChanged', kw); });
+    socket.on('updateKeyword', (newKeyword) => {
+        currentKeyword = newKeyword;
+        io.emit('keywordChanged', currentKeyword);
+    });
+
     socket.on('startFight', () => io.emit('triggerFight'));
-    socket.on('reset', () => { participants.clear(); io.emit('participantsReset'); });
+    
+    socket.on('reset', () => {
+        participants.clear();
+        io.emit('participantsReset');
+    });
 });
 
-server.listen(process.env.PORT || 3000);
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+    console.log(`Serwer działa na porcie: ${PORT}`);
+});
