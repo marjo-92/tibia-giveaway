@@ -15,14 +15,20 @@ app.get('/', (req, res) => {
     res.sendFile(__dirname + '/index.html');
 });
 
-// Furtka dla StreamElements
+// Endpoint odbierający dane od StreamElements
 app.post('/new-message', (req, res) => {
-    const { sender, content } = req.body;
+    // Logujemy wszystko, co przychodzi, aby debugować w logach Rendera
+    console.log("Otrzymano dane:", req.body);
     
-    // Przesyłamy treść czatu do przeglądarki (do nowego panelu)
-    io.emit('newChat', { sender, content });
+    // Pobieramy dane z obiektu (uwzględniając, że czasem mogą być zagnieżdżone)
+    const sender = req.body.sender || "Nieznany";
+    const content = req.body.content || "";
     
-    if (content && sender) {
+    if (content) {
+        // Przesyłamy do frontendu
+        io.emit('newChat', { sender: sender, content: content });
+        
+        // Sprawdzamy hasło
         if (content.toLowerCase().includes(currentKeyword.toLowerCase())) {
             if (!participants.has(sender)) {
                 participants.add(sender);
@@ -41,4 +47,4 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => { console.log(`Serwer działa na porcie: ${PORT}`); });
+server.listen(PORT, () => { console.log(`Serwer startuje na porcie: ${PORT}`); });
