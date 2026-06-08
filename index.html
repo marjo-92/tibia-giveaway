@@ -155,6 +155,7 @@
             top: 0; 
             height: 100%; 
             will-change: transform;
+            animation-fill-mode: forwards !important; /* Gwarantuje zatrzymanie w miejscu docelowym */
         }
         
         .ticker-item {
@@ -501,7 +502,6 @@
 
             const itemWidth = 170; const targetIndex = 45; const totalItems = 55;
             
-            ribbon.style.dynamicTargetPosition = "";
             ribbon.style.transition = "none"; 
             ribbon.style.transform = "translateX(0px)";
             ribbon.innerHTML = ""; 
@@ -526,23 +526,20 @@
             const stopPosition = (targetIndex * itemWidth) + itemCenterPoint - wrapperCenterPoint;
 
             setTimeout(() => {
-                // POPRAWKA: Nowy bezier gwarantuje ekstremalny start i idealnie czyste hamowanie do zera bez odskakiwania wstecz
-                ribbon.style.transition = `transform ${drawDurationSeconds}s cubic-bezier(0.1, 1.05, 0.2, 1)`;
+                // KRZYWA: Bardzo agresywny początek (rozmazanie) i idealnie czyste wygaszanie prędkości bez szarpnięć
+                ribbon.style.transition = `transform ${drawDurationSeconds}s cubic-bezier(0.1, 0.95, 0.2, 1)`;
                 ribbon.style.transform = `translateX(-${stopPosition}px)`;
             }, 50);
 
             setTimeout(() => {
-                // LOCK POSITION
-                ribbon.style.transition = "none";
-                ribbon.style.transform = `translateX(-${stopPosition}px)`;
-
+                // POPRAWKA: Usunąłem twarde zerowanie transition w JS, które powodowało uciekanie o 2 kafelki!
                 const winningCell = document.getElementById('winning-ticker-cell');
                 if (winningCell) {
                     winningCell.classList.add('winning-cell-active');
                 }
                 statusDisplay.innerText = `Wylosowano: ${winner}! Czekam na znak na czacie...`;
                 startVerificationStage(winner);
-            }, drawDurationMs + 50); 
+            }, drawDurationMs + 100); // 100ms zapasu na pełne, płynne wygaszenie silnika przeglądarki
         }
 
         function startVerificationStage(winnerNick) {
