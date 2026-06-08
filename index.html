@@ -6,6 +6,15 @@
     <script src="/socket.io/socket.io.js"></script>
     <style>
         :root {
+            --bg-main: #0b0c10;
+            --bg-panel: #13151b;
+            --bg-input: #1b1e25;
+            --kick-green: #53fc18;
+            --kick-green-hover: #45d612;
+            --text-main: #eff1f5;
+            --text-muted: #717684;
+            --border-color: #21242c;
+            --danger-red: #ea4335;
             --bg-main: #0c0814;
             --bg-panel: #160f24;
             --bg-input: #211633;
@@ -16,24 +25,50 @@
             --border-panel: #2f1e47;
             --border-card: #3c265c;
             --danger-red: #e63946;
-            --success-green: #2a9d8f;
         }
 
         body {
             background-color: var(--bg-main);
             color: var(--text-main);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             margin: 0;
+            padding: 15px;
             padding: 20px;
             display: flex;
+            flex-direction: column;
             height: 100vh;
             box-sizing: border-box;
             gap: 20px;
         }
 
-        /* PANEL STYLE */
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 10px 15px 10px;
+        }
+        .brand {
+            color: var(--kick-green);
+            font-weight: 800;
+            font-size: 1.3rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .app-container {
+            display: flex;
+            flex: 1;
+            gap: 15px;
+            overflow: hidden;
+        }
+
+        /* WSPÓLNE STYLE DLA PANELU LEWEGO I PRAWEGO */
         .panel {
             background-color: var(--bg-panel);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 20px;
             border: 1px solid var(--border-panel);
             border-radius: 12px;
             padding: 24px;
@@ -42,6 +77,26 @@
             box-shadow: 0 4px 25px rgba(0, 0, 0, 0.6);
         }
 
+        .sidebar { width: 280px; }
+        
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid var(--border-color);
+            margin-bottom: 15px;
+        }
+        .tab {
+            flex: 1;
+            text-align: center;
+            padding: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+        .tab.active {
+            color: var(--kick-green);
+            border-bottom: 2px solid var(--kick-green);
+            margin-bottom: -2px;
         .panel-title {
             font-size: 1.1rem;
             font-weight: 700;
@@ -52,165 +107,398 @@
             border-left: 3px solid var(--accent-glow);
             padding-left: 10px;
         }
+        
+        .section-title {
+            font-size: 0.95rem;
+            font-weight: bold;
+            margin-bottom: 15px;
 
-        /* LEWA KOLUMNA */
-        .sidebar-left { width: 320px; min-width: 320px; }
-        .form-group { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
-        .form-group label { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600; }
+        /* LEWA KOLUMNA - USTAWIENIA */
+        .sidebar-left {
+            width: 320px;
+            min-width: 320px;
+        }
+        
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 12px;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            font-size: 0.75rem;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        .form-group label span {
+            color: var(--accent-glow);
+            float: right;
+        }
+        input {
 
         input[type="text"], input[type="number"] {
             background-color: var(--bg-input);
+            border: 1px solid var(--border-color);
             border: 1px solid var(--border-card);
             color: var(--text-main);
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 0.85rem;
             padding: 12px;
             border-radius: 8px;
             font-size: 0.9rem;
             outline: none;
             transition: all 0.2s;
         }
+        input:focus { border-color: var(--kick-green); }
+        
+        .btn-primary {
+            background-color: var(--kick-green);
+            color: #000;
+            border: none;
+            padding: 12px;
+            border-radius: 6px;
+            font-weight: bold;
+
         input[type="text"]:focus, input[type="number"]:focus {
             border-color: var(--accent-glow);
             box-shadow: 0 0 8px rgba(182, 36, 255, 0.3);
         }
 
+        /* Stylizacja suwaka (Slider) */
         input[type="range"] {
-            -webkit-appearance: none; width: 100%; background: var(--bg-input); height: 8px; border-radius: 4px; outline: none;
+            -webkit-appearance: none;
+            width: 100%;
+            background: var(--bg-input);
+            height: 8px;
+            border-radius: 4px;
+            outline: none;
         }
+
         input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--accent-glow); cursor: pointer; box-shadow: 0 0 8px var(--accent-glow);
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--accent-glow);
+            cursor: pointer;
+            transition: transform 0.1s;
+            box-shadow: 0 0 8px var(--accent-glow);
         }
 
-        .btn-container-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 25px; }
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
 
-        button { font-weight: 700; text-transform: uppercase; font-size: 0.8rem; padding: 12px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: none; }
-        .btn-save { background-color: var(--accent-glow); color: #fff; box-shadow: 0 0 10px rgba(182, 36, 255, 0.4); }
+        .btn-container-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 25px;
+        }
+
+        button {
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            margin-top: auto;
+            transition: background 0.2s;
+            font-size: 0.8rem;
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+        }
+        .btn-primary:hover { background-color: var(--kick-green-hover); }
+
+        .btn-save {
+            background-color: var(--accent-glow);
+            color: #fff;
+            box-shadow: 0 0 10px rgba(182, 36, 255, 0.4);
+        }
         .btn-save:hover { background-color: var(--accent-hover); }
-        .btn-reset { background-color: var(--danger-red); color: #fff; }
-        .btn-reset:hover { filter: brightness(1.2); }
-        .btn-action { background-color: transparent; border: 1px solid var(--border-card); color: var(--text-main); margin-top: 10px; }
-        .btn-action:hover { border-color: var(--accent-glow); background-color: rgba(182, 36, 255, 0.05); }
 
-        /* ŚRODEK */
-        .main-content { flex: 1; display: flex; flex-direction: column; gap: 15px; }
-        .status-header { background-color: var(--bg-panel); border: 1px solid var(--border-panel); padding: 15px 20px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; }
+        .btn-reset {
+            background-color: var(--danger-red);
+            color: #fff;
+        }
+        .btn-reset:hover { filter: brightness(1.2); }
+
+        .btn-action {
+            background-color: transparent;
+            border: 1px solid var(--border-card);
+            color: var(--text-main);
+            margin-top: 10px;
+        }
+        .btn-action:hover { 
+            border-color: var(--accent-glow); 
+            background-color: rgba(182, 36, 255, 0.05);
+        }
+
+        /* ŚRODKOWA KOLUMNA - ARENA NICKÓW */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .widgets-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+        }
+        .widget {
+
+        .status-header {
+            background-color: var(--bg-panel);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 15px;
+            border: 1px solid var(--border-panel);
+            padding: 15px 20px;
+            border-radius: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            font-size: 0.9rem;
+        }
         .status-lbl { color: var(--text-muted); text-transform: uppercase; font-size: 0.75rem; font-weight: 700;}
         .status-val { font-weight: 700; color: var(--accent-glow); }
 
-        .arena-wrapper { flex: 1; background-color: rgba(0,0,0,0.2); border: 1px solid var(--border-panel); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; }
-        .arena-title { text-align: center; font-size: 0.85rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; letter-spacing: 2px; margin-bottom: 15px; flex-shrink: 0; }
+        .arena-wrapper {
+            flex: 1;
+            background-color: rgba(0,0,0,0.2);
+            border: 1px solid var(--border-panel);
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
 
-        .arena { flex: 1; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); grid-auto-rows: max-content; gap: 12px; }
+        .arena-title {
+            text-align: center;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            font-weight: 700;
+            letter-spacing: 2px;
+            margin-bottom: 15px;
+        }
+        .widget-icon { font-size: 1.5rem; }
+        .widget-info { display: flex; flex-direction: column; }
+        .widget-label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; }
+        .widget-value { font-size: 1.1rem; font-weight: bold; }
 
+        .arena {
+            flex: 1;
+            background-color: #0a0b0e;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 15px;
+            overflow-y: auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            grid-auto-rows: max-content;
+            gap: 10px;
+            gap: 12px;
+        }
+
+        /* Wyśrodkowane nicki w ramkach */
         .p-card {
-            background-color: var(--bg-panel); border: 1px solid var(--border-card); padding: 14px 10px; border-radius: 8px; text-align: center; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; font-weight: 600; color: var(--text-main); word-break: break-all; transition: all 0.3s ease;
+            background-color: var(--bg-input);
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            border-radius: 6px;
+            background-color: var(--bg-panel);
+            border: 1px solid var(--border-card);
+            padding: 14px 10px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-main);
+            word-break: break-all;
+            transition: all 0.2s;
         }
 
-        .p-card.winner-active { border-color: var(--accent-glow) !important; background-color: rgba(182, 36, 255, 0.15) !important; color: var(--accent-glow) !important; box-shadow: 0 0 12px rgba(182, 36, 255, 0.4); }
-        .p-card.winner-disqualified { border-color: var(--danger-red) !important; background-color: rgba(230, 57, 70, 0.1) !important; color: var(--danger-red) !important; text-decoration: line-through; opacity: 0.6; }
+        .bottom-actions { display: flex; gap: 10px; }
+        .btn-secondary {
+            background-color: var(--bg-input);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 10px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: bold;
+            transition: all 0.2s;
+        /* PRAWA KOLUMNA - TABELA ZWYCIĘZCÓW */
+        .sidebar-right {
+            width: 320px;
+            min-width: 320px;
+        }
+        .btn-secondary:hover { background-color: var(--border-color); }
+        .btn-danger {
+            background-color: rgba(234, 67, 53, 0.1);
+            border: 1px solid var(--danger-red);
+            color: var(--danger-red);
 
-        .arena::-webkit-scrollbar { width: 6px; }
-        .arena::-webkit-scrollbar-track { background: transparent; }
-        .arena::-webkit-scrollbar-thumb { background: var(--border-card); border-radius: 10px; }
-        .arena::-webkit-scrollbar-thumb:hover { background: var(--accent-glow); }
+        .table-container {
+            flex: 1;
+            overflow-y: auto;
+            background-color: var(--bg-input);
+            border-radius: 8px;
+            border: 1px solid var(--border-card);
+        }
+        .btn-danger:hover { background-color: rgba(234, 67, 53, 0.2); }
 
-        /* PRAWA KOLUMNA */
-        .sidebar-right { width: 320px; min-width: 320px; }
-        .table-container { flex: 1; overflow-y: auto; background-color: var(--bg-input); border-radius: 8px; border: 1px solid var(--border-card); }
-        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
-        th { background-color: rgba(0,0,0,0.3); color: var(--text-muted); padding: 12px; font-weight: 700; text-transform: uppercase; font-size: 0.75rem; border-bottom: 1px solid var(--border-card); }
-        td { padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.03); font-weight: 600; }
-        .td-tc { text-align: right; color: var(--accent-glow); }
-
-        .tr-disqualified td { color: var(--danger-red) !important; text-decoration: line-through; }
-        .tr-disqualified .td-tc { color: var(--danger-red) !important; }
-
-        /* ==================== BĘBEN LOSUJĄCY ==================== */
-        .ticker-wrapper {
-            display: none;
-            position: relative;
+        .winners-sidebar { width: 240px; }
+        .winners-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        table {
             width: 100%;
-            height: 95px;
-            background: #07040c;
-            border: 2px solid var(--border-card);
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: inset 0 0 20px rgba(0,0,0,0.9);
-            margin-bottom: 15px;
-            flex-shrink: 0;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 0.9rem;
         }
+        .badge {
+            background-color: var(--kick-green);
+            color: #000;
 
-        .ticker-pointer {
-            position: absolute; top: 0; bottom: 0; left: 50%; width: 4px; background: var(--accent-glow); z-index: 10; box-shadow: 0 0 15px var(--accent-glow); transform: translateX(-50%);
+        th {
+            background-color: rgba(0,0,0,0.3);
+            color: var(--text-muted);
+            padding: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            font-weight: bold;
+            padding: 2px 8px;
+            border-radius: 10px;
+            border-bottom: 1px solid var(--border-card);
         }
-        .ticker-pointer::before { content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%); border-left: 10px solid transparent; border-right: 10px solid transparent; border-top: 10px solid var(--accent-glow); }
-        .ticker-pointer::after { content: ''; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); border-left: 10px solid transparent; border-right: 10px solid transparent; border-bottom: 10px solid var(--accent-glow); }
+        .winners-list {
+            flex: 1;
+            background-color: #0a0b0e;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 10px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
 
-        .ticker-ribbon { display: flex; position: absolute; left: 0; top: 0; height: 100%; will-change: transform; }
-
-        .ticker-item {
-            min-width: 170px; max-width: 170px; height: 100%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.1rem; border-right: 1px solid rgba(255,255,255,0.04); color: var(--text-main); box-sizing: border-box; background: linear-gradient(180deg, #1d1430 0%, #130d21 100%); transition: color 0.4s ease, text-shadow 0.4s ease;
+        td {
+            padding: 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+            font-weight: 600;
         }
+        .w-card {
+            background-color: rgba(83, 252, 24, 0.1);
+            border: 1px solid var(--kick-green);
+            color: var(--text-main);
+            padding: 8px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            text-align: center;
 
-        /* ==================== PANEL WERYFIKACJI CZATU ==================== */
-        .verify-panel {
-            display: none;
-            background: #0f0a1c;
-            border: 2px solid var(--border-card);
-            border-radius: 12px;
-            padding: 15px 20px;
-            margin-bottom: 15px;
-            flex-shrink: 0;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+        tr:last-child td { border: none; }
+        
+        .td-tc {
+            text-align: right;
+            color: var(--accent-glow);
+            font-weight: 700;
         }
-
-        .verify-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-        .verify-user { font-size: 1.1rem; font-weight: 800; color: #fff; }
-
-        .verify-timer-box { display: flex; align-items: center; gap: 10px; }
-
-        .btn-manual {
-            background-color: var(--success-green); color: #fff; padding: 6px 14px; font-size: 0.75rem; font-weight: 700; border-radius: 6px; box-shadow: 0 0 10px rgba(42, 157, 143, 0.4);
-        }
-        .btn-manual:hover { filter: brightness(1.1); }
-
-        .verify-timer {
-            font-size: 1.2rem; font-weight: 800; color: var(--danger-red); background: rgba(230, 57, 70, 0.1); padding: 4px 12px; border-radius: 6px; border: 1px solid rgba(230, 57, 70, 0.2); font-variant-numeric: tabular-nums;
-        }
-
-        .verify-chat-box {
-            background: #07040c; border: 1px solid var(--border-panel); border-radius: 8px; padding: 10px; height: 75px; overflow-y: auto; font-size: 0.85rem; color: var(--text-muted); text-align: left; display: flex; flex-direction: column; gap: 4px;
-        }
-        .chat-line { animation: fadeIn 0.3s ease forwards; word-break: break-all; color: #fff; }
-        .chat-line strong { color: var(--accent-glow); }
-
-        .btn-reroll {
-            display: none; width: 100%; background-color: var(--danger-red); color: #fff; padding: 12px; font-size: 0.9rem; font-weight: 700; margin-top: 10px; box-shadow: 0 0 15px rgba(230, 57, 70, 0.4); animation: pulseGlow 1.5s infinite;
-        }
-
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(2px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes pulseGlow { 0% { box-shadow: 0 0 10px rgba(230, 57, 70, 0.4); } 50% { box-shadow: 0 0 20px rgba(230, 57, 70, 0.7); } 100% { box-shadow: 0 0 10px rgba(230, 57, 70, 0.4); } }
     </style>
 </head>
 <body>
 
+    <div class="navbar">
+        <div class="brand">Kick Raffle System</div>
+    </div>
+
+    <div class="app-container">
     <div class="panel sidebar-left">
         <div class="panel-title">Ustawienia Losowania</div>
 
+        <div class="panel sidebar">
+            <div class="tabs">
+                <div class="tab active">RAFFLE</div>
+                <div class="tab">KOŁO</div>
+            </div>
+            <div class="section-title">Ustawienia</div>
+            
+            <div class="form-group">
+                <label>Słowo kluczowe:</label>
+                <input id="keyword-input" placeholder="Wpisz hasło">
+            </div>
+            <button class="btn-secondary" onclick="saveKeyword()" style="margin-bottom: 15px;">ZAPISZ HASŁO</button>
+            
+            <div class="form-group">
+                <label>Liczba zwycięzców:</label>
+                <input type="number" id="winners-amount" value="1" min="1">
+            </div>
         <div class="form-group">
             <label>Słowo kluczowe:</label>
             <input id="keyword-input" type="text" placeholder="Wpisz hasło...">
         </div>
 
+            <button class="btn-primary" onclick="triggerStartFight()">Rozpocznij losowanie</button>
         <div class="form-group">
             <label>Ilość TC:</label>
             <input id="tc-input" type="number" value="50" placeholder="np. 50">
         </div>
 
+        <div class="main-content">
+            <div class="widgets-grid">
+                <div class="widget">
+                    <div class="widget-icon">🎁</div>
+                    <div class="widget-info">
+                        <span class="widget-label">Status</span>
+                        <span class="widget-value" id="status-display">Oczekiwanie</span>
+                    </div>
+                </div>
+                <div class="widget">
+                    <div class="widget-icon">🔑</div>
+                    <div class="widget-info">
+                        <span class="widget-label">Hasło</span>
+                        <span class="widget-value" id="password-display">-</span>
+                    </div>
+                </div>
+                <div class="widget">
+                    <div class="widget-icon">👥</div>
+                    <div class="widget-info">
+                        <span class="widget-label">Uczestników</span>
+                        <span class="widget-value" id="count-display">0</span>
+                    </div>
+                </div>
+            </div>
         <div class="form-group">
             <label>Ilość uczestników: <span id="slider-val">10</span></label>
             <input id="participant-slider" type="range" min="1" max="100" value="10" oninput="document.getElementById('slider-val').innerText = this.value">
         </div>
 
+            <div class="arena" id="participants-grid"></div>
         <div class="btn-container-row">
             <button class="btn-save" onclick="saveKeyword()">Zapisz</button>
             <button class="btn-reset" onclick="triggerReset()">Reset</button>
@@ -218,8 +506,13 @@
 
         <hr style="border: 0; border-top: 1px solid var(--border-card); margin-bottom: 25px; width: 100%;">
 
+            <div class="bottom-actions">
+                <button class="btn-secondary" onclick="drawWinner()">Wylosuj zwycięzcę</button>
+                <button class="btn-secondary" onclick="shuffleParticipants()">Przemieszaj</button>
+                <button class="btn-secondary btn-danger" onclick="triggerReset()">Resetuj</button>
+            </div>
         <button class="btn-save" style="width: 100%; padding: 15px; font-size: 0.9rem;" onclick="triggerStartFight()">Rozpocznij losowanie</button>
-        <button class="btn-action" style="width: 100%;" onclick="startCinematicDraw()">Wylosuj zwycięzcę</button>
+        <button class="btn-action" style="width: 100%;" onclick="drawWinner()">Wylosuj zwycięzcę</button>
         <button class="btn-action" style="width: 100%;" onclick="shuffleParticipants()">Przemieszaj</button>
     </div>
 
@@ -230,27 +523,14 @@
             <div><span class="status-lbl">Dołączyło:</span> <span id="count-display" class="status-val">0</span></div>
         </div>
 
+        <div class="panel winners-sidebar">
+            <div class="winners-header">
+                <div class="section-title" style="margin:0;">Zwycięzcy</div>
+                <span class="badge" id="winners-count">0</span>
+            </div>
+            <div class="winners-list" id="winners-box"></div>
         <div class="arena-wrapper">
             <div class="arena-title">arena</div>
-
-            <div class="ticker-wrapper" id="ticker-wrapper">
-                <div class="ticker-pointer"></div>
-                <div id="ticker-ribbon" class="ticker-ribbon"></div>
-            </div>
-
-            <div class="verify-panel" id="verify-panel">
-                <div class="verify-header">
-                    <div class="verify-user">Sprawdzanie obecności: <span id="verify-nick" style="color: var(--accent-glow);">Nick</span></div>
-                    <div class="verify-timer" id="verify-timer">60s</div>
-                    <div class="verify-timer-box">
-                        <button class="btn-manual" onclick="manualVerify()">✔ Potwierdź Ręcznie</button>
-                        <div class="verify-timer" id="verify-timer">60s</div>
-                    </div>
-                </div>
-                <div class="verify-chat-box" id="verify-chat-box"></div>
-                <button class="btn-reroll" id="btn-reroll" onclick="rerollDraw()">Ponowne losowanie (Reroll)</button>
-            </div>
-
             <div class="arena" id="participants-grid"></div>
         </div>
     </div>
@@ -265,7 +545,8 @@
                         <th style="text-align: right;">Nagroda</th>
                     </tr>
                 </thead>
-                <tbody id="winners-table-body"></tbody>
+                <tbody id="winners-table-body">
+                    </tbody>
             </table>
         </div>
     </div>
@@ -275,27 +556,16 @@
         let localParticipants = [];
         let winnersList = [];
 
-        let activeVerificationWinner = null;
-        let verificationTimerInterval = null;
-        let verificationTimeLeft = 60;
-
         const grid = document.getElementById('participants-grid');
         const countDisplay = document.getElementById('count-display');
         const passwordDisplay = document.getElementById('password-display');
         const statusDisplay = document.getElementById('status-display');
+        const winnersBox = document.getElementById('winners-box');
+        const winnersCountDisplay = document.getElementById('winners-count');
         const winnersTableBody = document.getElementById('winners-table-body');
         const keywordInput = document.getElementById('keyword-input');
         const tcInput = document.getElementById('tc-input');
         const participantSlider = document.getElementById('participant-slider');
-
-        const ribbon = document.getElementById('ticker-ribbon');
-        const wrapper = document.getElementById('ticker-wrapper');
-
-        const verifyPanel = document.getElementById('verify-panel');
-        const verifyNick = document.getElementById('verify-nick');
-        const verifyTimer = document.getElementById('verify-timer');
-        const verifyChatBox = document.getElementById('verify-chat-box');
-        const btnReroll = document.getElementById('btn-reroll');
 
         socket.on('init', (data) => {
             grid.innerHTML = "";
@@ -307,94 +577,11 @@
         });
 
         socket.on('newParticipant', (sender) => {
-            // Bezpieczne wyciąganie stringa z eventu zapisu
-            let cleanSender = (typeof sender === 'object') ? (sender.username || sender.name || "") : sender;
-            if(!cleanSender) return;
-            cleanSender = String(cleanSender).trim();
-
-            if (!localParticipants.includes(cleanSender)) {
-                localParticipants.push(cleanSender);
-                renderParticipant(cleanSender);
+            if (!localParticipants.includes(sender)) {
+                localParticipants.push(sender);
+                renderParticipant(sender);
                 updateCounter();
-                grid.scrollTop = grid.scrollHeight;
             }
-            // Zabezpieczenie: Ponowne wpisanie hasła też wyzwala weryfikację
-            handleIncomingUserActivity(cleanSender, "Wpisał słowo kluczowe na czacie.");
-        });
-
-        // ==================== ZAAWANSOWANY I BEZPIECZNY PARSER CZATU ====================
-        socket.on('chatMessage', (data) => {
-            console.log("Otrzymano event chatMessage z serwera:", data);
-            if (!data) return;
-
-            let sender = "";
-            let message = "";
-
-            // Przypadek 1: Serwer przesyła surowy ciąg tekstowy "Nick: wiadomość"
-            if (typeof data === 'string') {
-                const splitIdx = data.indexOf(':');
-                if (splitIdx !== -1) {
-                    sender = data.substring(0, splitIdx).trim();
-                    message = data.substring(splitIdx + 1).trim();
-        // ==================== AGRESYWNY MULTI-EVENT LISTENER CZATU ====================
-        const chatEvents = ['chatMessage', 'message', 'chat', 'msg', 'kickMessage'];
-        chatEvents.forEach(eventName => {
-            socket.on(eventName, (data) => {
-                console.log(`[SOCKET] Odebrano event '${eventName}':`, data);
-                if (!data) return;
-
-                let sender = "";
-                let message = "";
-
-                if (typeof data === 'string') {
-                    const splitIdx = data.indexOf(':');
-                    if (splitIdx !== -1) {
-                        sender = data.substring(0, splitIdx).trim();
-                        message = data.substring(splitIdx + 1).trim();
-                    } else {
-                        message = data;
-                    }
-                } else {
-                    message = data;
-                }
-            } else {
-                // Przypadek 2: Serwer przesyła obiekt (obsługa zagnieżdżonych struktur typu data.sender.username)
-                if (data.sender) {
-                    sender = (typeof data.sender === 'object') ? (data.sender.username || data.sender.name || data.sender.slug) : data.sender;
-                } else if (data.user) {
-                    sender = (typeof data.user === 'object') ? (data.user.username || data.user.name || data.user.nickname) : data.user;
-                } else {
-                    sender = data.username || data.nickname || data.slug || "";
-                    if (data.sender) {
-                        sender = (typeof data.sender === 'object') ? (data.sender.username || data.sender.name || data.sender.slug) : data.sender;
-                    } else if (data.user) {
-                        sender = (typeof data.user === 'object') ? (data.user.username || data.user.name || data.user.nickname) : data.user;
-                    } else {
-                        sender = data.username || data.nickname || data.slug || "";
-                    }
-
-                    if (data.message) {
-                        message = (typeof data.message === 'object') ? (data.message.content || data.message.text) : data.message;
-                    } else {
-                        message = data.content || data.text || data.msg || "";
-                    }
-                }
-
-                // Bezpieczne wyciąganie treści wiadomości
-                if (data.message) {
-                    message = (typeof data.message === 'object') ? (data.message.content || data.message.text) : data.message;
-                } else {
-                    message = data.content || data.text || data.msg || "";
-                if (sender) {
-                    handleIncomingUserActivity(sender, message);
-                }
-            }
-
-            // Jeśli pomyślnie wyciągnięto tekstowy nick nadawcy, przekaż do systemu weryfikacji
-            if (sender) {
-                handleIncomingUserActivity(String(sender).trim(), String(message).trim());
-            }
-            });
         });
 
         socket.on('keywordChanged', (kw) => {
@@ -404,22 +591,39 @@
 
         socket.on('participantsReset', () => {
             grid.innerHTML = "";
+            winnersBox.innerHTML = "";
             winnersTableBody.innerHTML = "";
             localParticipants = [];
             winnersList = [];
+            winnersCountDisplay.innerText = "0";
+            statusDisplay.innerText = "Zresetowano";
             statusDisplay.innerText = "Zresetowano system";
-            wrapper.style.display = 'none';
-            resetVerificationState();
             updateCounter();
         });
 
         socket.on('triggerFight', () => {
+            if (localParticipants.length === 0) {
+                statusDisplay.innerText = "Brak graczy!";
             const requiredAmount = parseInt(participantSlider.value);
+            
             if (localParticipants.length < requiredAmount) {
                 statusDisplay.innerText = `Za mało osób! Wymagane: ${requiredAmount}`;
                 return;
             }
-            startCinematicDraw();
+            statusDisplay.innerText = "Losowanie...";
+
+            // Efektowne automatyczne tasowanie przed wygraną
+            statusDisplay.innerText = "Trwa losowanie...";
+            
+            let shuffles = 0;
+            const interval = setInterval(() => {
+                shuffleParticipants();
+                shuffles++;
+                if (shuffles >= 10) {
+                    clearInterval(interval);
+                    drawWinner();
+                }
+            }, 150);
         });
 
         function renderParticipant(sender) {
@@ -432,218 +636,95 @@
             }
         }
 
-        function updateCounter() { countDisplay.innerText = localParticipants.length; }
-        function saveKeyword() { socket.emit('updateKeyword', keywordInput.value); }
-        function triggerReset() { socket.emit('reset'); }
-        function triggerStartFight() { socket.emit('startFight'); }
+        function updateCounter() {
+            countDisplay.innerText = localParticipants.length;
+        }
+
+        function saveKeyword() {
+            const val = keywordInput.value;
+            socket.emit('updateKeyword', val);
+        }
+
+        function triggerReset() {
+            socket.emit('reset');
+        }
+
+        function triggerStartFight() {
+            socket.emit('startFight');
+        }
 
         function shuffleParticipants() {
             if (localParticipants.length < 2) return;
+
+            // Algorytm Fisher-Yates do losowego mieszania tablicy
             for (let i = localParticipants.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [localParticipants[i], localParticipants[j]] = [localParticipants[j], localParticipants[i]];
             }
+
             grid.innerHTML = "";
             localParticipants.forEach(p => {
                 renderParticipant(p);
-                const winnerObj = winnersList.find(w => w.nick === p);
-                if (winnerObj) applyWinnerStyle(p, winnerObj.status);
+                // Zachowaj podświetlenie jeśli już wygrał wcześniej
+                if (winnersList.includes(p)) {
+                    const card = document.getElementById('p-' + p);
+                    if (card) {
+                        card.style.backgroundColor = 'var(--kick-green)';
+                        card.style.color = '#000';
+                        card.style.borderColor = 'var(--accent-glow)';
+                        card.style.backgroundColor = 'rgba(182, 36, 255, 0.15)';
+                        card.style.color = 'var(--accent-glow)';
+                        card.style.boxShadow = '0 0 12px rgba(182, 36, 255, 0.4)';
+                    }
+                }
             });
         }
 
-        function applyWinnerStyle(winnerNick, status) {
-            const card = document.getElementById('p-' + winnerNick);
-            if (card) {
-                card.className = 'p-card';
-                if (status === 'verified') card.classList.add('winner-active');
-                if (status === 'disqualified') card.classList.add('winner-disqualified');
-            }
-        }
-
-        function startCinematicDraw() {
-            const excludedNicks = winnersList.map(w => w.nick);
-            const available = localParticipants.filter(p => !excludedNicks.includes(p));
+        function drawWinner() {
+            // Filtrujemy tylko tych, którzy jeszcze nie wygrali
+            const available = localParticipants.filter(p => !winnersList.includes(p));
 
             if (available.length === 0) {
+                statusDisplay.innerText = "Brak kandydatów!";
                 statusDisplay.innerText = "Brak wolnych uczestników!";
                 return;
             }
 
-            resetVerificationState();
-
             const randomIndex = Math.floor(Math.random() * available.length);
             const winner = available[randomIndex];
 
-            const itemWidth = 170; 
-            const targetIndex = 26; 
-            const totalItems = 34;
-
-            ribbon.innerHTML = "";
-            ribbon.style.transition = "none";
-            ribbon.style.transform = "translateX(0px)";
-
-            for (let i = 0; i < totalItems; i++) {
-                const el = document.createElement('div');
-                el.className = 'ticker-item';
-                if (i === targetIndex) {
-                    el.innerText = winner;
-                    el.id = "winning-ticker-cell";
-                } else {
-                    const randP = localParticipants[Math.floor(Math.random() * localParticipants.length)];
-                    el.innerText = randP || "...";
-                }
-                ribbon.appendChild(el);
-            }
-
-            wrapper.style.display = 'block';
-            statusDisplay.innerText = "Losowanie w toku...";
-
-            setTimeout(() => {
-                const wrapperWidth = wrapper.offsetWidth;
-                const randomInnerOffset = Math.floor(Math.random() * 60) - 30;
-                const stopPosition = (targetIndex * itemWidth) + (itemWidth / 2) - (wrapperWidth / 2) + randomInnerOffset;
-
-                ribbon.style.transition = "transform 4.5s cubic-bezier(0.1, 1, 0.1, 1)";
-                ribbon.style.transform = `translateX(-${stopPosition}px)`;
-            }, 50);
-
-            // ZATRZYMANIE BĘBNA
-            setTimeout(() => {
-                const finalCell = document.getElementById("winning-ticker-cell");
-                if (finalCell) {
-                    finalCell.style.color = 'var(--accent-glow)';
-                    finalCell.style.textShadow = '0 0 12px var(--accent-glow)';
-                }
-
-                statusDisplay.innerText = `Wylosowano: ${winner}! Czekam na czat...`;
-                startVerificationStage(winner);
-            }, 4550);
-        }
-
-        function startVerificationStage(winnerNick) {
-            activeVerificationWinner = winnerNick;
-            verificationTimeLeft = 60;
-
-            verifyNick.innerText = winnerNick;
-            verifyTimer.innerText = "60s";
-            verifyTimer.style.color = "var(--danger-red)";
-            verifyTimer.style.borderColor = "rgba(230, 57, 70, 0.2)";
-            verifyChatBox.innerHTML = `<div id="chat-placeholder" style="color: #55486e; font-style: italic;">Oczekiwanie na dowolną wiadomość od @${winnerNick}...</div>`;
-            btnReroll.style.display = 'none';
-            verifyPanel.style.display = 'block';
-
-            verificationTimerInterval = setInterval(() => {
-                verificationTimeLeft--;
-                verifyTimer.innerText = verificationTimeLeft + "s";
-
-                if (verificationTimeLeft <= 0) {
-                    handleVerificationTimeout();
-                }
-            }, 1000);
-        }
-
-        // ==================== SYSTEM WERYFIKACJI CZATU (ALPHANUMERIC CLEAN) ====================
-        function handleIncomingUserActivity(sender, message) {
-            if (!activeVerificationWinner) return;
-
-            // Pancerne porównanie: rzutowanie na String, obcięcie spacji, małe litery
-            const cleanSender = String(sender).trim().toLowerCase();
-            const cleanWinner = String(activeVerificationWinner).trim().toLowerCase();
-            // Zostaw tylko czyste litery i cyfry do porównania (usuwa spacje, małpki itp.)
-            const cleanSender = String(sender).replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
-            const cleanWinner = String(activeVerificationWinner).replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
-
-            if (cleanSender !== cleanWinner) return;
-
-            // Gdy gracz napisze po raz pierwszy: zatrzymaj odliczanie czasu i przypisz nagrodę
-            // Jeśli pierwsze uderzenie (aktywny zegar): zatrzymaj odliczanie i dodaj do tabeli
-            if (verificationTimerInterval !== null) {
-                clearInterval(verificationTimerInterval);
-                verificationTimerInterval = null;
-
-                verifyTimer.innerText = "OK!";
-                verifyTimer.style.color = "var(--success-green)";
-                verifyTimer.style.borderColor = "var(--success-green)";
-                statusDisplay.innerText = `@${sender} potwierdził obecność!`;
-                statusDisplay.innerText = `@${activeVerificationWinner} potwierdził obecność!`;
-
-                const tcValue = tcInput.value || "0";
-                winnersList.push({ nick: activeVerificationWinner, status: 'verified' });
-
-                const tr = document.createElement('tr');
-                tr.id = `table-winner-${activeVerificationWinner}`;
-                tr.innerHTML = `<td>${activeVerificationWinner}</td><td class="td-tc">${tcValue} TC</td>`;
-                winnersTableBody.appendChild(tr);
-
-                applyWinnerStyle(activeVerificationWinner, 'verified');
-
-                // Usuń informację o oczekiwaniu
-                const placeholder = document.getElementById('chat-placeholder');
-                if (placeholder) placeholder.remove();
-            }
-
-            // Wypisuj kolejne wiadomości użytkownika na bieżąco w polu tekstowym
-            // Drukuj wiadomość na żywo do ramki
-            const div = document.createElement('div');
-            div.className = 'chat-line';
-            div.innerHTML = `<strong>${activeVerificationWinner}:</strong> ${message}`;
-            verifyChatBox.appendChild(div);
-            verifyChatBox.scrollTop = verifyChatBox.scrollHeight;
-
-            // Ukryj panel sprawdzania (zielone OK) po 5 sekundach od wysłania wiadomości (bęben zostaje)
-            const scopeWinner = activeVerificationWinner;
-            setTimeout(() => {
-                if (activeVerificationWinner === winnerNickFromScope && verificationTimerInterval === null) {
-                if (activeVerificationWinner === scopeWinner && verificationTimerInterval === null) {
-                    verifyPanel.style.display = 'none';
-                }
-            }, 5000);
-            
-            // Zmienna pomocnicza do upewnienia się w timeoutach scope
-            const winnerNickFromScope = activeVerificationWinner;
-        }
-
-        // FUNKCJA RĘCZNEGO POTWIERDZENIA (Zabezpieczenie na wypadek braku eventów czatu na serwerze)
-        function manualVerify() {
-            if (!activeVerificationWinner) return;
-            handleIncomingUserActivity(activeVerificationWinner, "Obecność potwierdzona ręcznie przez administratora.");
-        }
-
-        function handleVerificationTimeout() {
-            clearInterval(verificationTimerInterval);
-            verificationTimerInterval = null;
-            verifyTimer.innerText = "BRAK!";
-            statusDisplay.innerText = `@${activeVerificationWinner} nie odpowiedział! Disqualify.`;
-
-            const sender = activeVerificationWinner;
+            winnersList.push(winner);
             const tcValue = tcInput.value || "0";
 
-            winnersList.push({ nick: sender, status: 'disqualified' });
-
+            // Dodaj do listy zwycięzców po prawej stronie
+            const wCard = document.createElement('div');
+            wCard.className = 'w-card';
+            wCard.innerText = `🏆 ${winner}`;
+            winnersBox.appendChild(wCard);
+            // Dodanie wiersza (Tylko Nick i Nagroda - bez kolumny miejsca)
             const tr = document.createElement('tr');
-            tr.id = `table-winner-${sender}`;
-            tr.className = 'tr-disqualified';
-            tr.style.border = "1px solid var(--danger-red)";
-            tr.style.borderRadius = "6px";
-            tr.innerHTML = `<td>${sender} (BRAK)</td><td class="td-tc">${tcValue} TC</td>`;
+            tr.innerHTML = `
+                <td>${winner}</td>
+                <td class="td-tc">${tcValue} TC</td>
+            `;
             winnersTableBody.appendChild(tr);
 
-            applyWinnerStyle(sender, 'disqualified');
-            btnReroll.style.display = 'block';
-        }
+            // Podświetlenie kafelka na arenie na zielono Kicka
+            // Podświetlenie neonowym fioletem na arenie
+            const card = document.getElementById('p-' + winner);
+            if (card) {
+                card.style.backgroundColor = 'var(--kick-green)';
+                card.style.color = '#000';
+                card.style.transform = 'scale(1.05)';
+                card.style.borderColor = 'var(--accent-glow)';
+                card.style.backgroundColor = 'rgba(182, 36, 255, 0.2)';
+                card.style.color = 'var(--accent-glow)';
+                card.style.boxShadow = '0 0 15px rgba(182, 36, 255, 0.6)';
+            }
 
-        function rerollDraw() {
-            resetVerificationState();
-            startCinematicDraw();
-        }
-
-        function resetVerificationState() {
-            if (verificationTimerInterval) clearInterval(verificationTimerInterval);
-            verificationTimerInterval = null;
-            activeVerificationWinner = null;
-            verifyPanel.style.display = 'none';
-            verifyTimer.style.color = "var(--danger-red)";
-            verifyTimer.style.borderColor = "rgba(230, 57, 70, 0.2)";
+            winnersCountDisplay.innerText = winnersList.length;
+            statusDisplay.innerText = `Wygrał: ${winner}`;
+            statusDisplay.innerText = `Wygrywa: ${winner}!`;
         }
     </script>
 </body>
