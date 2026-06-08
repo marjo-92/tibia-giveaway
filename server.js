@@ -8,23 +8,19 @@ const io = new Server(server, { cors: { origin: "*" } });
 
 app.use(express.json());
 
-// Ręczne nagłówki CORS rozbudowane o obsługę preflight (OPTIONS)
+// Ręczne nagłówki CORS (Twoje oryginalne, sprawdzone)
 app.use((req, res, next) => {
     res.header("Access-Control-Allow-Origin", "*");
     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-    res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-    
-    // Jeśli StreamElements pyta o zgodę przed wysłaniem danych, od razu mówimy OK
-    if (req.method === "OPTIONS") {
-        return res.sendStatus(200);
-    }
     next();
 });
 
 let participants = new Set(); 
 let currentKeyword = "a";
 
+// TRASY (Dodana tylko bezpieczna linijka dla style.css)
 app.get('/', (req, res) => res.sendFile(__dirname + '/index.html'));
+app.get('/style.css', (req, res) => res.sendFile(__dirname + '/style.css'));
 
 app.post('/new-message', (req, res) => {
     console.log("Dane odebrane przez serwer:", req.body);
@@ -44,9 +40,6 @@ app.post('/new-message', (req, res) => {
     }
     res.status(200).send('OK');
 });
-
-// Serwowanie plików statycznych (CSS) na samym dole
-app.use(express.static(__dirname));
 
 io.on('connection', (socket) => {
     socket.emit('init', { participants: Array.from(participants), keyword: currentKeyword });
