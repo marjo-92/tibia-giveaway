@@ -8,7 +8,7 @@ const io = new Server(server, { cors: { origin: "*" } });
 
 app.use(express.json());
 
-// Ręczne nagłówki CORS (Twoje oryginalne, sprawdzone)
+// Ręczne nagłówki CORS
 app.use((req, res, next) => {
     res.header("Access-Control-Allow-Origin", "*");
     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
@@ -18,9 +18,7 @@ app.use((req, res, next) => {
 let participants = new Set(); 
 let currentKeyword = "a";
 
-// TRASY (Dodana tylko bezpieczna linijka dla style.css)
 app.get('/', (req, res) => res.sendFile(__dirname + '/index.html'));
-app.get('/style.css', (req, res) => res.sendFile(__dirname + '/style.css'));
 
 app.post('/new-message', (req, res) => {
     console.log("Dane odebrane przez serwer:", req.body);
@@ -56,5 +54,6 @@ io.on('connection', (socket) => {
     });
 });
 
+// Ta zmiana pozwoli Renderowi poprawnie uruchomić serwer na dowolnym porcie
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, '0.0.0.0', () => console.log(`Serwer działa na porcie: ${PORT}`));
