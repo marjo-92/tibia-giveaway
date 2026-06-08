@@ -166,6 +166,13 @@
         .verify-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
         .verify-user { font-size: 1.1rem; font-weight: 800; color: #fff; }
 
+        .verify-timer-box { display: flex; align-items: center; gap: 10px; }
+
+        .btn-manual {
+            background-color: var(--success-green); color: #fff; padding: 6px 14px; font-size: 0.75rem; font-weight: 700; border-radius: 6px; box-shadow: 0 0 10px rgba(42, 157, 143, 0.4);
+        }
+        .btn-manual:hover { filter: brightness(1.1); }
+
         .verify-timer {
             font-size: 1.2rem; font-weight: 800; color: var(--danger-red); background: rgba(230, 57, 70, 0.1); padding: 4px 12px; border-radius: 6px; border: 1px solid rgba(230, 57, 70, 0.2); font-variant-numeric: tabular-nums;
         }
@@ -234,7 +241,10 @@
             <div class="verify-panel" id="verify-panel">
                 <div class="verify-header">
                     <div class="verify-user">Sprawdzanie obecności: <span id="verify-nick" style="color: var(--accent-glow);">Nick</span></div>
-                    <div class="verify-timer" id="verify-timer">60s</div>
+                    <div class="verify-timer-box">
+                        <button class="btn-manual" onclick="manualVerify()">✔ Potwierdź Ręcznie</button>
+                        <div class="verify-timer" id="verify-timer">60s</div>
+                    </div>
                 </div>
                 <div class="verify-chat-box" id="verify-chat-box"></div>
                 <button class="btn-reroll" id="btn-reroll" onclick="rerollDraw()">Ponowne losowanie (Reroll)</button>
@@ -296,7 +306,6 @@
         });
 
         socket.on('newParticipant', (sender) => {
-            // Bezpieczne wyciąganie stringa z eventu zapisu
             let cleanSender = (typeof sender === 'object') ? (sender.username || sender.name || "") : sender;
             if(!cleanSender) return;
             cleanSender = String(cleanSender).trim();
@@ -307,48 +316,48 @@
                 updateCounter();
                 grid.scrollTop = grid.scrollHeight;
             }
+            // Zabezpieczenie: Ponowne wpisanie hasła też wyzwala weryfikację
             handleIncomingUserActivity(cleanSender, "Wpisał słowo kluczowe na czacie.");
         });
 
-        // ==================== ZAAWANSOWANY I BEZPIECZNY PARSER CZATU ====================
-        socket.on('chatMessage', (data) => {
-            console.log("Otrzymano event chatMessage z serwera:", data);
-            if (!data) return;
+        // ==================== AGRESYWNY MULTI-EVENT LISTENER CZATU ====================
+        const chatEvents = ['chatMessage', 'message', 'chat', 'msg', 'kickMessage'];
+        chatEvents.forEach(eventName => {
+            socket.on(eventName, (data) => {
+                console.log(`[SOCKET] Odebrano event '${eventName}':`, data);
+                if (!data) return;
 
-            let sender = "";
-            let message = "";
+                let sender = "";
+                let message = "";
 
-            // Przypadek 1: Serwer przesyła surowy ciąg tekstowy "Nick: wiadomość"
-            if (typeof data === 'string') {
-                const splitIdx = data.indexOf(':');
-                if (splitIdx !== -1) {
-                    sender = data.substring(0, splitIdx).trim();
-                    message = data.substring(splitIdx + 1).trim();
+                if (typeof data === 'string') {
+                    const splitIdx = data.indexOf(':');
+                    if (splitIdx !== -1) {
+                        sender = data.substring(0, splitIdx).trim();
+                        message = data.substring(splitIdx + 1).trim();
+                    } else {
+                        message = data;
+                    }
                 } else {
-                    message = data;
-                }
-            } else {
-                // Przypadek 2: Serwer przesyła obiekt (obsługa zagnieżdżonych struktur typu data.sender.username)
-                if (data.sender) {
-                    sender = (typeof data.sender === 'object') ? (data.sender.username || data.sender.name || data.sender.slug) : data.sender;
-                } else if (data.user) {
-                    sender = (typeof data.user === 'object') ? (data.user.username || data.user.name || data.user.nickname) : data.user;
-                } else {
-                    sender = data.username || data.nickname || data.slug || "";
+                    if (data.sender) {
+                        sender = (typeof data.sender === 'object') ? (data.sender.username || data.sender.name || data.sender.slug) : data.sender;
+                    } else if (data.user) {
+                        sender = (typeof data.user === 'object') ? (data.user.username || data.user.name || data.user.nickname) : data.user;
+                    } else {
+                        sender = data.username || data.nickname || data.slug || "";
+                    }
+
+                    if (data.message) {
+                        message = (typeof data.message === 'object') ? (data.message.content || data.message.text) : data.message;
+                    } else {
+                        message = data.content || data.text || data.msg || "";
+                    }
                 }
 
-                // Bezpieczne wyciąganie treści wiadomości
-                if (data.message) {
-                    message = (typeof data.message === 'object') ? (data.message.content || data.message.text) : data.message;
-                } else {
-                    message = data.content || data.text || data.msg || "";
+                if (sender) {
+                    handleIncomingUserActivity(sender, message);
                 }
-            }
-
-            // Jeśli pomyślnie wyciągnięto tekstowy nick nadawcy, przekaż do systemu weryfikacji
-            if (sender) {
-                handleIncomingUserActivity(String(sender).trim(), String(message).trim());
-            }
+            });
         });
 
         socket.on('keywordChanged', (kw) => {
@@ -461,7 +470,6 @@
                 ribbon.style.transform = `translateX(-${stopPosition}px)`;
             }, 50);
 
-            // ZATRZYMANIE BĘBNA
             setTimeout(() => {
                 const finalCell = document.getElementById("winning-ticker-cell");
                 if (finalCell) {
@@ -480,6 +488,8 @@
             
             verifyNick.innerText = winnerNick;
             verifyTimer.innerText = "60s";
+            verifyTimer.style.color = "var(--danger-red)";
+            verifyTimer.style.borderColor = "rgba(230, 57, 70, 0.2)";
             verifyChatBox.innerHTML = `<div id="chat-placeholder" style="color: #55486e; font-style: italic;">Oczekiwanie na dowolną wiadomość od @${winnerNick}...</div>`;
             btnReroll.style.display = 'none';
             verifyPanel.style.display = 'block';
@@ -494,16 +504,17 @@
             }, 1000);
         }
 
+        // ==================== SYSTEM WERYFIKACJI CZATU (ALPHANUMERIC CLEAN) ====================
         function handleIncomingUserActivity(sender, message) {
             if (!activeVerificationWinner) return;
 
-            // Pancerne porównanie: rzutowanie na String, obcięcie spacji, małe litery
-            const cleanSender = String(sender).trim().toLowerCase();
-            const cleanWinner = String(activeVerificationWinner).trim().toLowerCase();
+            // Zostaw tylko czyste litery i cyfry do porównania (usuwa spacje, małpki itp.)
+            const cleanSender = String(sender).replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+            const cleanWinner = String(activeVerificationWinner).replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
 
             if (cleanSender !== cleanWinner) return;
 
-            // Gdy gracz napisze po raz pierwszy: zatrzymaj odliczanie czasu i przypisz nagrodę
+            // Jeśli pierwsze uderzenie (aktywny zegar): zatrzymaj odliczanie i dodaj do tabeli
             if (verificationTimerInterval !== null) {
                 clearInterval(verificationTimerInterval);
                 verificationTimerInterval = null;
@@ -511,7 +522,7 @@
                 verifyTimer.innerText = "OK!";
                 verifyTimer.style.color = "var(--success-green)";
                 verifyTimer.style.borderColor = "var(--success-green)";
-                statusDisplay.innerText = `@${sender} potwierdził obecność!`;
+                statusDisplay.innerText = `@${activeVerificationWinner} potwierdził obecność!`;
 
                 const tcValue = tcInput.value || "0";
                 winnersList.push({ nick: activeVerificationWinner, status: 'verified' });
@@ -523,27 +534,29 @@
 
                 applyWinnerStyle(activeVerificationWinner, 'verified');
                 
-                // Usuń informację o oczekiwaniu
                 const placeholder = document.getElementById('chat-placeholder');
                 if (placeholder) placeholder.remove();
             }
 
-            // Wypisuj kolejne wiadomości użytkownika na bieżąco w polu tekstowym
+            // Drukuj wiadomość na żywo do ramki
             const div = document.createElement('div');
             div.className = 'chat-line';
             div.innerHTML = `<strong>${activeVerificationWinner}:</strong> ${message}`;
             verifyChatBox.appendChild(div);
             verifyChatBox.scrollTop = verifyChatBox.scrollHeight;
 
-            // Ukryj panel sprawdzania (zielone OK) po 5 sekundach od wysłania wiadomości (bęben zostaje)
+            const scopeWinner = activeVerificationWinner;
             setTimeout(() => {
-                if (activeVerificationWinner === winnerNickFromScope && verificationTimerInterval === null) {
+                if (activeVerificationWinner === scopeWinner && verificationTimerInterval === null) {
                     verifyPanel.style.display = 'none';
                 }
             }, 5000);
-            
-            // Zmienna pomocnicza do upewnienia się w timeoutach scope
-            const winnerNickFromScope = activeVerificationWinner;
+        }
+
+        // FUNKCJA RĘCZNEGO POTWIERDZENIA (Zabezpieczenie na wypadek braku eventów czatu na serwerze)
+        function manualVerify() {
+            if (!activeVerificationWinner) return;
+            handleIncomingUserActivity(activeVerificationWinner, "Obecność potwierdzona ręcznie przez administratora.");
         }
 
         function handleVerificationTimeout() {
