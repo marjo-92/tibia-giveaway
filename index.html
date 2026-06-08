@@ -2,6 +2,7 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
+    <title>KICK RAFFLE SYSTEM</title>
     <link rel="stylesheet" href="style.css">
     <script src="/socket.io/socket.io.js"></script>
 </head>
@@ -9,8 +10,8 @@
     <div class="panel sidebar">
         <h3>USTAWIENIA</h3>
         <input id="keyword" placeholder="Hasło">
-        <button onclick="updateKeyword()">ZAPISZ</button>
-        <button onclick="reset()" style="border-color: #ff4444; color: #ff4444;">RESET</button>
+        <button onclick="updateKeyword()">ZAPISZ HASŁO</button>
+        <button onclick="reset()" style="border-color: #ff4444; color: #ff4444;">RESET LISTY</button>
     </div>
 
     <div class="main">
@@ -23,14 +24,21 @@
     <script>
         const socket = io();
         const list = document.getElementById('participants-list');
+        const countSpan = document.getElementById('count');
 
         socket.on('init', (data) => {
+            list.innerHTML = "";
             data.participants.forEach(p => renderParticipant(p));
             updateCount();
         });
 
         socket.on('newParticipant', (sender) => {
             renderParticipant(sender);
+            updateCount();
+        });
+
+        socket.on('participantsReset', () => {
+            list.innerHTML = "";
             updateCount();
         });
 
@@ -45,7 +53,7 @@
         }
 
         function updateCount() {
-            document.getElementById('count').innerText = list.children.length;
+            countSpan.innerText = list.children.length;
         }
 
         function updateKeyword() {
@@ -54,8 +62,6 @@
 
         function reset() {
             socket.emit('reset');
-            list.innerHTML = "";
-            updateCount();
         }
     </script>
 </body>
