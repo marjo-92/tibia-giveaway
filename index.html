@@ -7,39 +7,113 @@
     <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
-    <div class="panel sidebar">
-        <h3>USTAWIENIA</h3>
-        <input id="keyword" placeholder="Hasło">
-        <button onclick="updateKeyword()">ZAPISZ HASŁO</button>
-        <button onclick="reset()" style="border-color: #ff4444; color: #ff4444;">RESET LISTY</button>
+
+    <div class="navbar">
+        <div class="brand">Kick Raffle System</div>
     </div>
 
-    <div class="main">
-        <div class="panel">UCZESTNICY: <span id="count">0</span></div>
-        <div id="participants-list"></div>
-    </div>
+    <div class="app-container">
+        
+        <div class="panel sidebar">
+            <div class="tabs">
+                <div class="tab active">RAFFLE</div>
+                <div class="tab">KOŁO</div>
+            </div>
+            <div class="section-title">Ustawienia</div>
+            
+            <div class="form-group">
+                <label>Słowo kluczowe (opcjonalne):</label>
+                <input id="keyword-input" placeholder="Wpisz hasło i kliknij zapisz">
+            </div>
+            <button class="btn-secondary" onclick="saveKeyword()" style="margin-bottom: 15px;">ZAPISZ HASŁO</button>
+            
+            <div class="form-group">
+                <label>Liczba zwycięzców:</label>
+                <input type="number" value="1" min="1">
+            </div>
+            <div class="form-group">
+                <label>Czas trwania animacji (sekundy):</label>
+                <input type="range" min="1" max="30" value="8">
+            </div>
 
-    <div class="panel winners"><h3>ZWYCIĘZCY</h3></div>
+            <button class="btn-primary" onclick="triggerStartFight()">Rozpocznij losowanie</button>
+        </div>
+
+        <div class="main-content">
+            <div class="widgets-grid">
+                <div class="widget">
+                    <div class="widget-icon">🎁</div>
+                    <div class="widget-info">
+                        <span class="widget-label">Losowanie</span>
+                        <span class="widget-value" id="status-display">-</span>
+                    </div>
+                </div>
+                <div class="widget">
+                    <div class="widget-icon">🔑</div>
+                    <div class="widget-info">
+                        <span class="widget-label">Hasło</span>
+                        <span class="widget-value" id="password-display">BRAK HASŁA</span>
+                    </div>
+                </div>
+                <div class="widget">
+                    <div class="widget-icon">👥</div>
+                    <div class="widget-info">
+                        <span class="widget-label">Uczestników</span>
+                        <span class="widget-value" id="count-display">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="arena" id="participants-grid"></div>
+
+            <div class="bottom-actions">
+                <button class="btn-secondary">Wylosuj zwycięzcę</button>
+                <button class="btn-secondary">Przemieszaj</button>
+                <button class="btn-secondary btn-danger" onclick="triggerReset()">Resetuj</button>
+            </div>
+        </div>
+
+        <div class="panel winners-sidebar">
+            <div class="winners-header">
+                <div class="section-title" style="margin:0;">Zwycięzcy</div>
+                <span class="badge" id="winners-count">0</span>
+            </div>
+            <div class="winners-list" id="winners-box"></div>
+            <button class="btn-secondary btn-danger" style="margin-top:15px;" onclick="triggerReset()">Wyczyść wszystkie dane</button>
+        </div>
+
+    </div>
 
     <script>
         const socket = io();
-        const list = document.getElementById('participants-list');
-        const countSpan = document.getElementById('count');
+        const grid = document.getElementById('participants-grid');
+        const countDisplay = document.getElementById('count-display');
+        const passwordDisplay = document.getElementById('password-display');
 
+        // Obsługa inicjalizacji
         socket.on('init', (data) => {
-            list.innerHTML = "";
+            grid.innerHTML = "";
+            passwordDisplay.innerText = data.keyword ? data.keyword.toUpperCase() : "BRAK HASŁA";
+            document.getElementById('keyword-input').value = data.keyword;
             data.participants.forEach(p => renderParticipant(p));
-            updateCount();
+            updateCounter();
         });
 
+        // Nasłuchiwanie na nowego uczestnika (Twoje sprawdzone wydarzenie)
         socket.on('newParticipant', (sender) => {
             renderParticipant(sender);
-            updateCount();
+            updateCounter();
         });
 
+        // Nasłuchiwanie na zmianę hasła ze strony serwera
+        socket.on('keywordChanged', (kw) => {
+            passwordDisplay.innerText = kw ? kw.toUpperCase() : "BRAK HASŁA";
+        });
+
+        // Nasłuchiwanie na reset
         socket.on('participantsReset', () => {
-            list.innerHTML = "";
-            updateCount();
+            grid.innerHTML = "";
+            updateCounter();
         });
 
         function renderParticipant(sender) {
@@ -48,20 +122,25 @@
                 div.className = 'p-card';
                 div.id = 'p-' + sender;
                 div.innerText = sender;
-                list.appendChild(div);
+                grid.appendChild(div);
             }
         }
 
-        function updateCount() {
-            countSpan.innerText = list.children.length;
+        function updateCounter() {
+            countDisplay.innerText = grid.children.length;
         }
 
-        function updateKeyword() {
-            socket.emit('updateKeyword', document.getElementById('keyword').value);
+        function saveKeyword() {
+            const val = document.getElementById('keyword-input').value;
+            socket.emit('updateKeyword', val);
         }
 
-        function reset() {
+        function triggerReset() {
             socket.emit('reset');
+        }
+
+        function triggerStartFight() {
+            socket.emit('startFight');
         }
     </script>
 </body>
