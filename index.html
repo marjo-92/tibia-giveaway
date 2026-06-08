@@ -147,7 +147,17 @@
         }
         .ticker-pointer::before { content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%); border-left: 10px solid transparent; border-right: 10px solid transparent; border-top: 10px solid var(--accent-glow); }
         .ticker-pointer::after { content: ''; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); border-left: 10px solid transparent; border-right: 10px solid transparent; border-bottom: 10px solid var(--accent-glow); }
-        .ticker-ribbon { display: flex; position: absolute; left: 0; top: 0; height: 100%; will-change: transform; }
+        
+        /* POPRAWKA: fill-mode forwards blokuje powrót bębna na środek ekranu */
+        .ticker-ribbon { 
+            display: flex; 
+            position: absolute; 
+            left: 0; 
+            top: 0; 
+            height: 100%; 
+            will-change: transform;
+            animation-fill-mode: forwards !important;
+        }
         
         .ticker-item {
             min-width: 170px; max-width: 170px; height: 100%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.9rem; border-right: 1px solid rgba(255,255,255,0.04); color: var(--text-main); box-sizing: border-box; background: linear-gradient(180deg, #1d1430 0%, #130d21 100%);
@@ -257,7 +267,7 @@
 
             <div class="verify-panel" id="verify-panel">
                 <div class="verify-header">
-                    <div class="verify-user">Spraw रंजन obecności: <span id="verify-nick" style="color: var(--accent-glow);">Nick</span></div>
+                    <div class="verify-user">Sprawdzanie obecności: <span id="verify-nick" style="color: var(--accent-glow);">Nick</span></div>
                     <div class="verify-timer-box">
                         <div class="verify-timer" id="verify-timer">60s</div>
                     </div>
@@ -487,17 +497,18 @@
                 return;
             }
 
-            closeVerificationPanel();
-            const randomIndex = Math.floor(Math.random() * available.length);
-            const winner = available[randomIndex];
-
+            // KROK 1: Czyścimy klasy i pozycję bez wywoływania ukrywania wrappera!
+            ribbon.style.transition = "none";
+            ribbon.style.transform = "translateX(0px)";
+            
+            // Tworzymy na nowo strukturę do losowania
             const itemWidth = 170; const targetIndex = 26; const totalItems = 34;
-            ribbon.innerHTML = ""; ribbon.style.transition = "none"; ribbon.style.transform = "translateX(0px)";
+            ribbon.innerHTML = "";
 
             for (let i = 0; i < totalItems; i++) {
                 const el = document.createElement('div'); el.className = 'ticker-item';
                 if (i === targetIndex) { 
-                    el.innerText = winner; 
+                    el.innerText = winner = available[randomIndex = Math.floor(Math.random() * available.length)]; 
                     el.id = "winning-ticker-cell"; 
                 } 
                 else { el.innerText = available[Math.floor(Math.random() * available.length)] || "..."; }
@@ -508,10 +519,10 @@
             const drawDurationMs = drawDurationSeconds * 1000;
 
             wrapper.style.display = 'block';
+            
+            // KROK 2: Odpalamy animację przesunięcia. Domyślnie zablokowaliśmy jej powrót.
             setTimeout(() => {
                 const stopPosition = (targetIndex * itemWidth) + (itemWidth / 2) - (wrapper.offsetWidth / 2);
-                
-                // DODANIE ELEMENTU DRAMATYZMU (cubic-bezier z delikatnym Fake-Out/Overshoot na końcu)
                 ribbon.style.transition = `transform ${drawDurationSeconds}s cubic-bezier(0.1, 1, 0.3, 1.05)`;
                 ribbon.style.transform = `translateX(-${stopPosition}px)`;
             }, 50);
