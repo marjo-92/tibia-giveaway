@@ -112,7 +112,7 @@
 
         .sidebar-right { width: 320px; min-width: 320px; }
         .table-container { flex: 1; overflow-y: auto; background-color: var(--bg-input); border-radius: 8px; border: 1px solid var(--border-card); }
-        <table> width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
         th { background-color: rgba(0,0,0,0.3); color: var(--text-muted); padding: 12px; font-weight: 700; text-transform: uppercase; font-size: 0.75rem; border-bottom: 1px solid var(--border-card); }
         td { padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.03); font-weight: 600; }
         .td-tc { text-align: right; color: var(--accent-glow); }
@@ -186,7 +186,6 @@
         <hr style="border: 0; border-top: 1px solid var(--border-card); margin-bottom: 25px; width: 100%;">
 
         <button class="btn-save" style="width: 100%; padding: 15px; font-size: 0.9rem;" onclick="triggerStartFight()">Rozpocznij losowanie</button>
-        <button class="btn-action" style="width: 100%;" onclick="startCinematicDraw()">Wylosuj zwycięzcę</button>
         <button class="btn-action" style="width: 100%;" onclick="shuffleParticipants()">Przemieszaj</button>
     </div>
 
@@ -268,8 +267,10 @@
             localParticipants = data.participants || [];
             if (data.keyword) {
                 passwordDisplay.innerText = data.keyword.toUpperCase();
+                keywordInput.value = data.keyword;
             } else {
                 passwordDisplay.innerText = "-";
+                keywordInput.value = "";
             }
             localParticipants.forEach(p => renderParticipant(p));
             updateCounter();
@@ -351,17 +352,28 @@
                 return;
             }
             socket.emit('updateKeyword', newKeyword);
-            keywordInput.value = ""; 
         }
 
         socket.on('keywordChanged', (kw) => { 
             passwordDisplay.innerText = kw ? kw.toUpperCase() : "-"; 
+            keywordInput.value = kw || "";
             statusDisplay.innerText = "Zaktualizowano hasło losowania!";
         });
         
         socket.on('participantsReset', () => {
-            grid.innerHTML = ""; winnersTableBody.innerHTML = ""; localParticipants = []; winnersList = [];
-            statusDisplay.innerText = "Zresetowano system"; wrapper.style.display = 'none'; resetVerificationState(); updateCounter();
+            grid.innerHTML = ""; 
+            winnersTableBody.innerHTML = ""; 
+            localParticipants = []; 
+            winnersList = [];
+            keywordInput.value = "";
+            tcInput.value = "";
+            participantSlider.value = 1;
+            document.getElementById('slider-val').innerText = "1";
+            passwordDisplay.innerText = "-";
+            statusDisplay.innerText = "Zresetowano system"; 
+            wrapper.style.display = 'none'; 
+            resetVerificationState(); 
+            updateCounter();
         });
         
         socket.on('triggerFight', () => { startCinematicDraw(); });
@@ -372,7 +384,11 @@
             }
         }
         function updateCounter() { countDisplay.innerText = localParticipants.length; }
-        function triggerReset() { socket.emit('reset'); }
+        
+        function triggerReset() { 
+            socket.emit('reset'); 
+        }
+        
         function triggerStartFight() { socket.emit('startFight'); }
 
         function shuffleParticipants() {
