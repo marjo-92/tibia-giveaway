@@ -16,6 +16,7 @@
             --border-panel: #2f1e47;
             --border-card: #3c265c;
             --danger-red: #e63946;
+            --success-green: #2a9d8f;
         }
 
         body {
@@ -211,7 +212,21 @@
             transition: all 0.3s ease;
         }
 
-        /* Fioletowy pasek przewijania */
+        /* Style dla wygranej/przegranej na liście głównej */
+        .p-card.winner-active {
+            border-color: var(--accent-glow) !important;
+            background-color: rgba(182, 36, 255, 0.15) !important;
+            color: var(--accent-glow) !important;
+            box-shadow: 0 0 12px rgba(182, 36, 255, 0.4);
+        }
+        .p-card.winner-disqualified {
+            border-color: var(--danger-red) !important;
+            background-color: rgba(230, 57, 70, 0.1) !important;
+            color: var(--danger-red) !important;
+            text-decoration: line-through;
+            opacity: 0.6;
+        }
+
         .arena::-webkit-scrollbar { width: 6px; }
         .arena::-webkit-scrollbar-track { background: transparent; }
         .arena::-webkit-scrollbar-thumb { background: var(--border-card); border-radius: 10px; }
@@ -238,8 +253,17 @@
         }
         td { padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.03); font-weight: 600; }
         .td-tc { text-align: right; color: var(--accent-glow); }
+        
+        /* Style wierszy w tabeli zwycięzców */
+        .tr-disqualified td {
+            color: var(--danger-red) !important;
+            text-decoration: line-through;
+        }
+        .tr-disqualified .td-tc {
+            color: var(--danger-red) !important;
+        }
 
-        /* ==================== BĘBEN LOSUJĄCY (U GÓRY ARENY) ==================== */
+        /* ==================== BĘBEN LOSUJĄCY ==================== */
         .ticker-wrapper {
             display: none;
             position: relative;
@@ -250,11 +274,10 @@
             border-radius: 12px;
             overflow: hidden;
             box-shadow: inset 0 0 20px rgba(0,0,0,0.9);
-            margin-bottom: 20px; /* Margines oddzielający bęben od siatki pod spodem */
+            margin-bottom: 15px;
             flex-shrink: 0;
         }
 
-        /* Celownik na środku */
         .ticker-pointer {
             position: absolute;
             top: 0; bottom: 0; left: 50%;
@@ -266,38 +289,99 @@
         }
         .ticker-pointer::before {
             content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
-            border-left: 10px solid transparent; border-right: 10px solid transparent;
-            border-top: 10px solid var(--accent-glow);
+            border-left: 10px solid transparent; border-right: 10px solid transparent; border-top: 10px solid var(--accent-glow);
         }
         .ticker-pointer::after {
             content: ''; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
-            border-left: 10px solid transparent; border-right: 10px solid transparent;
-            border-bottom: 10px solid var(--accent-glow);
+            border-left: 10px solid transparent; border-right: 10px solid transparent; border-bottom: 10px solid var(--accent-glow);
         }
 
-        /* Ruchoma taśma */
-        .ticker-ribbon {
-            display: flex;
-            position: absolute;
-            left: 0; top: 0; height: 100%;
-            will-change: transform;
-        }
+        .ticker-ribbon { display: flex; position: absolute; left: 0; top: 0; height: 100%; will-change: transform; }
 
-        /* Element w bębnie */
         .ticker-item {
-            min-width: 170px;
-            max-width: 170px;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            font-size: 1.1rem;
-            border-right: 1px solid rgba(255,255,255,0.04);
-            color: var(--text-main);
-            box-sizing: border-box;
+            min-width: 170px; max-width: 170px; height: 100%;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 1.1rem;
+            border-right: 1px solid rgba(255,255,255,0.04); color: var(--text-main); box-sizing: border-box;
             background: linear-gradient(180deg, #1d1430 0%, #130d21 100%);
             transition: color 0.4s ease, text-shadow 0.4s ease;
+        }
+
+        /* ==================== PANEL WERYFIKACJI CZATU ==================== */
+        .verify-panel {
+            display: none;
+            background: #0f0a1c;
+            border: 2px solid var(--border-card);
+            border-radius: 12px;
+            padding: 15px 20px;
+            margin-bottom: 15px;
+            flex-shrink: 0;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+        }
+
+        .verify-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .verify-user {
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: #fff;
+        }
+
+        .verify-timer {
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: var(--danger-red);
+            background: rgba(230, 57, 70, 0.1);
+            padding: 4px 12px;
+            border-radius: 6px;
+            border: 1px solid rgba(230, 57, 70, 0.2);
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* Box z wiadomościami z czatu */
+        .verify-chat-box {
+            background: #07040c;
+            border: 1px solid var(--border-panel);
+            border-radius: 8px;
+            padding: 10px;
+            height: 60px;
+            overflow-y: auto;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            text-align: left;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .chat-line {
+            animation: fadeIn 0.3s ease forwards;
+            word-break: break-all;
+        }
+        .chat-line strong { color: var(--accent-glow); }
+
+        .btn-reroll {
+            display: none;
+            width: 100%;
+            background-color: var(--danger-red);
+            color: #fff;
+            padding: 12px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            margin-top: 10px;
+            box-shadow: 0 0 15px rgba(230, 57, 70, 0.4);
+            animation: pulseGlow 1.5s infinite;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(2px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes pulseGlow { 
+            0% { box-shadow: 0 0 10px rgba(230, 57, 70, 0.4); } 
+            50% { box-shadow: 0 0 20px rgba(230, 57, 70, 0.7); } 
+            100% { box-shadow: 0 0 10px rgba(230, 57, 70, 0.4); } 
         }
     </style>
 </head>
@@ -348,6 +432,17 @@
                 <div id="ticker-ribbon" class="ticker-ribbon"></div>
             </div>
 
+            <div class="verify-panel" id="verify-panel">
+                <div class="verify-header">
+                    <div class="verify-user">Sprawdzanie obecności: <span id="verify-nick" style="color: var(--accent-glow);">Nick</span></div>
+                    <div class="verify-timer" id="verify-timer">60s</div>
+                </div>
+                <div class="verify-chat-box" id="verify-chat-box">
+                    <div style="color: #55486e; font-style: italic;">Oczekiwanie na dowolną wiadomość na czacie...</div>
+                </div>
+                <button class="btn-reroll" id="btn-reroll" onclick="rerollDraw()">Ponowne losowanie (Reroll)</button>
+            </div>
+
             <div class="arena" id="participants-grid"></div>
         </div>
     </div>
@@ -372,6 +467,11 @@
         let localParticipants = [];
         let winnersList = [];
 
+        // Zmienne weryfikacji
+        let activeVerificationWinner = null;
+        let verificationTimerInterval = null;
+        let verificationTimeLeft = 60;
+
         const grid = document.getElementById('participants-grid');
         const countDisplay = document.getElementById('count-display');
         const passwordDisplay = document.getElementById('password-display');
@@ -383,6 +483,13 @@
         
         const ribbon = document.getElementById('ticker-ribbon');
         const wrapper = document.getElementById('ticker-wrapper');
+        
+        // Elementy panelu weryfikacji
+        const verifyPanel = document.getElementById('verify-panel');
+        const verifyNick = document.getElementById('verify-nick');
+        const verifyTimer = document.getElementById('verify-timer');
+        const verifyChatBox = document.getElementById('verify-chat-box');
+        const btnReroll = document.getElementById('btn-reroll');
 
         socket.on('init', (data) => {
             grid.innerHTML = "";
@@ -393,12 +500,22 @@
             updateCounter();
         });
 
+        // Nasłuchiwanie nowych osób (i jednoczesny fallback sprawdzania aktywności)
         socket.on('newParticipant', (sender) => {
             if (!localParticipants.includes(sender)) {
                 localParticipants.push(sender);
                 renderParticipant(sender);
                 updateCounter();
                 grid.scrollTop = grid.scrollHeight;
+            }
+            // Fallback: jeśli serwer nie przesyła czatu osobno, wpisanie hasła ponownie też zalicza test
+            handleIncomingUserActivity(sender, "Wpisał słowo kluczowe w celu dołączenia/potwierdzenia!");
+        });
+
+        // NOWOŚĆ: Rejestrowanie ogólnych wiadomości z czatu do weryfikacji wygranego
+        socket.on('chatMessage', (data) => {
+            if(data && data.sender) {
+                handleIncomingUserActivity(data.sender, data.message);
             }
         });
 
@@ -414,6 +531,7 @@
             winnersList = [];
             statusDisplay.innerText = "Zresetowano system";
             wrapper.style.display = 'none';
+            resetVerificationState();
             updateCounter();
         });
 
@@ -440,17 +558,9 @@
             countDisplay.innerText = localParticipants.length;
         }
 
-        function saveKeyword() {
-            socket.emit('updateKeyword', keywordInput.value);
-        }
-
-        function triggerReset() {
-            socket.emit('reset');
-        }
-
-        function triggerStartFight() {
-            socket.emit('startFight');
-        }
+        function saveKeyword() { socket.emit('updateKeyword', keywordInput.value); }
+        function triggerReset() { socket.emit('reset'); }
+        function triggerStartFight() { socket.emit('startFight'); }
 
         function shuffleParticipants() {
             if (localParticipants.length < 2) return;
@@ -461,28 +571,39 @@
             grid.innerHTML = "";
             localParticipants.forEach(p => {
                 renderParticipant(p);
-                if (winnersList.includes(p)) applyWinnerStyle(p);
+                // Odtworzenie stylów jeśli ktoś jest na liście zwycięzców
+                const winnerObj = winnersList.find(w => w.nick === p);
+                if (winnerObj) {
+                    applyWinnerStyle(p, winnerObj.status);
+                }
             });
         }
 
-        function applyWinnerStyle(winnerNick) {
+        function applyWinnerStyle(winnerNick, status) {
             const card = document.getElementById('p-' + winnerNick);
             if (card) {
-                card.style.borderColor = 'var(--accent-glow)';
-                card.style.backgroundColor = 'rgba(182, 36, 255, 0.15)';
-                card.style.color = 'var(--accent-glow)';
-                card.style.boxShadow = '0 0 12px rgba(182, 36, 255, 0.4)';
+                card.className = 'p-card'; // Czyszczenie klas
+                if (status === 'verified') {
+                    card.classList.add('winner-active');
+                } else if (status === 'disqualified') {
+                    card.classList.add('winner-disqualified');
+                }
             }
         }
 
-        // ==================== ZMODYFIKOWANA LOGIKA BĘBNA ====================
+        // ==================== LOGIKA BĘBNA I WERYFIKACJI ====================
         function startCinematicDraw() {
-            const available = localParticipants.filter(p => !winnersList.includes(p));
+            // Szukamy osób, które jeszcze nie wygrały ORAZ nie zostały zdyskwalifikowane
+            const excludedNicks = winnersList.map(w => w.nick);
+            const available = localParticipants.filter(p => !excludedNicks.includes(p));
             
             if (available.length === 0) {
                 statusDisplay.innerText = "Brak wolnych uczestników!";
                 return;
             }
+
+            // Reset poprzedniej weryfikacji przed nowym losowaniem
+            resetVerificationState();
 
             const randomIndex = Math.floor(Math.random() * available.length);
             const winner = available[randomIndex];
@@ -495,14 +616,13 @@
             ribbon.style.transition = "none";
             ribbon.style.transform = "translateX(0px)";
 
-            // Generujemy taśmę losującą
             for (let i = 0; i < totalItems; i++) {
                 const el = document.createElement('div');
                 el.className = 'ticker-item';
                 
                 if (i === targetIndex) {
                     el.innerText = winner;
-                    el.id = "winning-ticker-cell"; // Nadajemy ID, żeby podświetlić go dopiero na końcu!
+                    el.id = "winning-ticker-cell";
                 } else {
                     const randP = localParticipants[Math.floor(Math.random() * localParticipants.length)];
                     el.innerText = randP || "...";
@@ -510,48 +630,137 @@
                 ribbon.appendChild(el);
             }
 
-            // Pokazujemy bęben U GÓRY tabelki (Siatka pod spodem zostaje widoczna)
             wrapper.style.display = 'block';
             statusDisplay.innerText = "Losowanie w toku...";
 
-            // Rozpoczęcie kręcenia
             setTimeout(() => {
                 const wrapperWidth = wrapper.offsetWidth;
-                const randomInnerOffset = Math.floor(Math.random() * 60) - 30; // Losowy offset stanięcia w celowniku (+/- 30px)
+                const randomInnerOffset = Math.floor(Math.random() * 60) - 30;
                 const stopPosition = (targetIndex * itemWidth) + (itemWidth / 2) - (wrapperWidth / 2) + randomInnerOffset;
 
                 ribbon.style.transition = "transform 4.5s cubic-bezier(0.1, 1, 0.1, 1)";
                 ribbon.style.transform = `translateX(-${stopPosition}px)`;
             }, 50);
 
-            // Zatrzymanie bębna (po 4.5 sekundy)
+            // ZATRZYMANIE BĘBNA (Konspiracja pęka)
             setTimeout(() => {
-                // 1. DOPIERO TERAZ podświetlamy nick na bębnie, kiedy maszyna stoi w miejscu
                 const finalCell = document.getElementById("winning-ticker-cell");
                 if (finalCell) {
                     finalCell.style.color = 'var(--accent-glow)';
                     finalCell.style.textShadow = '0 0 12px var(--accent-glow)';
                 }
 
-                // 2. Dodajemy do tablicy i bazy wygranych
-                winnersList.push(winner);
-                const tcValue = tcInput.value || "0";
+                statusDisplay.innerText = `Wylosowano: ${winner}! Sprawdzanie obecności...`;
+                
+                // Uruchomienie procedury sprawdzania obecności na czacie
+                startVerificationStage(winner);
 
-                // 3. Dodajemy wiersz po prawej stronie
-                const tr = document.createElement('tr');
-                tr.innerHTML = `<td>${winner}</td><td class="td-tc">${tcValue} TC</td>`;
-                winnersTableBody.appendChild(tr);
-
-                // 4. Zapalamy fiolet na dole w siatce nicków
-                applyWinnerStyle(winner);
-                statusDisplay.innerText = `Wygrywa: ${winner}!`;
-
-                // Trzymamy podświetlony wynik przez 3 sekundy, po czym chowamy bęben
+                // Ukrycie bębna po 3 sekundach zachwytu
                 setTimeout(() => {
                     wrapper.style.display = 'none';
                 }, 3000);
 
             }, 4550);
+        }
+
+        // START LICZNIKA 60 SEKUND
+        function startVerificationStage(winnerNick) {
+            activeVerificationWinner = winnerNick;
+            verificationTimeLeft = 60;
+            
+            verifyNick.innerText = winnerNick;
+            verifyTimer.innerText = "60s";
+            verifyChatBox.innerHTML = `<div style="color: #55486e; font-style: italic;">Oczekiwanie na wiadomość od @${winnerNick}...</div>`;
+            btnReroll.style.display = 'none';
+            verifyPanel.style.display = 'block';
+
+            verificationTimerInterval = setInterval(() => {
+                verificationTimeLeft--;
+                verifyTimer.innerText = verificationTimeLeft + "s";
+
+                if (verificationTimeLeft <= 0) {
+                    handleVerificationTimeout();
+                }
+            }, 1000);
+        }
+
+        // FUNKCJA OBSŁUGUJĄCA AKTYWNOŚĆ Z CZATU
+        function handleIncomingUserActivity(sender, message) {
+            if (!activeVerificationWinner || sender.toLowerCase() !== activeVerificationWinner.toLowerCase()) return;
+
+            // Gracz napisał na czacie! Zatrzymujemy timer
+            clearInterval(verificationTimerInterval);
+
+            // Dodaj wpis do okienka weryfikacji na ekranie
+            verifyChatBox.innerHTML = `<div class="chat-line"><strong>${sender}:</strong> ${message}</div>`;
+            verifyTimer.innerText = "OK!";
+            verifyTimer.style.color = "var(--success-green)";
+            verifyTimer.style.borderColor = "var(--success-green)";
+            
+            statusDisplay.innerText = `@${sender} potwierdził obecność!`;
+
+            // Dopisz oficjalnie do listy zwycięzców jako ZWERYFIKOWANY
+            const tcValue = tcInput.value || "0";
+            winnersList.push({ nick: sender, status: 'verified' });
+
+            // Dodanie normalnego wiersza do tabeli po prawej
+            const tr = document.createElement('tr');
+            tr.id = `table-winner-${sender}`;
+            tr.innerHTML = `<td>${sender}</td><td class="td-tc">${tcValue} TC</td>`;
+            winnersTableBody.appendChild(tr);
+
+            // Podświetlenie neonem fioletowym w głównej siatce
+            applyWinnerStyle(sender, 'verified');
+
+            // Zamknij panel weryfikacji automatycznie po 4 sekundach sukcesu
+            setTimeout(() => {
+                if (activeVerificationWinner === sender) {
+                    resetVerificationState();
+                }
+            }, 4000);
+        }
+
+        // MINĘŁO 60 SEKUND (BRAK REAKCJI)
+        function handleVerificationTimeout() {
+            clearInterval(verificationTimerInterval);
+            verifyTimer.innerText = "BRAK!";
+            statusDisplay.innerText = `@${activeVerificationWinner} nie odpowiedział na czas! Disqualify.`;
+
+            const sender = activeVerificationWinner;
+            const tcValue = tcInput.value || "0";
+
+            // Zapisujemy na listę jako zdyskwalifikowany
+            winnersList.push({ nick: sender, status: 'disqualified' });
+
+            // DODANIE DO TABELI ZWYCIĘZCÓW W CZERWONEJ RAMCE I PRZEKREŚLONEGO
+            const tr = document.createElement('tr');
+            tr.id = `table-winner-${sender}`;
+            tr.className = 'tr-disqualified';
+            tr.style.border = "1px solid var(--danger-red)";
+            tr.style.borderRadius = "6px";
+            tr.innerHTML = `<td>${sender} (BRAK)</td><td class="td-tc">${tcValue} TC</td>`;
+            winnersTableBody.appendChild(tr);
+
+            // Zmiana ramki na liście głównej (czerwona + przekreślenie)
+            applyWinnerStyle(sender, 'disqualified');
+
+            // WYŚWIETLENIE PRZYCISKU REROLL
+            btnReroll.style.display = 'block';
+        }
+
+        // KLIKNIĘCIE PRZYCISKU REROLL
+        function rerollDraw() {
+            resetVerificationState();
+            startCinematicDraw();
+        }
+
+        // CZYSZCZENIE STANU
+        function resetVerificationState() {
+            clearInterval(verificationTimerInterval);
+            activeVerificationWinner = null;
+            verifyPanel.style.display = 'none';
+            verifyTimer.style.color = "var(--danger-red)";
+            verifyTimer.style.borderColor = "rgba(230, 57, 70, 0.2)";
         }
     </script>
 </body>
