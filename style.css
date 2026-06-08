@@ -1,14 +1,209 @@
-:root { --accent: #00ff41; --bg: #0f1115; --panel: #1a1d23; }
-body { background: var(--bg); color: #fff; font-family: 'Roboto', sans-serif; display: flex; height: 100vh; padding: 20px; box-sizing: border-box; }
+:root {
+    --bg-main: #0b0c10;
+    --bg-panel: #13151b;
+    --bg-input: #1b1e25;
+    --kick-green: #53fc18;
+    --kick-green-hover: #45d612;
+    --text-main: #eff1f5;
+    --text-muted: #717684;
+    --border-color: #21242c;
+    --danger-red: #ea4335;
+}
 
-.panel { background: var(--panel); border: 1px solid #333; border-radius: 12px; padding: 20px; }
-.sidebar { width: 300px; display: flex; flex-direction: column; gap: 15px; }
-.main { flex: 1; margin: 0 20px; display: flex; flex-direction: column; gap: 15px; }
-.winners { width: 250px; }
+body {
+    background-color: var(--bg-main);
+    color: var(--text-main);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    margin: 0;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    box-sizing: border-box;
+}
 
-input { background: #262a33; border: 1px solid #444; color: white; padding: 10px; border-radius: 5px; width: 100%; box-sizing: border-box; }
-button { background: transparent; border: 1px solid var(--accent); color: var(--accent); padding: 10px; border-radius: 5px; cursor: pointer; text-transform: uppercase; font-weight: bold; }
-button:hover { background: var(--accent); color: #000; }
+/* Górny pasek nawigacji */
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 10px 15px 10px;
+}
+.brand {
+    color: var(--kick-green);
+    font-weight: 800;
+    font-size: 1.3rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
 
-#participants-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; padding: 10px; overflow-y: auto; flex: 1; }
-.p-card { background: #262a33; padding: 10px; border-radius: 4px; text-align: center; border: 1px solid #444; }
+/* Główny układ trzech kolumn */
+.app-container {
+    display: flex;
+    flex: 1;
+    gap: 15px;
+    overflow: hidden;
+}
+
+.panel {
+    background-color: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Lewa kolumna: Ustawienia */
+.sidebar {
+    width: 280px;
+}
+.tabs {
+    display: flex;
+    border-bottom: 2px solid var(--border-color);
+    margin-bottom: 15px;
+}
+.tab {
+    flex: 1;
+    text-align: center;
+    padding: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+.tab.active {
+    color: var(--kick-green);
+    border-bottom: 2px solid var(--kick-green);
+    margin-bottom: -2px;
+}
+.section-title {
+    font-size: 0.95rem;
+    font-weight: bold;
+    margin-bottom: 15px;
+}
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 12px;
+}
+.form-group label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+input, select {
+    background-color: var(--bg-input);
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
+    padding: 10px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+}
+.btn-primary {
+    background-color: var(--kick-green);
+    color: #000;
+    border: none;
+    padding: 12px;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    margin-top: auto;
+}
+.btn-primary:hover { background-color: var(--kick-green-hover); }
+
+/* Środkowa kolumna: Widgety i arena */
+.main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+.widgets-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+}
+.widget {
+    background-color: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 15px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+.widget-icon { font-size: 1.5rem; }
+.widget-info { display: flex; flex-direction: column; }
+.widget-label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; }
+.widget-value { font-size: 1.1rem; font-weight: bold; }
+
+.arena {
+    flex: 1;
+    background-color: #0a0b0e;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 15px;
+    overflow-y: auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    grid-auto-rows: max-content;
+    gap: 10px;
+}
+.p-card {
+    background-color: var(--bg-input);
+    border: 1px solid var(--border-color);
+    padding: 8px;
+    border-radius: 6px;
+    text-align: center;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.bottom-actions {
+    display: flex;
+    gap: 10px;
+}
+.btn-secondary {
+    background-color: var(--bg-input);
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
+    padding: 10px 15px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.8rem;
+}
+.btn-danger {
+    background-color: rgba(234, 67, 53, 0.1);
+    border: 1px solid var(--danger-red);
+    color: var(--danger-red);
+}
+
+/* Prawa kolumna: Zwycięzcy */
+.winners-sidebar {
+    width: 240px;
+}
+.winners-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+.badge {
+    background-color: var(--kick-green);
+    color: #000;
+    font-size: 0.75rem;
+    font-weight: bold;
+    padding: 2px 8px;
+    border-radius: 10px;
+}
+.winners-list {
+    flex: 1;
+    background-color: #0a0b0e;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 10px;
+    overflow-y: auto;
+}
