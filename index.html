@@ -500,9 +500,11 @@
             const winner = available[randomIndex];
 
             const itemWidth = 170; const targetIndex = 26; const totalItems = 34;
-            ribbon.innerHTML = ""; 
+            
+            // CAŁKOWITY RESET STYLÓW PRZED KOLEJNYM LOSOWANIEM
             ribbon.style.transition = "none"; 
             ribbon.style.transform = "translateX(0px)";
+            ribbon.innerHTML = ""; 
 
             for (let i = 0; i < totalItems; i++) {
                 const el = document.createElement('div'); el.className = 'ticker-item';
@@ -517,19 +519,21 @@
             const drawDurationSeconds = parseFloat(timeSlider.value) || 20;
             const drawDurationMs = drawDurationSeconds * 1000;
             
-            // Dokładna pozycja końcowa w pikselach
-            const stopPosition = (targetIndex * itemWidth) + (itemWidth / 2) - (wrapper.offsetWidth / 2);
-
             wrapper.style.display = 'block';
             
+            // KROK DOKŁADNEGO CELOWANIA: Matematyczne wyrównanie na środek okna
+            const halfWrapper = wrapper.offsetWidth / 2;
+            const halfItem = itemWidth / 2;
+            const stopPosition = (targetIndex * itemWidth) + halfItem - halfWrapper;
+
             setTimeout(() => {
-                // POPRAWKA: Nowy cubic-bezier sprawia, że start jest piorunująco szybki, a zwalnianie rozciąga się równomiernie do samego końca
-                ribbon.style.transition = `transform ${drawDurationSeconds}s cubic-bezier(0, 0.9, 0.1, 1)`;
+                // SYSTEMATYCZNE, PŁYNNE WYTRACANIE PRĘDKOŚCI (Perfekcyjna krzywa Beziera dla emocji)
+                ribbon.style.transition = `transform ${drawDurationSeconds}s cubic-bezier(0.15, 0.85, 0.35, 1)`;
                 ribbon.style.transform = `translateX(-${stopPosition}px)`;
             }, 50);
 
             setTimeout(() => {
-                // INTEGRALNA POPRAWKA BLOKADY: Gdy animacja dobiegnie końca, usuwamy przejście transition i "na twardo" wbijamy transformację pikselową
+                // LOCK POSITION: Po skończonym losowaniu przeglądarka płynnie zamraża transformację
                 ribbon.style.transition = "none";
                 ribbon.style.transform = `translateX(-${stopPosition}px)`;
 
