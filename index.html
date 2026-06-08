@@ -72,8 +72,6 @@
             font-weight: 600;
         }
 
-        .form-group label span { color: var(--accent-glow); float: right; }
-
         input[type="text"], input[type="number"] {
             background-color: var(--bg-input);
             border: 1px solid var(--border-card);
@@ -175,6 +173,7 @@
             padding: 20px;
             display: flex;
             flex-direction: column;
+            justify-content: center; /* Centrowanie bębna pionowo kiedy się pojawi */
         }
 
         .arena-title {
@@ -185,6 +184,7 @@
             font-weight: 700;
             letter-spacing: 2px;
             margin-bottom: 15px;
+            flex-shrink: 0;
         }
 
         .arena {
@@ -211,7 +211,7 @@
             word-break: break-all;
         }
 
-        /* Customowy, fioletowy pasek przewijania */
+        /* Fioletowy pasek przewijania */
         .arena::-webkit-scrollbar { width: 6px; }
         .arena::-webkit-scrollbar-track { background: transparent; }
         .arena::-webkit-scrollbar-thumb { background: var(--border-card); border-radius: 10px; }
@@ -239,53 +239,21 @@
         td { padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.03); font-weight: 600; }
         .td-tc { text-align: right; color: var(--accent-glow); }
 
-        /* ==================== KINOWE OKNO LOSOWANIA (BĘBEN) ==================== */
-        .lottery-modal {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(12, 8, 20, 0.9);
-            backdrop-filter: blur(10px);
-            z-index: 9999;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .modal-content {
-            background: var(--bg-panel);
-            border: 2px solid var(--border-panel);
-            box-shadow: 0 0 40px rgba(182, 36, 255, 0.4);
-            border-radius: 16px;
-            padding: 40px;
-            width: 85%;
-            max-width: 850px;
-            text-align: center;
-            box-sizing: border-box;
-        }
-
-        .modal-title {
-            font-size: 1.4rem;
-            font-weight: 800;
-            letter-spacing: 3px;
-            color: #fff;
-            margin-bottom: 35px;
-            text-transform: uppercase;
-            text-shadow: 0 0 10px var(--accent-glow);
-        }
-
-        /* Kontener bębna maszynowego */
+        /* ==================== BĘBEN LOSUJĄCY (WBUDOWANY W ARENĘ) ==================== */
         .ticker-wrapper {
+            display: none;
             position: relative;
             width: 100%;
-            height: 90px;
+            height: 95px;
             background: #07040c;
-            border: 1px solid var(--border-card);
-            border-radius: 10px;
+            border: 2px solid var(--border-card);
+            border-radius: 12px;
             overflow: hidden;
-            box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.9), 0 0 20px rgba(182, 36, 255, 0.2);
+            margin: auto 0; /* Centrowanie w pionie wewnątrz areny */
         }
 
-        /* Celownik / Linia środkowa */
+        /* Celownik na środku */
         .ticker-pointer {
             position: absolute;
             top: 0; bottom: 0; left: 50%;
@@ -306,7 +274,7 @@
             border-bottom: 10px solid var(--accent-glow);
         }
 
-        /* Pasek przewijający nicki */
+        /* Ruchoma taśma */
         .ticker-ribbon {
             display: flex;
             position: absolute;
@@ -314,7 +282,7 @@
             will-change: transform;
         }
 
-        /* Pojedynczy kafelek w bębnie */
+        /* Element w bębnie */
         .ticker-item {
             min-width: 170px;
             max-width: 170px;
@@ -372,7 +340,13 @@
 
         <div class="arena-wrapper">
             <div class="arena-title">arena</div>
+            
             <div class="arena" id="participants-grid"></div>
+
+            <div class="ticker-wrapper" id="ticker-wrapper">
+                <div class="ticker-pointer"></div>
+                <div id="ticker-ribbon" class="ticker-ribbon"></div>
+            </div>
         </div>
     </div>
 
@@ -391,16 +365,6 @@
         </div>
     </div>
 
-    <div id="lottery-modal" class="lottery-modal">
-        <div class="modal-content">
-            <div class="modal-title">Trwa losowanie nagrody...</div>
-            <div class="ticker-wrapper" id="ticker-wrapper">
-                <div class="ticker-pointer"></div>
-                <div id="ticker-ribbon" class="ticker-ribbon"></div>
-            </div>
-        </div>
-    </div>
-
     <script>
         const socket = io();
         let localParticipants = [];
@@ -415,8 +379,7 @@
         const tcInput = document.getElementById('tc-input');
         const participantSlider = document.getElementById('participant-slider');
         
-        // Elementy bębna
-        const modal = document.getElementById('lottery-modal');
+        // Elementy wbudowanego bębna
         const ribbon = document.getElementById('ticker-ribbon');
         const wrapper = document.getElementById('ticker-wrapper');
 
@@ -435,7 +398,7 @@
                 renderParticipant(sender);
                 updateCounter();
                 
-                // Autoscroll areny w dół
+                // Autoscroll listy w dół
                 grid.scrollTop = grid.scrollHeight;
             }
         });
@@ -451,6 +414,10 @@
             localParticipants = [];
             winnersList = [];
             statusDisplay.innerText = "Zresetowano system";
+            
+            // Przywrócenie domyślnego widoku siatki na wypadek resetu w trakcie losowania
+            wrapper.style.display = 'none';
+            grid.style.display = 'grid';
             updateCounter();
         });
 
@@ -512,7 +479,7 @@
             }
         }
 
-        // ==================== LOGIKA KINOWEGO BĘBNA ====================
+        // ==================== NOWA LOGIKA WBUDOWANEGO BĘBNA ====================
         function startCinematicDraw() {
             const available = localParticipants.filter(p => !winnersList.includes(p));
             
@@ -521,19 +488,18 @@
                 return;
             }
 
-            // 1. Losujemy zwycięzcę
             const randomIndex = Math.floor(Math.random() * available.length);
             const winner = available[randomIndex];
 
-            // 2. Budujemy tablicę bębna (35 elementów, żeby ładnie pędziło)
             const itemWidth = 170; 
-            const targetIndex = 28; // Zwycięzca wyląduje na 28 pozycji na pasku
-            const totalItems = 36;
+            const targetIndex = 26; // Pozycja zwycięzcy na pasku bębna
+            const totalItems = 34;
             
             ribbon.innerHTML = "";
             ribbon.style.transition = "none";
             ribbon.style.transform = "translateX(0px)";
 
+            // Generowanie zawartości taśmy losującej
             for (let i = 0; i < totalItems; i++) {
                 const el = document.createElement('div');
                 el.className = 'ticker-item';
@@ -541,47 +507,50 @@
                 if (i === targetIndex) {
                     el.innerText = winner;
                     el.style.color = 'var(--accent-glow)';
-                    el.style.textShadow = '0 0 10px var(--accent-glow)';
+                    el.style.textShadow = '0 0 12px var(--accent-glow)';
                 } else {
-                    // Wypełniamy resztę paska losowymi osobami
                     const randP = localParticipants[Math.floor(Math.random() * localParticipants.length)];
                     el.innerText = randP || "...";
                 }
                 ribbon.appendChild(el);
             }
 
-            // Pokazujemy okno losowania
-            modal.style.display = 'flex';
-            statusDisplay.innerText = "Maszyna losująca w ruchu!";
+            // KLUCZOWA ZMIANA: Ukrywamy siatkę z nickami, odpalamy pasek bębna w tym samym miejscu
+            grid.style.display = 'none';
+            wrapper.style.display = 'block';
+            statusDisplay.innerText = "Trwa losowanie...";
 
-            // 3. Obliczamy pozycję stopu (wyśrodkowanie targetIndex w oknie + mały losowy offset, żeby nie stawało co do piksela tak samo)
+            // Start przewijania bębna
             setTimeout(() => {
                 const wrapperWidth = wrapper.offsetWidth;
-                const randomInnerOffset = Math.floor(Math.random() * 60) - 30; // +/- 30px losowości
+                const randomInnerOffset = Math.floor(Math.random() * 60) - 30; // Losowość +/- 30px żeby nie stawało idealnie tak samo
                 const stopPosition = (targetIndex * itemWidth) + (itemWidth / 2) - (wrapperWidth / 2) + randomInnerOffset;
 
-                // Animacja pędu z pięknym efektem hamowania (cubic-bezier)
                 ribbon.style.transition = "transform 4.5s cubic-bezier(0.1, 1, 0.1, 1)";
                 ribbon.style.transform = `translateX(-${stopPosition}px)`;
             }, 50);
 
-            // 4. Koniec animacji (po 4.5 sekundy)
+            // Po zakończeniu animacji (4.5 sekundy)
             setTimeout(() => {
                 winnersList.push(winner);
                 const tcValue = tcInput.value || "0";
 
-                // Dodanie do tabeli
+                // Dodanie rekordu do tabeli po prawej
                 const tr = document.createElement('tr');
                 tr.innerHTML = `<td>${winner}</td><td class="td-tc">${tcValue} TC</td>`;
                 winnersTableBody.appendChild(tr);
 
-                // Podświetlenie na głównej arenie
+                // Zastosowanie stylów wygranego w tle
                 applyWinnerStyle(winner);
-                statusDisplay.innerText = `Wygrał: ${winner}!`;
+                statusDisplay.innerText = `Zwycięzca: ${winner}!`;
 
-                // Trzymamy okno otwarte przez kolejne 3 sekundy dla "hype'u" i zamykamy
+                // Pokazujemy wynik na bębnie przez 3 sekundy, po czym wracamy do listy nicków
                 setTimeout(() => {
-                    modal.style.display = 'none';
+                    wrapper.style.display = 'none';
+                    grid.style.display = 'grid';
+                    
+                    // Automatycznie zjedź na dół listy po powrocie
+                    grid.scrollTop = grid.scrollHeight;
                 }, 3000);
 
             }, 4550);
