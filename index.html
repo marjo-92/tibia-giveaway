@@ -148,7 +148,6 @@
         .ticker-pointer::before { content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%); border-left: 10px solid transparent; border-right: 10px solid transparent; border-top: 10px solid var(--accent-glow); }
         .ticker-pointer::after { content: ''; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); border-left: 10px solid transparent; border-right: 10px solid transparent; border-bottom: 10px solid var(--accent-glow); }
         
-        /* POPRAWKA: fill-mode forwards blokuje powrót bębna na środek ekranu */
         .ticker-ribbon { 
             display: flex; 
             position: absolute; 
@@ -156,7 +155,6 @@
             top: 0; 
             height: 100%; 
             will-change: transform;
-            animation-fill-mode: forwards !important;
         }
         
         .ticker-item {
@@ -497,18 +495,19 @@
                 return;
             }
 
-            // KROK 1: Czyścimy klasy i pozycję bez wywoływania ukrywania wrappera!
-            ribbon.style.transition = "none";
-            ribbon.style.transform = "translateX(0px)";
-            
-            // Tworzymy na nowo strukturę do losowania
+            closeVerificationPanel();
+            const randomIndex = Math.floor(Math.random() * available.length);
+            const winner = available[randomIndex];
+
             const itemWidth = 170; const targetIndex = 26; const totalItems = 34;
-            ribbon.innerHTML = "";
+            ribbon.innerHTML = ""; 
+            ribbon.style.transition = "none"; 
+            ribbon.style.transform = "translateX(0px)";
 
             for (let i = 0; i < totalItems; i++) {
                 const el = document.createElement('div'); el.className = 'ticker-item';
                 if (i === targetIndex) { 
-                    el.innerText = winner = available[randomIndex = Math.floor(Math.random() * available.length)]; 
+                    el.innerText = winner; 
                     el.id = "winning-ticker-cell"; 
                 } 
                 else { el.innerText = available[Math.floor(Math.random() * available.length)] || "..."; }
@@ -517,17 +516,23 @@
 
             const drawDurationSeconds = parseFloat(timeSlider.value) || 20;
             const drawDurationMs = drawDurationSeconds * 1000;
+            
+            // Dokładna pozycja końcowa w pikselach
+            const stopPosition = (targetIndex * itemWidth) + (itemWidth / 2) - (wrapper.offsetWidth / 2);
 
             wrapper.style.display = 'block';
             
-            // KROK 2: Odpalamy animację przesunięcia. Domyślnie zablokowaliśmy jej powrót.
             setTimeout(() => {
-                const stopPosition = (targetIndex * itemWidth) + (itemWidth / 2) - (wrapper.offsetWidth / 2);
-                ribbon.style.transition = `transform ${drawDurationSeconds}s cubic-bezier(0.1, 1, 0.3, 1.05)`;
+                // POPRAWKA: Nowy cubic-bezier sprawia, że start jest piorunująco szybki, a zwalnianie rozciąga się równomiernie do samego końca
+                ribbon.style.transition = `transform ${drawDurationSeconds}s cubic-bezier(0, 0.9, 0.1, 1)`;
                 ribbon.style.transform = `translateX(-${stopPosition}px)`;
             }, 50);
 
             setTimeout(() => {
+                // INTEGRALNA POPRAWKA BLOKADY: Gdy animacja dobiegnie końca, usuwamy przejście transition i "na twardo" wbijamy transformację pikselową
+                ribbon.style.transition = "none";
+                ribbon.style.transform = `translateX(-${stopPosition}px)`;
+
                 const winningCell = document.getElementById('winning-ticker-cell');
                 if (winningCell) {
                     winningCell.classList.add('winning-cell-active');
