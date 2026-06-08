@@ -104,7 +104,9 @@
             padding: 10px;
             border-radius: 6px;
             font-size: 0.85rem;
+            outline: none;
         }
+        input:focus { border-color: var(--kick-green); }
         
         .btn-primary {
             background-color: var(--kick-green);
@@ -117,6 +119,7 @@
             text-transform: uppercase;
             font-size: 0.85rem;
             margin-top: auto;
+            transition: background 0.2s;
         }
         .btn-primary:hover { background-color: var(--kick-green-hover); }
 
@@ -160,11 +163,13 @@
         .p-card {
             background-color: var(--bg-input);
             border: 1px solid var(--border-color);
-            padding: 8px;
+            padding: 10px;
             border-radius: 6px;
             text-align: center;
             font-size: 0.85rem;
             font-weight: 500;
+            transition: all 0.2s;
+            word-break: break-all;
         }
 
         .bottom-actions { display: flex; gap: 10px; }
@@ -176,12 +181,16 @@
             border-radius: 6px;
             cursor: pointer;
             font-size: 0.8rem;
+            font-weight: bold;
+            transition: all 0.2s;
         }
+        .btn-secondary:hover { background-color: var(--border-color); }
         .btn-danger {
             background-color: rgba(234, 67, 53, 0.1);
             border: 1px solid var(--danger-red);
             color: var(--danger-red);
         }
+        .btn-danger:hover { background-color: rgba(234, 67, 53, 0.2); }
 
         .winners-sidebar { width: 240px; }
         .winners-header {
@@ -205,6 +214,19 @@
             border-radius: 8px;
             padding: 10px;
             overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .w-card {
+            background-color: rgba(83, 252, 24, 0.1);
+            border: 1px solid var(--kick-green);
+            color: var(--text-main);
+            padding: 8px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            text-align: center;
         }
     </style>
 </head>
@@ -231,7 +253,7 @@
             
             <div class="form-group">
                 <label>Liczba zwycięzców:</label>
-                <input type="number" value="1" min="1">
+                <input type="number" id="winners-amount" value="1" min="1">
             </div>
 
             <button class="btn-primary" onclick="triggerStartFight()">Rozpocznij losowanie</button>
@@ -242,15 +264,15 @@
                 <div class="widget">
                     <div class="widget-icon">🎁</div>
                     <div class="widget-info">
-                        <span class="widget-label">Losowanie</span>
-                        <span class="widget-value" id="status-display">-</span>
+                        <span class="widget-label">Status</span>
+                        <span class="widget-value" id="status-display">Oczekiwanie</span>
                     </div>
                 </div>
                 <div class="widget">
                     <div class="widget-icon">🔑</div>
                     <div class="widget-info">
                         <span class="widget-label">Hasło</span>
-                        <span class="widget-value" id="password-display">A</span>
+                        <span class="widget-value" id="password-display">-</span>
                     </div>
                 </div>
                 <div class="widget">
@@ -265,8 +287,8 @@
             <div class="arena" id="participants-grid"></div>
 
             <div class="bottom-actions">
-                <button class="btn-secondary">Wylosuj zwycięzcę</button>
-                <button class="btn-secondary">Przemieszaj</button>
+                <button class="btn-secondary" onclick="drawWinner()">Wylosuj zwycięzcę</button>
+                <button class="btn-secondary" onclick="shuffleParticipants()">Przemieszaj</button>
                 <button class="btn-secondary btn-danger" onclick="triggerReset()">Resetuj</button>
             </div>
         </div>
@@ -283,21 +305,32 @@
 
     <script>
         const socket = io();
+        let localParticipants = [];
+        let winnersList = [];
+
         const grid = document.getElementById('participants-grid');
         const countDisplay = document.getElementById('count-display');
         const passwordDisplay = document.getElementById('password-display');
+        const statusDisplay = document.getElementById('status-display');
+        const winnersBox = document.getElementById('winners-box');
+        const winnersCountDisplay = document.getElementById('winners-count');
+        const keywordInput = document.getElementById('keyword-input');
 
         socket.on('init', (data) => {
             grid.innerHTML = "";
+            localParticipants = data.participants || [];
             passwordDisplay.innerText = data.keyword ? data.keyword.toUpperCase() : "A";
-            document.getElementById('keyword-input').value = data.keyword;
-            data.participants.forEach(p => renderParticipant(p));
+            keywordInput.value = data.keyword || "a";
+            localParticipants.forEach(p => renderParticipant(p));
             updateCounter();
         });
 
         socket.on('newParticipant', (sender) => {
-            renderParticipant(sender);
-            updateCounter();
+            if (!localParticipants.includes(sender)) {
+                localParticipants.push(sender);
+                renderParticipant(sender);
+                updateCounter();
+            }
         });
 
         socket.on('keywordChanged', (kw) => {
@@ -306,7 +339,31 @@
 
         socket.on('participantsReset', () => {
             grid.innerHTML = "";
+            winnersBox.innerHTML = "";
+            localParticipants = [];
+            winnersList = [];
+            winnersCountDisplay.innerText = "0";
+            statusDisplay.innerText = "Zresetowano";
             updateCounter();
+        });
+
+        socket.on('triggerFight', () => {
+            if (localParticipants.length === 0) {
+                statusDisplay.innerText = "Brak graczy!";
+                return;
+            }
+            statusDisplay.innerText = "Losowanie...";
+            
+            // Efektowne automatyczne tasowanie przed wygraną
+            let shuffles = 0;
+            const interval = setInterval(() => {
+                shuffleParticipants();
+                shuffles++;
+                if (shuffles >= 10) {
+                    clearInterval(interval);
+                    drawWinner();
+                }
+            }, 150);
         });
 
         function renderParticipant(sender) {
@@ -320,11 +377,11 @@
         }
 
         function updateCounter() {
-            countDisplay.innerText = grid.children.length;
+            countDisplay.innerText = localParticipants.length;
         }
 
         function saveKeyword() {
-            const val = document.getElementById('keyword-input').value;
+            const val = keywordInput.value;
             socket.emit('updateKeyword', val);
         }
 
@@ -334,6 +391,61 @@
 
         function triggerStartFight() {
             socket.emit('startFight');
+        }
+
+        function shuffleParticipants() {
+            if (localParticipants.length < 2) return;
+            
+            // Algorytm Fisher-Yates do losowego mieszania tablicy
+            for (let i = localParticipants.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [localParticipants[i], localParticipants[j]] = [localParticipants[j], localParticipants[i]];
+            }
+            
+            grid.innerHTML = "";
+            localParticipants.forEach(p => {
+                renderParticipant(p);
+                // Zachowaj podświetlenie jeśli już wygrał wcześniej
+                if (winnersList.includes(p)) {
+                    const card = document.getElementById('p-' + p);
+                    if (card) {
+                        card.style.backgroundColor = 'var(--kick-green)';
+                        card.style.color = '#000';
+                    }
+                }
+            });
+        }
+
+        function drawWinner() {
+            // Filtrujemy tylko tych, którzy jeszcze nie wygrali
+            const available = localParticipants.filter(p => !winnersList.includes(p));
+            
+            if (available.length === 0) {
+                statusDisplay.innerText = "Brak kandydatów!";
+                return;
+            }
+
+            const randomIndex = Math.floor(Math.random() * available.length);
+            const winner = available[randomIndex];
+            
+            winnersList.push(winner);
+
+            // Dodaj do listy zwycięzców po prawej stronie
+            const wCard = document.createElement('div');
+            wCard.className = 'w-card';
+            wCard.innerText = `🏆 ${winner}`;
+            winnersBox.appendChild(wCard);
+
+            // Podświetlenie kafelka na arenie na zielono Kicka
+            const card = document.getElementById('p-' + winner);
+            if (card) {
+                card.style.backgroundColor = 'var(--kick-green)';
+                card.style.color = '#000';
+                card.style.transform = 'scale(1.05)';
+            }
+
+            winnersCountDisplay.innerText = winnersList.length;
+            statusDisplay.innerText = `Wygrał: ${winner}`;
         }
     </script>
 </body>
