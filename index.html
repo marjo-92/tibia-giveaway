@@ -102,7 +102,19 @@
             background-color: var(--bg-panel); border: 1px solid var(--border-card); padding: 14px 10px; border-radius: 8px; text-align: center; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; font-weight: 600; color: var(--text-main); word-break: break-all; transition: all 0.3s ease;
         }
 
-        .p-card.winner-active { border-color: var(--accent-glow) !important; background-color: rgba(182, 36, 255, 0.15) !important; color: var(--accent-glow) !important; box-shadow: 0 0 12px rgba(182, 36, 255, 0.4); }
+        /* ANIMACJA MIGAJĄCEGO, FIOLETOWEGO NEONU DLA ZWYCIĘZCY */
+        @keyframes neonPulse {
+            0% { border-color: #b624ff; box-shadow: 0 0 5px rgba(182, 36, 255, 0.4), inset 0 0 5px rgba(182, 36, 255, 0.2); }
+            50% { border-color: #d67cff; box-shadow: 0 0 18px rgba(182, 36, 255, 0.8), inset 0 0 10px rgba(182, 36, 255, 0.4); }
+            100% { border-color: #b624ff; box-shadow: 0 0 5px rgba(182, 36, 255, 0.4), inset 0 0 5px rgba(182, 36, 255, 0.2); }
+        }
+
+        .p-card.winner-active { 
+            animation: neonPulse 1.5s infinite ease-in-out !important;
+            background-color: rgba(182, 36, 255, 0.15) !important; 
+            color: #e5b3ff !important; 
+            font-weight: 700;
+        }
         .p-card.winner-disqualified { border-color: var(--danger-red) !important; background-color: rgba(230, 57, 70, 0.1) !important; color: var(--danger-red) !important; text-decoration: line-through; opacity: 0.6; }
 
         .arena::-webkit-scrollbar { width: 6px; }
@@ -131,13 +143,14 @@
         .ticker-pointer::after { content: ''; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); border-left: 10px solid transparent; border-right: 10px solid transparent; border-bottom: 10px solid var(--accent-glow); }
         .ticker-ribbon { display: flex; position: absolute; left: 0; top: 0; height: 100%; will-change: transform; }
         
-        /* ZABEZPIECZENIE PRZED DŁUGIMI NICKAMI W BĘBNIE */
+        /* ZMIANA: NICKI ZAWIJAJĄ SIĘ W KILKA LINII (TAK JAK W KAFELKACH) ZAMIAST SIĘ UCINAĆ */
         .ticker-item {
-            min-width: 170px; max-width: 170px; height: 100%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.95rem; border-right: 1px solid rgba(255,255,255,0.04); color: var(--text-main); box-sizing: border-box; background: linear-gradient(180deg, #1d1430 0%, #130d21 100%);
-            padding: 0 10px;
-            white-space: nowrap;
+            min-width: 170px; max-width: 170px; height: 100%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.9rem; border-right: 1px solid rgba(255,255,255,0.04); color: var(--text-main); box-sizing: border-box; background: linear-gradient(180deg, #1d1430 0%, #130d21 100%);
+            padding: 5px 12px;
+            text-align: center;
+            word-break: break-all;
+            line-height: 1.2;
             overflow: hidden;
-            text-overflow: ellipsis;
         }
 
         /* PANEL WERYFIKACJI */
@@ -148,11 +161,6 @@
         .verify-user { font-size: 1.1rem; font-weight: 800; color: #fff; }
         .verify-timer-box { display: flex; align-items: center; gap: 10px; }
 
-        .btn-manual {
-            background-color: transparent; border: 1px solid var(--border-card); color: var(--text-main); padding: 6px 14px; font-size: 0.75rem; font-weight: 700; border-radius: 6px; cursor: pointer; transition: all 0.2s;
-        }
-        .btn-manual:hover { border-color: var(--accent-glow); background: rgba(182, 36, 255, 0.1); }
-
         .verify-timer {
             font-size: 1.2rem; font-weight: 800; color: var(--danger-red); background: rgba(230, 57, 70, 0.1); padding: 4px 12px; border-radius: 6px; border: 1px solid rgba(230, 57, 70, 0.2);
         }
@@ -162,15 +170,16 @@
         .chat-line { color: #fff; word-break: break-all; font-weight: 600; }
         .chat-line strong { color: var(--accent-glow); }
         
+        /* FOOTER I PRZYCISKI AKCJI WYŚRODKOWANE */
         .verify-footer-actions {
-            display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px;
+            display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; text-align: center;
         }
         .btn-action-ok {
-            background-color: var(--success-green); color: #fff; width: 100%; box-shadow: 0 0 10px rgba(42, 157, 143, 0.3);
+            background-color: var(--success-green); color: #fff; width: 100%; box-shadow: 0 0 10px rgba(42, 157, 143, 0.3); text-align: center; display: flex; align-items: center; justify-content: center;
         }
         .btn-action-ok:hover { filter: brightness(1.2); }
         .btn-action-draw {
-            background-color: var(--danger-red); color: #fff; width: 100%; box-shadow: 0 0 10px rgba(230, 57, 70, 0.3);
+            background-color: var(--danger-red); color: #fff; width: 100%; box-shadow: 0 0 10px rgba(230, 57, 70, 0.3); text-align: center; display: flex; align-items: center; justify-content: center;
         }
         .btn-action-draw:hover { filter: brightness(1.2); }
     </style>
@@ -225,7 +234,6 @@
                 <div class="verify-header">
                     <div class="verify-user">Sprawdzanie obecności: <span id="verify-nick" style="color: var(--accent-glow);">Nick</span></div>
                     <div class="verify-timer-box">
-                        <button class="btn-manual" onclick="manualVerify()">✔ Udawaj wiadomość widza</button>
                         <div class="verify-timer" id="verify-timer">60s</div>
                     </div>
                 </div>
@@ -234,7 +242,7 @@
                 
                 <div class="verify-footer-actions">
                     <button class="btn-action-ok" id="btn-verify-confirm" onclick="confirmWinnerAndAdd()">✔ Zatwierdź i dodaj</button>
-                    <button class="btn-action-draw" id="btn-verify-reroll" onclick="rejectWinnerAndReroll()">❌ Losuj Ponownie</button>
+                    <button class="btn-action-draw" id="btn-verify-reroll" onclick="rejectWinnerAndReroll()">❌ Pomiń / Losuj Ponownie</button>
                 </div>
             </div>
 
@@ -371,7 +379,6 @@
         function rejectWinnerAndReroll() {
             if (!activeVerificationWinner) return;
 
-            // Zapisujemy gracza jako pominiętego w winnersList
             winnersList.push({ nick: activeVerificationWinner, status: 'disqualified' });
 
             const tr = document.createElement('tr');
@@ -382,14 +389,7 @@
             applyWinnerStyle(activeVerificationWinner, 'disqualified');
             
             closeVerificationPanel();
-            
-            // SYSTEM AUTOMATYCZNIE URUCHAMIA NOWE LOSOWANIE (Pominięty gracz zostanie wykluczony w startCinematicDraw)
             startCinematicDraw();
-        }
-
-        function manualVerify() {
-            if (!activeVerificationWinner) return;
-            checkAndVerifyPlayer(activeVerificationWinner, "Jestem! Obecny!");
         }
 
         function saveKeyword() {
@@ -462,10 +462,7 @@
         }
 
         function startCinematicDraw() {
-            // KLUCZOWA POPRAWKA: wyciągamy niki wszystkich dotychczasowych zwycięzców i osób pominiętych/zdyskwalifikowanych
             const excludedNicks = winnersList.map(w => w.nick);
-            
-            // Filtrujemy listę uczestników – odrzucamy każdego, kto już jest na liście wykluczonych
             const available = localParticipants.filter(p => !excludedNicks.includes(p));
             
             if (available.length === 0) {
@@ -519,6 +516,7 @@
             btnVerifyReroll.innerText = "❌ Pomiń / Losuj Ponownie";
             
             verifyPanel.style.display = 'block';
+            applyWinnerStyle(winnerNick, 'verified');
 
             verificationTimerInterval = setInterval(() => {
                 verificationTimeLeft--;
@@ -544,6 +542,15 @@
         function closeVerificationPanel() {
             if (verificationTimerInterval) clearInterval(verificationTimerInterval);
             verificationTimerInterval = null; 
+            
+            // Przy zamykaniu okna usuwamy podświetlenie z karty, jeśli gracz został odrzucony
+            if (activeVerificationWinner) {
+                const stillValid = winnersList.find(w => w.nick === activeVerificationWinner);
+                if (!stillValid || stillValid.status !== 'verified') {
+                    applyWinnerStyle(activeVerificationWinner, 'normal');
+                }
+            }
+
             activeVerificationWinner = null; 
             hasPlayerResponded = false;
             verifyPanel.style.display = 'none';
