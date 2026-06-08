@@ -117,8 +117,26 @@
         td { padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.03); font-weight: 600; }
         .td-tc { text-align: right; color: var(--accent-glow); }
 
-        .tr-disqualified td { color: var(--danger-red) !important; text-decoration: line-through; }
-        .tr-disqualified .td-tc { color: var(--danger-red) !important; }
+        /* STYL DLA ZATWIERDZONYCH ZWYCIĘZCÓW W TABELI - ZIELONA RAMKA */
+        .tr-verified {
+            border: 2px solid var(--success-green);
+            background-color: rgba(42, 157, 143, 0.05);
+        }
+        .tr-verified td {
+            color: #d8f3f0 !important;
+            border-top: 1px solid rgba(42, 157, 143, 0.3);
+            border-bottom: 1px solid rgba(42, 157, 143, 0.3);
+        }
+        .tr-verified td:first-child { border-left: 2px solid var(--success-green); }
+        .tr-verified td:last-child { border-right: 2px solid var(--success-green); color: var(--success-green) !important; }
+
+        /* STYL DLA POMINIĘTYCH - CZERWONE, PRZEKREŚLONE, PRZYCIEMNIONE */
+        .tr-disqualified td { 
+            color: var(--danger-red) !important; 
+            text-decoration: line-through; 
+            opacity: 0.5; 
+        }
+        .tr-disqualified .td-tc { color: var(--danger-red) !important; text-decoration: line-through; }
 
         /* BĘBEN LOSUJĄCY */
         .ticker-wrapper {
@@ -149,10 +167,9 @@
             100% { border-top-color: #b624ff; border-bottom-color: #b624ff; box-shadow: inset 0 0 8px rgba(182, 36, 255, 0.5); background: linear-gradient(180deg, #321654 0%, #130d21 100%); }
         }
 
-        /* KLASA AKTYWOWANA PO ZAKOŃCZENIU LOSOWANIA */
         .winning-cell-active {
             animation: tickerNeonPulse 1.2s infinite ease-in-out !important;
-            color: #e5b3ff !important; /* Robi nick na fioletowo */
+            color: #e5b3ff !important;
             font-weight: 800;
             font-size: 1rem;
         }
@@ -205,6 +222,11 @@
         <div class="form-group">
             <label>Ilość uczestników: <span id="slider-val">1</span></label>
             <input id="participant-slider" type="range" min="1" max="10" value="1" oninput="document.getElementById('slider-val').innerText = this.value">
+        </div>
+
+        <div class="form-group">
+            <label>Czas losowania: <span id="time-slider-val">5</span>s</label>
+            <input id="time-slider" type="range" min="3" max="15" value="5" oninput="document.getElementById('time-slider-val').innerText = this.value">
         </div>
 
         <div class="btn-container-row">
@@ -286,6 +308,7 @@
         const keywordInput = document.getElementById('keyword-input');
         const tcInput = document.getElementById('tc-input');
         const participantSlider = document.getElementById('participant-slider');
+        const timeSlider = document.getElementById('time-slider');
 
         const ribbon = document.getElementById('ticker-ribbon');
         const wrapper = document.getElementById('ticker-wrapper');
@@ -301,7 +324,8 @@
         socket.on('init', (data) => {
             grid.innerHTML = "";
             localParticipants = data.participants || [];
-            if (data.keyword) {
+            // POPRAWKA: Jeśli na serwerze jest domyślne "a", ignorujemy je, żeby wymusić czyste zresetowane hasło
+            if (data.keyword && data.keyword !== "a") {
                 passwordDisplay.innerText = data.keyword.toUpperCase();
                 keywordInput.value = data.keyword;
             } else {
@@ -370,6 +394,8 @@
 
             const tr = document.createElement('tr');
             tr.id = `table-winner-${activeVerificationWinner}`;
+            // DODANIE KLASY ZIELONEJ RAMKI
+            tr.className = 'tr-verified';
             tr.innerHTML = `<td>${activeVerificationWinner}</td><td class="td-tc">${tcValue} TC</td>`;
             winnersTableBody.appendChild(tr);
 
@@ -384,8 +410,9 @@
             winnersList.push({ nick: activeVerificationWinner, status: 'disqualified' });
 
             const tr = document.createElement('tr');
+            // DODANIE KLASY PRZEKREŚLONEJ/PRZYCIEMNIONEJ
             tr.className = 'tr-disqualified';
-            tr.innerHTML = `<td>${activeVerificationWinner} (POMINIĘTY)</td><td class="td-tc">${tcInput.value || 0} TC</td>`;
+            tr.innerHTML = `<td>${activeVerificationWinner}</td><td class="td-tc">${tcInput.value || 0} TC</td>`;
             winnersTableBody.appendChild(tr);
             
             closeVerificationPanel();
@@ -416,6 +443,8 @@
             tcInput.value = "";
             participantSlider.value = 1;
             document.getElementById('slider-val').innerText = "1";
+            timeSlider.value = 5;
+            document.getElementById('time-slider-val').innerText = "5";
             passwordDisplay.innerText = "-";
             statusDisplay.innerText = "Zresetowano system"; 
             wrapper.style.display = 'none'; 
@@ -478,14 +507,18 @@
                 ribbon.appendChild(el);
             }
 
+            // DYNAMICZNE POBIERANIE CZASU Z SUWAKA
+            const drawDurationSeconds = parseFloat(timeSlider.value) || 5;
+            const drawDurationMs = drawDurationSeconds * 1000;
+
             wrapper.style.display = 'block';
             setTimeout(() => {
                 const stopPosition = (targetIndex * itemWidth) + (itemWidth / 2) - (wrapper.offsetWidth / 2);
-                ribbon.style.transition = "transform 4.5s cubic-bezier(0.1, 1, 0.1, 1)";
+                // Czas cubic-bezier dopasowuje się do suwaka streamera
+                ribbon.style.transition = `transform ${drawDurationSeconds}s cubic-bezier(0.1, 1, 0.1, 1)`;
                 ribbon.style.transform = `translateX(-${stopPosition}px)`;
             }, 50);
 
-            // AKTUALIZACJA: Neon oraz fioletowy nick aktywują się dokładnie po 4.5s (gdy bęben stanie!)
             setTimeout(() => {
                 const winningCell = document.getElementById('winning-ticker-cell');
                 if (winningCell) {
@@ -493,7 +526,7 @@
                 }
                 statusDisplay.innerText = `Wylosowano: ${winner}! Czekam na znak na czacie...`;
                 startVerificationStage(winner);
-            }, 4550);
+            }, drawDurationMs + 50); // Odpala weryfikację dokładnie po zatrzymaniu bębna
         }
 
         function startVerificationStage(winnerNick) {
