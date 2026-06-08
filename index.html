@@ -8,24 +8,27 @@
         body { background: #1a1a1a; color: white; font-family: sans-serif; display: grid; grid-template-columns: 300px 1fr 300px; gap: 20px; padding: 20px; }
         h1 { grid-column: 1 / span 3; text-align: center; color: #00ff00; }
         .panel { background: #262626; padding: 20px; border-radius: 10px; height: 80vh; overflow-y: auto; }
-        input, button { width: 100%; margin: 10px 0; padding: 10px; }
+        input, textarea, button { width: 100%; margin: 10px 0; padding: 10px; box-sizing: border-box; }
         .participant { border-bottom: 1px solid #444; padding: 5px; }
     </style>
 </head>
 <body>
     <h1>FeruLosowanie</h1>
+    
     <div class="panel">
         <h3>USTAWIENIA</h3>
         <input id="tc" placeholder="Ilość TC">
         <input id="pass" placeholder="Hasło losowania">
         <textarea id="excluded" placeholder="Wykluczeni (nicki po przecinku)"></textarea>
         <button onclick="saveConfig()">ZATWIERDŹ DANE</button>
-        <button onclick="reset()" style="background:red;">RESET</button>
+        <button onclick="reset()" style="background:red;">RESET LISTY</button>
     </div>
+
     <div class="panel">
-        <h3 id="display-info">Dane losowania:</h3>
+        <h3 id="info-board">Oczekiwanie na dane...</h3>
         <div id="participants-list"></div>
     </div>
+
     <div class="panel">
         <h3>ZWYCIĘZCY</h3>
         <div id="winners"></div>
@@ -33,21 +36,24 @@
 
     <script>
         const socket = io();
+
         function saveConfig() {
             const data = {
-                tcAmount: document.getElementById('tc').value,
-                password: document.getElementById('pass').value,
-                excluded: document.getElementById('excluded').value.split(',')
+                tc: document.getElementById('tc').value,
+                pass: document.getElementById('pass').value,
+                excluded: document.getElementById('excluded').value.split(',').map(n => n.trim())
             };
             socket.emit('updateConfig', data);
-            document.getElementById('display-info').innerText = `Hasło: ${data.password} | TC: ${data.tcAmount}`;
+            document.getElementById('info-board').innerText = `TC: ${data.tc} | Hasło: ${data.pass}`;
         }
+
         socket.on('newParticipant', (data) => {
             const div = document.createElement('div');
             div.className = 'participant';
             div.innerText = data.sender;
             document.getElementById('participants-list').appendChild(div);
         });
+
         function reset() { socket.emit('reset'); }
     </script>
 </body>
