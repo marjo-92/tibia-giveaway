@@ -117,7 +117,7 @@
         td { padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.03); font-weight: 600; }
         .td-tc { text-align: right; color: var(--accent-glow); }
 
-        /* STYL DLA ZATWIERDZONYCH ZWYCIĘZCÓW W TABELI - ZIELONA RAMKA */
+        /* TABELA ZWYCIĘZCÓW - ZIELONA RAMKA DLA WYGRANYCH */
         .tr-verified {
             border: 2px solid var(--success-green);
             background-color: rgba(42, 157, 143, 0.05);
@@ -130,7 +130,7 @@
         .tr-verified td:first-child { border-left: 2px solid var(--success-green); }
         .tr-verified td:last-child { border-right: 2px solid var(--success-green); color: var(--success-green) !important; }
 
-        /* STYL DLA POMINIĘTYCH - CZERWONE, PRZEKREŚLONE, PRZYCIEMNIONE */
+        /* TABELA ZWYCIĘZCÓW - CZERWONE PRZEKREŚLENIE DLA POMINIĘTYCH */
         .tr-disqualified td { 
             color: var(--danger-red) !important; 
             text-decoration: line-through; 
@@ -225,8 +225,8 @@
         </div>
 
         <div class="form-group">
-            <label>Czas losowania: <span id="time-slider-val">5</span>s</label>
-            <input id="time-slider" type="range" min="3" max="15" value="5" oninput="document.getElementById('time-slider-val').innerText = this.value">
+            <label>Czas losowania: <span id="time-slider-val">20</span>s</label>
+            <input id="time-slider" type="range" min="5" max="200" value="20" oninput="document.getElementById('time-slider-val').innerText = this.value">
         </div>
 
         <div class="btn-container-row">
@@ -257,7 +257,7 @@
 
             <div class="verify-panel" id="verify-panel">
                 <div class="verify-header">
-                    <div class="verify-user">Sprawdzanie obecności: <span id="verify-nick" style="color: var(--accent-glow);">Nick</span></div>
+                    <div class="verify-user">Spraw रंजन obecności: <span id="verify-nick" style="color: var(--accent-glow);">Nick</span></div>
                     <div class="verify-timer-box">
                         <div class="verify-timer" id="verify-timer">60s</div>
                     </div>
@@ -324,7 +324,6 @@
         socket.on('init', (data) => {
             grid.innerHTML = "";
             localParticipants = data.participants || [];
-            // POPRAWKA: Jeśli na serwerze jest domyślne "a", ignorujemy je, żeby wymusić czyste zresetowane hasło
             if (data.keyword && data.keyword !== "a") {
                 passwordDisplay.innerText = data.keyword.toUpperCase();
                 keywordInput.value = data.keyword;
@@ -394,7 +393,6 @@
 
             const tr = document.createElement('tr');
             tr.id = `table-winner-${activeVerificationWinner}`;
-            // DODANIE KLASY ZIELONEJ RAMKI
             tr.className = 'tr-verified';
             tr.innerHTML = `<td>${activeVerificationWinner}</td><td class="td-tc">${tcValue} TC</td>`;
             winnersTableBody.appendChild(tr);
@@ -410,7 +408,6 @@
             winnersList.push({ nick: activeVerificationWinner, status: 'disqualified' });
 
             const tr = document.createElement('tr');
-            // DODANIE KLASY PRZEKREŚLONEJ/PRZYCIEMNIONEJ
             tr.className = 'tr-disqualified';
             tr.innerHTML = `<td>${activeVerificationWinner}</td><td class="td-tc">${tcInput.value || 0} TC</td>`;
             winnersTableBody.appendChild(tr);
@@ -443,8 +440,8 @@
             tcInput.value = "";
             participantSlider.value = 1;
             document.getElementById('slider-val').innerText = "1";
-            timeSlider.value = 5;
-            document.getElementById('time-slider-val').innerText = "5";
+            timeSlider.value = 20;
+            document.getElementById('time-slider-val').innerText = "20";
             passwordDisplay.innerText = "-";
             statusDisplay.innerText = "Zresetowano system"; 
             wrapper.style.display = 'none'; 
@@ -507,15 +504,15 @@
                 ribbon.appendChild(el);
             }
 
-            // DYNAMICZNE POBIERANIE CZASU Z SUWAKA
-            const drawDurationSeconds = parseFloat(timeSlider.value) || 5;
+            const drawDurationSeconds = parseFloat(timeSlider.value) || 20;
             const drawDurationMs = drawDurationSeconds * 1000;
 
             wrapper.style.display = 'block';
             setTimeout(() => {
                 const stopPosition = (targetIndex * itemWidth) + (itemWidth / 2) - (wrapper.offsetWidth / 2);
-                // Czas cubic-bezier dopasowuje się do suwaka streamera
-                ribbon.style.transition = `transform ${drawDurationSeconds}s cubic-bezier(0.1, 1, 0.1, 1)`;
+                
+                // DODANIE ELEMENTU DRAMATYZMU (cubic-bezier z delikatnym Fake-Out/Overshoot na końcu)
+                ribbon.style.transition = `transform ${drawDurationSeconds}s cubic-bezier(0.1, 1, 0.3, 1.05)`;
                 ribbon.style.transform = `translateX(-${stopPosition}px)`;
             }, 50);
 
@@ -526,7 +523,7 @@
                 }
                 statusDisplay.innerText = `Wylosowano: ${winner}! Czekam na znak na czacie...`;
                 startVerificationStage(winner);
-            }, drawDurationMs + 50); // Odpala weryfikację dokładnie po zatrzymaniu bębna
+            }, drawDurationMs + 50); 
         }
 
         function startVerificationStage(winnerNick) {
