@@ -143,8 +143,10 @@
         .verify-timer-box { display: flex; align-items: center; gap: 10px; }
 
         .btn-manual {
-            background-color: var(--success-green); color: #fff; padding: 6px 14px; font-size: 0.75rem; font-weight: 700; border-radius: 6px; cursor: pointer;
+            background-color: transparent; border: 1px solid var(--border-card); color: var(--text-main); padding: 6px 14px; font-size: 0.75rem; font-weight: 700; border-radius: 6px; cursor: pointer; transition: all 0.2s;
         }
+        .btn-manual:hover { border-color: var(--accent-glow); background: rgba(182, 36, 255, 0.1); }
+
         .verify-timer {
             font-size: 1.2rem; font-weight: 800; color: var(--danger-red); background: rgba(230, 57, 70, 0.1); padding: 4px 12px; border-radius: 6px; border: 1px solid rgba(230, 57, 70, 0.2);
         }
@@ -153,9 +155,18 @@
         }
         .chat-line { color: #fff; word-break: break-all; font-weight: 600; }
         .chat-line strong { color: var(--accent-glow); }
-        .btn-reroll {
-            display: none; width: 100%; background-color: var(--danger-red); color: #fff; padding: 12px; font-size: 0.9rem; font-weight: 700; margin-top: 10px; cursor: pointer;
+        
+        .verify-footer-actions {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px;
         }
+        .btn-action-ok {
+            background-color: var(--success-green); color: #fff; width: 100%; box-shadow: 0 0 10px rgba(42, 157, 143, 0.3);
+        }
+        .btn-action-ok:hover { filter: brightness(1.2); }
+        .btn-action-draw {
+            background-color: var(--danger-red); color: #fff; width: 100%; box-shadow: 0 0 10px rgba(230, 57, 70, 0.3);
+        }
+        .btn-action-draw:hover { filter: brightness(1.2); }
     </style>
 </head>
 <body>
@@ -208,12 +219,17 @@
                 <div class="verify-header">
                     <div class="verify-user">Sprawdzanie obecności: <span id="verify-nick" style="color: var(--accent-glow);">Nick</span></div>
                     <div class="verify-timer-box">
-                        <button class="btn-manual" onclick="manualVerify()">✔ Potwierdź Ręcznie</button>
+                        <button class="btn-manual" onclick="manualVerify()">✔ Udawaj wiadomość widza</button>
                         <div class="verify-timer" id="verify-timer">60s</div>
                     </div>
                 </div>
+                
                 <div class="verify-chat-box" id="verify-chat-box"></div>
-                <button class="btn-reroll" id="btn-reroll" onclick="rerollDraw()">Ponowne losowanie (Reroll)</button>
+                
+                <div class="verify-footer-actions">
+                    <button class="btn-action-ok" id="btn-verify-confirm" onclick="confirmWinnerAndAdd()">✔ Zatwierdź i dodaj</button>
+                    <button class="btn-action-draw" id="btn-verify-reroll" onclick="rejectWinnerAndReroll()">❌ Losuj Ponownie</button>
+                </div>
             </div>
 
             <div class="arena" id="participants-grid"></div>
@@ -243,6 +259,7 @@
         let activeVerificationWinner = null;
         let verificationTimerInterval = null;
         let verificationTimeLeft = 60;
+        let hasPlayerResponded = false;
 
         const grid = document.getElementById('participants-grid');
         const countDisplay = document.getElementById('count-display');
@@ -260,7 +277,9 @@
         const verifyNick = document.getElementById('verify-nick');
         const verifyTimer = document.getElementById('verify-timer');
         const verifyChatBox = document.getElementById('verify-chat-box');
-        const btnReroll = document.getElementById('btn-reroll');
+        
+        const btnVerifyConfirm = document.getElementById('btn-verify-confirm');
+        const btnVerifyReroll = document.getElementById('btn-verify-reroll');
 
         socket.on('init', (data) => {
             grid.innerHTML = "";
@@ -306,24 +325,19 @@
 
             if (cleanSender !== cleanWinner) return;
 
+            // Gracz dał znak życia -> zatrzymujemy licznik czasu
             if (verificationTimerInterval !== null) {
                 clearInterval(verificationTimerInterval);
                 verificationTimerInterval = null;
+                hasPlayerResponded = true;
 
                 verifyTimer.innerText = "OK!";
                 verifyTimer.style.color = "var(--success-green)";
                 verifyTimer.style.borderColor = "var(--success-green)";
-                statusDisplay.innerText = `@${activeVerificationWinner} potwierdził obecność!`;
-
-                const tcValue = tcInput.value || "0";
-                winnersList.push({ nick: activeVerificationWinner, status: 'verified' });
-
-                const tr = document.createElement('tr');
-                tr.id = `table-winner-${activeVerificationWinner}`;
-                tr.innerHTML = `<td>${activeVerificationWinner}</td><td class="td-tc">${tcValue} TC</td>`;
-                winnersTableBody.appendChild(tr);
-
-                applyWinnerStyle(activeVerificationWinner, 'verified');
+                statusDisplay.innerText = `@${activeVerificationWinner} napisał na czacie! Czekam na decyzję streamera.`;
+                
+                // Odblokowujemy możliwość zatwierdzenia, ponieważ gracz odpisał
+                btnVerifyConfirm.style.display = 'block';
             }
 
             const div = document.createElement('div');
@@ -331,18 +345,48 @@
             div.innerHTML = `<strong>${activeVerificationWinner}:</strong> ${message}`;
             verifyChatBox.appendChild(div);
             verifyChatBox.scrollTop = verifyChatBox.scrollHeight;
+        }
 
-            const scopeWinner = activeVerificationWinner;
-            setTimeout(() => {
-                if (activeVerificationWinner === scopeWinner && verificationTimerInterval === null) {
-                    verifyPanel.style.display = 'none';
-                }
-            }, 5000);
+        // RĘCZNE DODANIE WIDZA DO TABELI PRZEZ STREAMERA (Przycisk "Zatwierdź i dodaj")
+        function confirmWinnerAndAdd() {
+            if (!activeVerificationWinner) return;
+
+            const tcValue = tcInput.value || "0";
+            winnersList.push({ nick: activeVerificationWinner, status: 'verified' });
+
+            const tr = document.createElement('tr');
+            tr.id = `table-winner-${activeVerificationWinner}`;
+            tr.innerHTML = `<td>${activeVerificationWinner}</td><td class="td-tc">${tcValue} TC</td>`;
+            winnersTableBody.appendChild(tr);
+
+            applyWinnerStyle(activeVerificationWinner, 'verified');
+            statusDisplay.innerText = `Nagroda przyznana dla @${activeVerificationWinner}!`;
+            
+            closeVerificationPanel();
+        }
+
+        // ODRZUCENIE WIDZA I AUTOMATYCZNY REROLL (Przycisk "Losuj Ponownie")
+        function rejectWinnerAndReroll() {
+            if (!activeVerificationWinner) return;
+
+            // Zapisujemy gracza jako dyskwalifikacja
+            winnersList.push({ nick: activeVerificationWinner, status: 'disqualified' });
+
+            const tr = document.createElement('tr');
+            tr.className = 'tr-disqualified';
+            tr.innerHTML = `<td>${activeVerificationWinner} (POMINIĘTY)</td><td class="td-tc">${tcInput.value || 0} TC</td>`;
+            winnersTableBody.appendChild(tr);
+
+            applyWinnerStyle(activeVerificationWinner, 'disqualified');
+            
+            // Czyścimy aktualny stan i automatycznie odpalamy nowe losowanie
+            closeVerificationPanel();
+            startCinematicDraw();
         }
 
         function manualVerify() {
             if (!activeVerificationWinner) return;
-            checkAndVerifyPlayer(activeVerificationWinner, "Obecność potwierdzona ręcznie przez admina.");
+            checkAndVerifyPlayer(activeVerificationWinner, "Jestem! Obecny!");
         }
 
         function saveKeyword() {
@@ -372,7 +416,7 @@
             passwordDisplay.innerText = "-";
             statusDisplay.innerText = "Zresetowano system"; 
             wrapper.style.display = 'none'; 
-            resetVerificationState(); 
+            closeVerificationPanel(); 
             updateCounter();
         });
         
@@ -417,9 +461,12 @@
         function startCinematicDraw() {
             const excludedNicks = winnersList.map(w => w.nick);
             const available = localParticipants.filter(p => !excludedNicks.includes(p));
-            if (available.length === 0) return;
+            if (available.length === 0) {
+                statusDisplay.innerText = "Brak dostępnych uczestników do wylosowania!";
+                return;
+            }
 
-            resetVerificationState();
+            closeVerificationPanel();
             const randomIndex = Math.floor(Math.random() * available.length);
             const winner = available[randomIndex];
 
@@ -441,7 +488,7 @@
             }, 50);
 
             setTimeout(() => {
-                statusDisplay.innerText = `Wylosowano: ${winner}! Czekam na czat...`;
+                statusDisplay.innerText = `Wylosowano: ${winner}! Czekam na znak na czacie...`;
                 startVerificationStage(winner);
             }, 4550);
         }
@@ -449,10 +496,22 @@
         function startVerificationStage(winnerNick) {
             activeVerificationWinner = winnerNick;
             verificationTimeLeft = 60;
+            hasPlayerResponded = false;
+            
             verifyNick.innerText = winnerNick;
             verifyTimer.innerText = "60s";
+            verifyTimer.style.color = "var(--danger-red)";
+            verifyTimer.style.borderColor = "rgba(230, 57, 70, 0.2)";
+            
             verifyChatBox.innerHTML = `<div style="color: #55486e; font-style: italic;">Oczekiwanie na dowolną wiadomość od @${winnerNick}...</div>`;
-            btnReroll.style.display = 'none';
+            
+            // Ukrywamy przycisk "Zatwierdź" na start (póki gracz nic nie napisał)
+            btnVerifyConfirm.style.display = 'none';
+            // Przycisk "Losuj ponownie" jest zawsze dostępny dla streamera
+            btnVerifyReroll.style.display = 'block';
+            btnVerifyReroll.className = 'btn-action-draw';
+            btnVerifyReroll.innerText = "❌ Pomiń / Losuj Ponownie";
+            
             verifyPanel.style.display = 'block';
 
             verificationTimerInterval = setInterval(() => {
@@ -462,25 +521,32 @@
             }, 1000);
         }
 
+        // CO SIĘ DZIEJE GDY MINIE 60 SEKUND BEZ ODPOWIEDZI
         function handleVerificationTimeout() {
-            clearInterval(verificationTimerInterval); verificationTimerInterval = null;
+            clearInterval(verificationTimerInterval); 
+            verificationTimerInterval = null;
+            
             verifyTimer.innerText = "BRAK!";
-            winnersList.push({ nick: activeVerificationWinner, status: 'disqualified' });
-
-            const tr = document.createElement('tr');
-            tr.className = 'tr-disqualified';
-            tr.innerHTML = `<td>${activeVerificationWinner} (BRAK)</td><td class="td-tc">${tcInput.value || 0} TC</td>`;
-            winnersTableBody.appendChild(tr);
-
-            applyWinnerStyle(activeVerificationWinner, 'disqualified');
-            btnReroll.style.display = 'block';
+            statusDisplay.innerText = `@${activeVerificationWinner} nie odpowiedział w wyznaczonym czasie!`;
+            
+            // Ukrywamy przycisk zatwierdzania, bo gracz przegrał czas
+            btnVerifyConfirm.style.display = 'none';
+            
+            // Przycisk odrzucenia zmienia się w wielki, czerwony alert do ponownego losowania
+            btnVerifyReroll.className = 'btn-action-draw';
+            btnVerifyReroll.style.gridColumn = '1 / span 2'; // Rozciąga go na całą szerokość panelu
+            btnVerifyReroll.innerText = "❌ Czas minął! Losuj kolejną osobę";
         }
 
-        function rerollDraw() { resetVerificationState(); startCinematicDraw(); }
-        function resetVerificationState() {
+        function closeVerificationPanel() {
             if (verificationTimerInterval) clearInterval(verificationTimerInterval);
-            verificationTimerInterval = null; activeVerificationWinner = null; verifyPanel.style.display = 'none';
-            verifyTimer.style.color = "var(--danger-red)"; verifyTimer.style.borderColor = "rgba(230, 57, 70, 0.2)";
+            verificationTimerInterval = null; 
+            activeVerificationWinner = null; 
+            hasPlayerResponded = false;
+            verifyPanel.style.display = 'none';
+            
+            // Resetujemy układ przycisków w stopce do domyślnego
+            btnVerifyReroll.style.gridColumn = 'auto';
         }
     </script>
 </body>
