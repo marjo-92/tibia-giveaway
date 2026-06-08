@@ -113,7 +113,10 @@
         .sidebar-right { width: 320px; min-width: 320px; }
         .table-container { flex: 1; overflow-y: auto; background-color: var(--bg-input); border-radius: 8px; border: 1px solid var(--border-card); }
         table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
-@@ -120,7 +115,7 @@
+        th { background-color: rgba(0,0,0,0.3); color: var(--text-muted); padding: 12px; font-weight: 700; text-transform: uppercase; font-size: 0.75rem; border-bottom: 1px solid var(--border-card); }
+        td { padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.03); font-weight: 600; }
+        .td-tc { text-align: right; color: var(--accent-glow); }
+
         .tr-disqualified td { color: var(--danger-red) !important; text-decoration: line-through; }
         .tr-disqualified .td-tc { color: var(--danger-red) !important; }
 
@@ -122,7 +125,152 @@
         .ticker-wrapper {
             display: none; position: relative; width: 100%; height: 95px; background: #07040c; border: 2px solid var(--border-card); border-radius: 12px; overflow: hidden; box-shadow: inset 0 0 20px rgba(0,0,0,0.9); margin-bottom: 15px; flex-shrink: 0;
         }
-@@ -273,59 +268,43 @@
+        .ticker-pointer {
+            position: absolute; top: 0; bottom: 0; left: 50%; width: 4px; background: var(--accent-glow); z-index: 10; box-shadow: 0 0 15px var(--accent-glow); transform: translateX(-50%);
+        }
+        .ticker-pointer::before { content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%); border-left: 10px solid transparent; border-right: 10px solid transparent; border-top: 10px solid var(--accent-glow); }
+        .ticker-pointer::after { content: ''; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); border-left: 10px solid transparent; border-right: 10px solid transparent; border-bottom: 10px solid var(--accent-glow); }
+        .ticker-ribbon { display: flex; position: absolute; left: 0; top: 0; height: 100%; will-change: transform; }
+        .ticker-item {
+            min-width: 170px; max-width: 170px; height: 100%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.1rem; border-right: 1px solid rgba(255,255,255,0.04); color: var(--text-main); box-sizing: border-box; background: linear-gradient(180deg, #1d1430 0%, #130d21 100%);
+        }
+
+        /* PANEL WERYFIKACJI */
+        .verify-panel {
+            display: none; background: #0f0a1c; border: 2px solid var(--border-card); border-radius: 12px; padding: 15px 20px; margin-bottom: 15px; flex-shrink: 0; box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+        }
+        .verify-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .verify-user { font-size: 1.1rem; font-weight: 800; color: #fff; }
+        .verify-timer-box { display: flex; align-items: center; gap: 10px; }
+
+        .btn-manual {
+            background-color: var(--success-green); color: #fff; padding: 6px 14px; font-size: 0.75rem; font-weight: 700; border-radius: 6px; cursor: pointer;
+        }
+        .verify-timer {
+            font-size: 1.2rem; font-weight: 800; color: var(--danger-red); background: rgba(230, 57, 70, 0.1); padding: 4px 12px; border-radius: 6px; border: 1px solid rgba(230, 57, 70, 0.2);
+        }
+        .verify-chat-box {
+            background: #07040c; border: 1px solid var(--border-panel); border-radius: 8px; padding: 10px; height: 75px; overflow-y: auto; font-size: 0.85rem; color: var(--text-muted); text-align: left; display: flex; flex-direction: column; gap: 4px;
+        }
+        .chat-line { color: #fff; word-break: break-all; font-weight: 600; }
+        .chat-line strong { color: var(--accent-glow); }
+        .btn-reroll {
+            display: none; width: 100%; background-color: var(--danger-red); color: #fff; padding: 12px; font-size: 0.9rem; font-weight: 700; margin-top: 10px; cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="panel sidebar-left">
+        <div class="panel-title">Ustawienia Losowania</div>
+
+        <div class="form-group">
+            <label>Słowo kluczowe:</label>
+            <input id="keyword-input" type="text" placeholder="Wpisz hasło...">
+        </div>
+
+        <div class="form-group">
+            <label>Ilość TC:</label>
+            <input id="tc-input" type="number" value="50">
+        </div>
+
+        <div class="form-group">
+            <label>Ilość uczestników: <span id="slider-val">10</span></label>
+            <input id="participant-slider" type="range" min="1" max="100" value="10" oninput="document.getElementById('slider-val').innerText = this.value">
+        </div>
+
+        <div class="btn-container-row">
+            <button class="btn-save" onclick="saveKeyword()">Zapisz</button>
+            <button class="btn-reset" onclick="triggerReset()">Reset</button>
+        </div>
+
+        <hr style="border: 0; border-top: 1px solid var(--border-card); margin-bottom: 25px; width: 100%;">
+
+        <button class="btn-save" style="width: 100%; padding: 15px; font-size: 0.9rem;" onclick="triggerStartFight()">Rozpocznij losowanie</button>
+        <button class="btn-action" style="width: 100%;" onclick="startCinematicDraw()">Wylosuj zwycięzcę</button>
+        <button class="btn-action" style="width: 100%;" onclick="shuffleParticipants()">Przemieszaj</button>
+    </div>
+
+    <div class="main-content">
+        <div class="status-header">
+            <div><span class="status-lbl">Status:</span> <span id="status-display" class="status-val" style="color: #fff;">Oczekiwanie</span></div>
+            <div><span class="status-lbl">Aktywne Hasło:</span> <span id="password-display" class="status-val">-</span></div>
+            <div><span class="status-lbl">Dołączyło:</span> <span id="count-display" class="status-val">0</span></div>
+        </div>
+
+        <div class="arena-wrapper">
+            <div class="arena-title">arena</div>
+
+            <div class="ticker-wrapper" id="ticker-wrapper">
+                <div class="ticker-pointer"></div>
+                <div id="ticker-ribbon" class="ticker-ribbon"></div>
+            </div>
+
+            <div class="verify-panel" id="verify-panel">
+                <div class="verify-header">
+                    <div class="verify-user">Sprawdzanie obecności: <span id="verify-nick" style="color: var(--accent-glow);">Nick</span></div>
+                    <div class="verify-timer-box">
+                        <button class="btn-manual" onclick="manualVerify()">✔ Potwierdź Ręcznie</button>
+                        <div class="verify-timer" id="verify-timer">60s</div>
+                    </div>
+                </div>
+                <div class="verify-chat-box" id="verify-chat-box"></div>
+                <button class="btn-reroll" id="btn-reroll" onclick="rerollDraw()">Ponowne losowanie (Reroll)</button>
+            </div>
+
+            <div class="arena" id="participants-grid"></div>
+        </div>
+    </div>
+
+    <div class="panel sidebar-right">
+        <div class="panel-title">Zwycięzcy</div>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Nick</th>
+                        <th style="text-align: right;">Nagroda</th>
+                    </tr>
+                </thead>
+                <tbody id="winners-table-body"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+        let localParticipants = [];
+        let winnersList = [];
+
+        let activeVerificationWinner = null;
+        let verificationTimerInterval = null;
+        let verificationTimeLeft = 60;
+
+        const grid = document.getElementById('participants-grid');
+        const countDisplay = document.getElementById('count-display');
+        const passwordDisplay = document.getElementById('password-display');
+        const statusDisplay = document.getElementById('status-display');
+        const winnersTableBody = document.getElementById('winners-table-body');
+        const keywordInput = document.getElementById('keyword-input');
+        const tcInput = document.getElementById('tc-input');
+        const participantSlider = document.getElementById('participant-slider');
+
+        const ribbon = document.getElementById('ticker-ribbon');
+        const wrapper = document.getElementById('ticker-wrapper');
+
+        const verifyPanel = document.getElementById('verify-panel');
+        const verifyNick = document.getElementById('verify-nick');
+        const verifyTimer = document.getElementById('verify-timer');
+        const verifyChatBox = document.getElementById('verify-chat-box');
+        const btnReroll = document.getElementById('btn-reroll');
+
+        socket.on('init', (data) => {
+            grid.innerHTML = "";
+            localParticipants = data.participants || [];
+            passwordDisplay.innerText = data.keyword ? data.keyword.toUpperCase() : "A";
+            keywordInput.value = data.keyword || "a";
+            localParticipants.forEach(p => renderParticipant(p));
+            updateCounter();
         });
 
         socket.on('newParticipant', (sender) => {
@@ -200,7 +348,20 @@
             if (verificationTimerInterval !== null) {
                 clearInterval(verificationTimerInterval);
                 verificationTimerInterval = null;
-@@ -346,13 +325,14 @@
+
+                verifyTimer.innerText = "OK!";
+                verifyTimer.style.color = "var(--success-green)";
+                verifyTimer.style.borderColor = "var(--success-green)";
+                statusDisplay.innerText = `@${activeVerificationWinner} potwierdził obecność!`;
+
+                const tcValue = tcInput.value || "0";
+                winnersList.push({ nick: activeVerificationWinner, status: 'verified' });
+
+                const tr = document.createElement('tr');
+                tr.id = `table-winner-${activeVerificationWinner}`;
+                tr.innerHTML = `<td>${activeVerificationWinner}</td><td class="td-tc">${tcValue} TC</td>`;
+                winnersTableBody.appendChild(tr);
+
                 applyWinnerStyle(activeVerificationWinner, 'verified');
             }
 
@@ -216,7 +377,10 @@
             const scopeWinner = activeVerificationWinner;
             setTimeout(() => {
                 if (activeVerificationWinner === scopeWinner && verificationTimerInterval === null) {
-@@ -363,14 +343,16 @@
+                    verifyPanel.style.display = 'none';
+                }
+            }, 5000);
+        }
 
         function manualVerify() {
             if (!activeVerificationWinner) return;
@@ -234,7 +398,62 @@
         socket.on('triggerFight', () => { startCinematicDraw(); });
 
         function renderParticipant(sender) {
-@@ -433,7 +415,7 @@
+            if (!document.getElementById('p-' + sender)) {
+                const div = document.createElement('div'); div.className = 'p-card'; div.id = 'p-' + sender; div.innerText = sender; grid.appendChild(div);
+            }
+        }
+        function updateCounter() { countDisplay.innerText = localParticipants.length; }
+        function saveKeyword() { socket.emit('updateKeyword', keywordInput.value); }
+        function triggerReset() { socket.emit('reset'); }
+        function triggerStartFight() { socket.emit('startFight'); }
+
+        function shuffleParticipants() {
+            if (localParticipants.length < 2) return;
+            for (let i = localParticipants.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [localParticipants[i], localParticipants[j]] = [localParticipants[j], localParticipants[i]];
+            }
+            grid.innerHTML = "";
+            localParticipants.forEach(p => {
+                renderParticipant(p);
+                const winnerObj = winnersList.find(w => w.nick === p);
+                if (winnerObj) applyWinnerStyle(p, winnerObj.status);
+            });
+        }
+
+        function applyWinnerStyle(winnerNick, status) {
+            const card = document.getElementById('p-' + winnerNick);
+            if (card) {
+                card.className = 'p-card';
+                if (status === 'verified') card.classList.add('winner-active');
+                if (status === 'disqualified') card.classList.add('winner-disqualified');
+            }
+        }
+
+        function startCinematicDraw() {
+            const excludedNicks = winnersList.map(w => w.nick);
+            const available = localParticipants.filter(p => !excludedNicks.includes(p));
+            if (available.length === 0) return;
+
+            resetVerificationState();
+            const randomIndex = Math.floor(Math.random() * available.length);
+            const winner = available[randomIndex];
+
+            const itemWidth = 170; const targetIndex = 26; const totalItems = 34;
+            ribbon.innerHTML = ""; ribbon.style.transition = "none"; ribbon.style.transform = "translateX(0px)";
+
+            for (let i = 0; i < totalItems; i++) {
+                const el = document.createElement('div'); el.className = 'ticker-item';
+                if (i === targetIndex) { el.innerText = winner; el.id = "winning-ticker-cell"; } 
+                else { el.innerText = localParticipants[Math.floor(Math.random() * localParticipants.length)] || "..."; }
+                ribbon.appendChild(el);
+            }
+
+            wrapper.style.display = 'block';
+            setTimeout(() => {
+                const stopPosition = (targetIndex * itemWidth) + (itemWidth / 2) - (wrapper.offsetWidth / 2);
+                ribbon.style.transition = "transform 4.5s cubic-bezier(0.1, 1, 0.1, 1)";
+                ribbon.style.transform = `translateX(-${stopPosition}px)`;
             }, 50);
 
             setTimeout(() => {
@@ -243,7 +462,9 @@
                 startVerificationStage(winner);
             }, 4550);
         }
-@@ -443,7 +425,7 @@
+
+        function startVerificationStage(winnerNick) {
+            activeVerificationWinner = winnerNick;
             verificationTimeLeft = 60;
             verifyNick.innerText = winnerNick;
             verifyTimer.innerText = "60s";
@@ -251,9 +472,6 @@
             verifyChatBox.innerHTML = `<div style="color: #55486e; font-style: italic;">Oczekiwanie na dowolną wiadomość od @${winnerNick}...</div>`;
             btnReroll.style.display = 'none';
             verifyPanel.style.display = 'block';
-
-
-
 
             verificationTimerInterval = setInterval(() => {
                 verificationTimeLeft--;
