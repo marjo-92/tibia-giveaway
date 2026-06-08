@@ -110,10 +110,11 @@
         .arena::-webkit-scrollbar-thumb { background: var(--border-card); border-radius: 10px; }
         .arena::-webkit-scrollbar-thumb:hover { background: var(--accent-glow); }
 
-        .sidebar-right { width: 320px; min-width: 320px; }
-        .table-container { flex: 1; overflow-y: auto; background-color: var(--bg-input); border-radius: 8px; border: 1px solid var(--border-card); }
+        /* Prawy Panel - Zmodyfikowany pod przycisk na dole */
+        .sidebar-right { width: 320px; min-width: 320px; display: flex; flex-direction: column; }
+        .table-container { flex: 1; overflow-y: auto; background-color: var(--bg-input); border-radius: 8px; border: 1px solid var(--border-card); margin-bottom: 15px; }
         table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
-        th { background-color: rgba(0,0,0,0.3); color: var(--text-muted); padding: 12px; font-weight: 700; text-transform: uppercase; font-size: 0.75rem; border-bottom: 1px solid var(--border-card); }
+        th { background-color: rgba(0,0,0,0.3); color: var(--text-muted); padding: 12px; font-weight: 700; text-transform: uppercase; font-size: 0.75rem; border-bottom: 1px solid var(--border-card); position: sticky; top: 0; }
         td { padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.03); font-weight: 600; }
         .td-tc { text-align: right; color: var(--accent-glow); }
 
@@ -276,6 +277,7 @@
                 <tbody id="winners-table-body"></tbody>
             </table>
         </div>
+        <button class="btn-action" style="color: var(--danger-red); border-color: rgba(230, 57, 70, 0.3);" onclick="clearWinnersList()">Wyczyść listę zwycięzców</button>
     </div>
 
     <script>
@@ -311,6 +313,42 @@
 
         let animationFrameId = null;
 
+        // --- ZARZĄDZANIE PAMIĘCIĄ LOCALSTORAGE ---
+        function loadWinnersFromStorage() {
+            const stored = localStorage.getItem('kickRaffleWinners');
+            if (stored) {
+                winnersList = JSON.parse(stored);
+                renderWinnersTable();
+            }
+        }
+
+        function saveWinnersToStorage() {
+            localStorage.setItem('kickRaffleWinners', JSON.stringify(winnersList));
+        }
+
+        function renderWinnersTable() {
+            winnersTableBody.innerHTML = "";
+            winnersList.forEach(w => {
+                const tr = document.createElement('tr');
+                tr.className = w.status === 'verified' ? 'tr-verified' : 'tr-disqualified';
+                if (w.status === 'verified') tr.id = `table-winner-${w.nick}`;
+                tr.innerHTML = `<td>${w.nick}</td><td class="td-tc">${w.tc} TC</td>`;
+                winnersTableBody.appendChild(tr);
+            });
+        }
+
+        function clearWinnersList() {
+            if (confirm("Czy na pewno chcesz wyczyścić historię wszystkich zwycięzców? Tej akcji nie można cofnąć.")) {
+                winnersList = [];
+                localStorage.removeItem('kickRaffleWinners');
+                renderWinnersTable();
+            }
+        }
+
+        // Ładujemy dane od razu po otwarciu strony
+        loadWinnersFromStorage();
+
+        // --- NASŁUCHIWANIE SOCKETÓW ---
         socket.on('init', (data) => {
             grid.innerHTML = "";
             localParticipants = data.participants || [];
@@ -375,32 +413,28 @@
             verifyChatBox.scrollTop = verifyChatBox.scrollHeight;
         }
 
+        // --- MODYFIKACJA DODAWANIA DO LISTY (ZAPIS) ---
         function confirmWinnerAndAdd() {
             if (!activeVerificationWinner) return;
 
             const tcValue = tcInput.value || "0";
-            winnersList.push({ nick: activeVerificationWinner, status: 'verified' });
-
-            const tr = document.createElement('tr');
-            tr.id = `table-winner-${activeVerificationWinner}`;
-            tr.className = 'tr-verified';
-            tr.innerHTML = `<td>${activeVerificationWinner}</td><td class="td-tc">${tcValue} TC</td>`;
-            winnersTableBody.appendChild(tr);
+            winnersList.push({ nick: activeVerificationWinner, status: 'verified', tc: tcValue });
+            
+            saveWinnersToStorage();
+            renderWinnersTable();
 
             statusDisplay.innerText = `Nagroda przyznana dla @${activeVerificationWinner}!`;
-            
             closeVerificationPanel();
         }
 
         function rejectWinnerAndReroll() {
             if (!activeVerificationWinner) return;
 
-            winnersList.push({ nick: activeVerificationWinner, status: 'disqualified' });
+            const tcValue = tcInput.value || "0";
+            winnersList.push({ nick: activeVerificationWinner, status: 'disqualified', tc: tcValue });
 
-            const tr = document.createElement('tr');
-            tr.className = 'tr-disqualified';
-            tr.innerHTML = `<td>${activeVerificationWinner}</td><td class="td-tc">${tcInput.value || 0} TC</td>`;
-            winnersTableBody.appendChild(tr);
+            saveWinnersToStorage();
+            renderWinnersTable();
             
             closeVerificationPanel();
             startCinematicDraw();
@@ -422,10 +456,9 @@
         });
         
         socket.on('participantsReset', () => {
+            // TUTAJ WAŻNA ZMIANA: Usunięto czyszczenie tabeli winnersList podczas głównego resetu!
             grid.innerHTML = ""; 
-            winnersTableBody.innerHTML = ""; 
             localParticipants = []; 
-            winnersList = [];
             keywordInput.value = "";
             tcInput.value = "";
             participantSlider.value = 1;
@@ -433,7 +466,7 @@
             timeSlider.value = 20;
             document.getElementById('time-slider-val').innerText = "20";
             passwordDisplay.innerText = "-";
-            statusDisplay.innerText = "Zresetowano system"; 
+            statusDisplay.innerText = "Zresetowano uczestników i ustawienia."; 
             wrapper.style.display = 'none'; 
             closeVerificationPanel(); 
             updateCounter();
@@ -497,7 +530,6 @@
             
             wrapper.style.display = 'block';
             
-            // KLUCZ: Używamy clientWidth zamiast offsetWidth. Omija to ramki CSS, centrując idealnie co do milimetra!
             const wrapperCenterPoint = wrapper.clientWidth / 2;
             const itemCenterPoint = itemWidth / 2;
             const stopPosition = (targetIndex * itemWidth) + itemCenterPoint - wrapperCenterPoint;
@@ -511,11 +543,9 @@
 
                 if (progress >= 1) progress = 1;
 
-                // Bezpieczna funkcja zwalniania (nigdy nie wykracza poza cel)
                 const ease = 1 - Math.pow(1 - progress, 5);
                 const currentX = ease * stopPosition;
 
-                // GPU Acceleration: Używamy translate3d i zero wymuszania snapowania wstecz na koniec
                 ribbon.style.transform = `translate3d(-${currentX}px, 0, 0)`;
 
                 if (progress < 1) {
