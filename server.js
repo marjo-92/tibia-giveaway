@@ -8,25 +8,30 @@ const io = new Server(server, { cors: { origin: "*" } });
 
 app.use(express.json());
 
-let participants = new Set();
-let config = { tc: 0, pass: "", excluded: [] };
+// Ręczne nagłówki CORS - to musi zostać, bo bez tego przesyłanie nie działa
+app.use((req, res, next) => {
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    next();
+});
+
+let participants = new Set(); 
+let config = { password: "a", tc: 0, excluded: [] }; // Twój obiekt konfiguracyjny
 
 app.get('/', (req, res) => res.sendFile(__dirname + '/index.html'));
 
 app.post('/new-message', (req, res) => {
-    console.log("Dane odebrane:", req.body); // Sprawdź logi na Renderze!
     const { sender, content } = req.body;
-
+    
     if (sender && content) {
-        // Przesyłanie na czat na stronie (nowy event: chatMessage)
-        io.emit('chatMessage', { sender, content });
-
-        // Logika losowania
-        if (content.toLowerCase().trim() === config.pass.toLowerCase().trim()) {
-            if (!config.excluded.includes(sender) && !participants.has(sender)) {
+        // Przesyłamy czat (oryginalne dane)
+        io.emit('newChat', { sender, content });
+        
+        // Logika hasła (bez zmian, Twoja sprawdzona wersja)
+        if (content.toLowerCase().trim() === config.password.toLowerCase().trim()) {
+            if (!participants.has(sender) && !config.excluded.includes(sender)) {
                 participants.add(sender);
-                // Przesyłanie do listy uczestników
-                io.emit('newParticipant', { sender });
+                io.emit('newParticipant', sender);
             }
         }
     }
@@ -34,14 +39,17 @@ app.post('/new-message', (req, res) => {
 });
 
 io.on('connection', (socket) => {
-    socket.on('updateConfig', (data) => {
-        config = data;
-        console.log("Nowa konfiguracja:", config);
+    socket.emit('init', { participants: Array.from(participants), config });
+    
+    socket.on('updateConfig', (newConfig) => { 
+        config = newConfig; 
     });
-    socket.on('reset', () => {
-        participants.clear();
-        io.emit('participantsReset');
+    
+    socket.on('reset', () => { 
+        participants.clear(); 
+        io.emit('participantsReset'); 
     });
 });
 
-server.listen(3000, () => console.log("Serwer działa na porcie 3000"));
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => console.log(`Serwer działa na porcie: ${PORT}`));
