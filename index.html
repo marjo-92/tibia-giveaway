@@ -142,7 +142,7 @@
             border-bottom: 2px solid transparent;
         }
 
-        /* ANIMACJA MIGAJĄCEGO FIOLETOWEGO NEONU BEZPOŚREDNIO NA ELEMENT BĘBNA */
+        /* ANIMACJA MIGAJĄCEGO FIOLETOWEGO NEONU NA ELEMENT BĘBNA */
         @keyframes tickerNeonPulse {
             0% { border-top-color: #b624ff; border-bottom-color: #b624ff; box-shadow: inset 0 0 8px rgba(182, 36, 255, 0.5); background: linear-gradient(180deg, #321654 0%, #130d21 100%); }
             50% { border-top-color: #e2abff; border-bottom-color: #e2abff; box-shadow: inset 0 0 20px rgba(182, 36, 255, 0.9); background: linear-gradient(180deg, #4d1d85 0%, #1a0f30 100%); }
@@ -173,7 +173,6 @@
         .chat-line { color: #fff; word-break: break-all; font-weight: 600; }
         .chat-line strong { color: var(--accent-glow); }
         
-        /* WYŚRODKOWANY UKŁAD ELEMENTÓW STOPKI */
         .verify-footer-actions {
             display: flex; justify-content: center; gap: 15px; margin-top: 15px; width: 100%; box-sizing: border-box;
         }
@@ -322,7 +321,6 @@
                 renderParticipant(cleanSender);
                 updateCounter();
             }
-            checkAndVerifyPlayer(cleanSender, "Wpisał słowo kluczowe ponownie.");
         });
 
         socket.on('newChat', (data) => {
@@ -353,6 +351,7 @@
                 statusDisplay.innerText = `@${activeVerificationWinner} napisał na czacie! Czekam na decyzję streamera.`;
                 
                 btnVerifyConfirm.style.display = 'block';
+                verifyChatBox.innerHTML = ""; // Czyścimy komunikat oczekiwania przy pierwszej wiadomości
             }
 
             const div = document.createElement('div');
@@ -436,7 +435,8 @@
             socket.emit('reset'); 
         }
         
-        function triggerStartFight() { triggerReset(); startCinematicDraw(); }
+        // POPRAWKA: Usunięto triggerReset() stąd, dzięki czemu bęben NIE znika po 1 sekundzie!
+        function triggerStartFight() { startCinematicDraw(); }
 
         function shuffleParticipants() {
             if (localParticipants.length < 2) return;
@@ -457,7 +457,7 @@
             if (available.length === 0) {
                 statusDisplay.innerText = "Brak dostępnych nowych uczestników do wylosowania!";
                 alert("Wszyscy uczestnicy zostali już wylosowani lub pominięci!");
-                grid.style.display = 'grid'; // Awaryjnie przywracamy siatkę nicków
+                grid.style.display = 'grid';
                 return;
             }
 
@@ -493,7 +493,6 @@
             verificationTimeLeft = 60;
             hasPlayerResponded = false;
             
-            // UKRYWANIE NICKÓW NA DOLE ARENY PO WYLOSOWANIU
             grid.style.display = 'none';
             
             verifyNick.innerText = winnerNick;
@@ -528,7 +527,7 @@
             btnVerifyConfirm.style.display = 'none';
             
             btnVerifyReroll.className = 'btn-action-draw';
-            btnVerifyReroll.style.maxWidth = '100%'; // Rozciągamy wyśrodkowany przycisk na pełną szerokość
+            btnVerifyReroll.style.maxWidth = '100%'; 
             btnVerifyReroll.innerText = "❌ Czas minął! Losuj kolejną osobę";
         }
 
@@ -540,7 +539,6 @@
             hasPlayerResponded = false;
             verifyPanel.style.display = 'none';
             
-            // PRZYWRACANIE WIDOCZNOŚCI SIATKI NICKÓW PO ZAKOŃCZENIU WERYFIKACJI
             grid.style.display = 'grid';
             btnVerifyReroll.style.maxWidth = '240px';
         }
