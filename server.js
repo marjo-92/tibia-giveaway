@@ -8,21 +8,27 @@ const io = new Server(server, { cors: { origin: "*" } });
 
 app.use(express.json());
 
-// --- TO JEST TEN BRAKUJĄCY FRAGMENT (CORS) ---
-// Bez tego StreamElements nie może wysyłać wiadomości do serwera
+// Ręczne nagłówki CORS
 app.use((req, res, next) => {
     res.header("Access-Control-Allow-Origin", "*");
     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
     next();
 });
-// ---------------------------------------------
 
-// Odbieranie wiadomości ze StreamElements
+let participants = new Set(); 
+let currentKeyword = "a";
+
+app.get('/', (req, res) => res.sendFile(__dirname + '/index.html'));
+
 app.post('/new-message', (req, res) => {
-    console.log("OTRZYMANO DANE Z WIDGETU:", req.body);
+    console.log("Dane odebrane przez serwer:", req.body);
     const { sender, content } = req.body;
     
     if (sender && content) {
+        // Przesyłamy czat dalej
+        io.emit('newChat', { sender, content });
+        
+        // Twoja sprawdzona logika porównywania
         if (content.toLowerCase().trim() === currentKeyword.toLowerCase().trim()) {
             if (!participants.has(sender)) {
                 participants.add(sender);
@@ -33,24 +39,24 @@ app.post('/new-message', (req, res) => {
     res.status(200).send('OK');
 });
 
-// Serwowanie plików HTML i CSS
+// BEZPIECZNE SERWOWANIE PLIKU CSS (nie koliduje z trasami powyżej)
 app.use(express.static(__dirname));
-
-let participants = new Set();
-let currentKeyword = "a";
 
 io.on('connection', (socket) => {
     socket.emit('init', { participants: Array.from(participants), keyword: currentKeyword });
     
     socket.on('updateKeyword', (kw) => { 
         currentKeyword = kw; 
+        io.emit('keywordChanged', kw); 
     });
     
+    socket.on('startFight', () => io.emit('triggerFight'));
     socket.on('reset', () => { 
         participants.clear(); 
         io.emit('participantsReset'); 
     });
 });
 
-const PORT = process.env.PORT || 10000;
+// Ta zmiana pozwoli Renderowi poprawnie uruchomić serwer na dowolnym porcie
+const PORT = process.env.PORT || 3000;
 server.listen(PORT, '0.0.0.0', () => console.log(`Serwer działa na porcie: ${PORT}`));
