@@ -8,10 +8,16 @@ const io = new Server(server, { cors: { origin: "*" } });
 
 app.use(express.json());
 
-// Ręczne nagłówki CORS
+// Ręczne nagłówki CORS rozbudowane o obsługę preflight (OPTIONS)
 app.use((req, res, next) => {
     res.header("Access-Control-Allow-Origin", "*");
     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    
+    // Jeśli StreamElements pyta o zgodę przed wysłaniem danych, od razu mówimy OK
+    if (req.method === "OPTIONS") {
+        return res.sendStatus(200);
+    }
     next();
 });
 
@@ -39,7 +45,7 @@ app.post('/new-message', (req, res) => {
     res.status(200).send('OK');
 });
 
-// BEZPIECZNE SERWOWANIE PLIKU CSS (nie koliduje z trasami powyżej)
+// Serwowanie plików statycznych (CSS) na samym dole
 app.use(express.static(__dirname));
 
 io.on('connection', (socket) => {
@@ -57,6 +63,5 @@ io.on('connection', (socket) => {
     });
 });
 
-// Ta zmiana pozwoli Renderowi poprawnie uruchomić serwer na dowolnym porcie
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, '0.0.0.0', () => console.log(`Serwer działa na porcie: ${PORT}`));
