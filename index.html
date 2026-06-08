@@ -30,7 +30,7 @@
             gap: 20px;
         }
 
-        /* WSPÓLNE STYLE DLA PANELU LEWEGO I PRAWEGO */
+        /* PANEL STYLE */
         .panel {
             background-color: var(--bg-panel);
             border: 1px solid var(--border-panel);
@@ -52,7 +52,7 @@
             padding-left: 10px;
         }
 
-        /* LEWA KOLUMNA - USTAWIENIA */
+        /* LEWA KOLUMNA */
         .sidebar-left {
             width: 320px;
             min-width: 320px;
@@ -72,10 +72,7 @@
             font-weight: 600;
         }
 
-        .form-group label span {
-            color: var(--accent-glow);
-            float: right;
-        }
+        .form-group label span { color: var(--accent-glow); float: right; }
 
         input[type="text"], input[type="number"] {
             background-color: var(--bg-input);
@@ -93,7 +90,6 @@
             box-shadow: 0 0 8px rgba(182, 36, 255, 0.3);
         }
 
-        /* Stylizacja suwaka (Slider) */
         input[type="range"] {
             -webkit-appearance: none;
             width: 100%;
@@ -102,7 +98,6 @@
             border-radius: 4px;
             outline: none;
         }
-
         input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none;
             width: 18px;
@@ -110,12 +105,7 @@
             border-radius: 50%;
             background: var(--accent-glow);
             cursor: pointer;
-            transition: transform 0.1s;
             box-shadow: 0 0 8px var(--accent-glow);
-        }
-
-        input[type="range"]::-webkit-slider-thumb:hover {
-            transform: scale(1.2);
         }
 
         .btn-container-row {
@@ -142,11 +132,7 @@
             box-shadow: 0 0 10px rgba(182, 36, 255, 0.4);
         }
         .btn-save:hover { background-color: var(--accent-hover); }
-
-        .btn-reset {
-            background-color: var(--danger-red);
-            color: #fff;
-        }
+        .btn-reset { background-color: var(--danger-red); color: #fff; }
         .btn-reset:hover { filter: brightness(1.2); }
 
         .btn-action {
@@ -160,7 +146,7 @@
             background-color: rgba(182, 36, 255, 0.05);
         }
 
-        /* ŚRODKOWA KOLUMNA - ARENA NICKÓW */
+        /* ŚRODEK */
         .main-content {
             flex: 1;
             display: flex;
@@ -210,7 +196,6 @@
             gap: 12px;
         }
 
-        /* Wyśrodkowane nicki w ramkach */
         .p-card {
             background-color: var(--bg-panel);
             border: 1px solid var(--border-card);
@@ -224,15 +209,16 @@
             font-weight: 600;
             color: var(--text-main);
             word-break: break-all;
-            transition: all 0.2s;
         }
 
-        /* PRAWA KOLUMNA - TABELA ZWYCIĘZCÓW */
-        .sidebar-right {
-            width: 320px;
-            min-width: 320px;
-        }
+        /* Customowy, fioletowy pasek przewijania */
+        .arena::-webkit-scrollbar { width: 6px; }
+        .arena::-webkit-scrollbar-track { background: transparent; }
+        .arena::-webkit-scrollbar-thumb { background: var(--border-card); border-radius: 10px; }
+        .arena::-webkit-scrollbar-thumb:hover { background: var(--accent-glow); }
 
+        /* PRAWA KOLUMNA */
+        .sidebar-right { width: 320px; min-width: 320px; }
         .table-container {
             flex: 1;
             overflow-y: auto;
@@ -240,14 +226,7 @@
             border-radius: 8px;
             border: 1px solid var(--border-card);
         }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            text-align: left;
-            font-size: 0.9rem;
-        }
-
+        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
         th {
             background-color: rgba(0,0,0,0.3);
             color: var(--text-muted);
@@ -257,19 +236,98 @@
             font-size: 0.75rem;
             border-bottom: 1px solid var(--border-card);
         }
+        td { padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.03); font-weight: 600; }
+        .td-tc { text-align: right; color: var(--accent-glow); }
 
-        td {
-            padding: 12px;
-            border-bottom: 1px solid rgba(255,255,255,0.03);
-            font-weight: 600;
+        /* ==================== KINOWE OKNO LOSOWANIA (BĘBEN) ==================== */
+        .lottery-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(12, 8, 20, 0.9);
+            backdrop-filter: blur(10px);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
         }
 
-        tr:last-child td { border: none; }
-        
-        .td-tc {
-            text-align: right;
-            color: var(--accent-glow);
+        .modal-content {
+            background: var(--bg-panel);
+            border: 2px solid var(--border-panel);
+            box-shadow: 0 0 40px rgba(182, 36, 255, 0.4);
+            border-radius: 16px;
+            padding: 40px;
+            width: 85%;
+            max-width: 850px;
+            text-align: center;
+            box-sizing: border-box;
+        }
+
+        .modal-title {
+            font-size: 1.4rem;
+            font-weight: 800;
+            letter-spacing: 3px;
+            color: #fff;
+            margin-bottom: 35px;
+            text-transform: uppercase;
+            text-shadow: 0 0 10px var(--accent-glow);
+        }
+
+        /* Kontener bębna maszynowego */
+        .ticker-wrapper {
+            position: relative;
+            width: 100%;
+            height: 90px;
+            background: #07040c;
+            border: 1px solid var(--border-card);
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+        }
+
+        /* Celownik / Linia środkowa */
+        .ticker-pointer {
+            position: absolute;
+            top: 0; bottom: 0; left: 50%;
+            width: 4px;
+            background: var(--accent-glow);
+            z-index: 10;
+            box-shadow: 0 0 15px var(--accent-glow);
+            transform: translateX(-50%);
+        }
+        .ticker-pointer::before {
+            content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+            border-left: 10px solid transparent; border-right: 10px solid transparent;
+            border-top: 10px solid var(--accent-glow);
+        }
+        .ticker-pointer::after {
+            content: ''; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
+            border-left: 10px solid transparent; border-right: 10px solid transparent;
+            border-bottom: 10px solid var(--accent-glow);
+        }
+
+        /* Pasek przewijający nicki */
+        .ticker-ribbon {
+            display: flex;
+            position: absolute;
+            left: 0; top: 0; height: 100%;
+            will-change: transform;
+        }
+
+        /* Pojedynczy kafelek w bębnie */
+        .ticker-item {
+            min-width: 170px;
+            max-width: 170px;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             font-weight: 700;
+            font-size: 1.1rem;
+            border-right: 1px solid rgba(255,255,255,0.04);
+            color: var(--text-main);
+            box-sizing: border-box;
+            background: linear-gradient(180deg, #1d1430 0%, #130d21 100%);
         }
     </style>
 </head>
@@ -301,7 +359,7 @@
         <hr style="border: 0; border-top: 1px solid var(--border-card); margin-bottom: 25px; width: 100%;">
 
         <button class="btn-save" style="width: 100%; padding: 15px; font-size: 0.9rem;" onclick="triggerStartFight()">Rozpocznij losowanie</button>
-        <button class="btn-action" style="width: 100%;" onclick="drawWinner()">Wylosuj zwycięzcę</button>
+        <button class="btn-action" style="width: 100%;" onclick="startCinematicDraw()">Wylosuj zwycięzcę</button>
         <button class="btn-action" style="width: 100%;" onclick="shuffleParticipants()">Przemieszaj</button>
     </div>
 
@@ -328,9 +386,18 @@
                         <th style="text-align: right;">Nagroda</th>
                     </tr>
                 </thead>
-                <tbody id="winners-table-body">
-                    </tbody>
+                <tbody id="winners-table-body"></tbody>
             </table>
+        </div>
+    </div>
+
+    <div id="lottery-modal" class="lottery-modal">
+        <div class="modal-content">
+            <div class="modal-title">Trwa losowanie nagrody...</div>
+            <div class="ticker-wrapper" id="ticker-wrapper">
+                <div class="ticker-pointer"></div>
+                <div id="ticker-ribbon" class="ticker-ribbon"></div>
+            </div>
         </div>
     </div>
 
@@ -347,6 +414,11 @@
         const keywordInput = document.getElementById('keyword-input');
         const tcInput = document.getElementById('tc-input');
         const participantSlider = document.getElementById('participant-slider');
+        
+        // Elementy bębna
+        const modal = document.getElementById('lottery-modal');
+        const ribbon = document.getElementById('ticker-ribbon');
+        const wrapper = document.getElementById('ticker-wrapper');
 
         socket.on('init', (data) => {
             grid.innerHTML = "";
@@ -362,6 +434,9 @@
                 localParticipants.push(sender);
                 renderParticipant(sender);
                 updateCounter();
+                
+                // Autoscroll areny w dół
+                grid.scrollTop = grid.scrollHeight;
             }
         });
 
@@ -381,23 +456,11 @@
 
         socket.on('triggerFight', () => {
             const requiredAmount = parseInt(participantSlider.value);
-            
             if (localParticipants.length < requiredAmount) {
                 statusDisplay.innerText = `Za mało osób! Wymagane: ${requiredAmount}`;
                 return;
             }
-            
-            statusDisplay.innerText = "Trwa losowanie...";
-            
-            let shuffles = 0;
-            const interval = setInterval(() => {
-                shuffleParticipants();
-                shuffles++;
-                if (shuffles >= 10) {
-                    clearInterval(interval);
-                    drawWinner();
-                }
-            }, 150);
+            startCinematicDraw();
         });
 
         function renderParticipant(sender) {
@@ -415,8 +478,7 @@
         }
 
         function saveKeyword() {
-            const val = keywordInput.value;
-            socket.emit('updateKeyword', val);
+            socket.emit('updateKeyword', keywordInput.value);
         }
 
         function triggerReset() {
@@ -429,28 +491,29 @@
 
         function shuffleParticipants() {
             if (localParticipants.length < 2) return;
-            
             for (let i = localParticipants.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [localParticipants[i], localParticipants[j]] = [localParticipants[j], localParticipants[i]];
             }
-            
             grid.innerHTML = "";
             localParticipants.forEach(p => {
                 renderParticipant(p);
-                if (winnersList.includes(p)) {
-                    const card = document.getElementById('p-' + p);
-                    if (card) {
-                        card.style.borderColor = 'var(--accent-glow)';
-                        card.style.backgroundColor = 'rgba(182, 36, 255, 0.15)';
-                        card.style.color = 'var(--accent-glow)';
-                        card.style.boxShadow = '0 0 12px rgba(182, 36, 255, 0.4)';
-                    }
-                }
+                if (winnersList.includes(p)) applyWinnerStyle(p);
             });
         }
 
-        function drawWinner() {
+        function applyWinnerStyle(winnerNick) {
+            const card = document.getElementById('p-' + winnerNick);
+            if (card) {
+                card.style.borderColor = 'var(--accent-glow)';
+                card.style.backgroundColor = 'rgba(182, 36, 255, 0.15)';
+                card.style.color = 'var(--accent-glow)';
+                card.style.boxShadow = '0 0 12px rgba(182, 36, 255, 0.4)';
+            }
+        }
+
+        // ==================== LOGIKA KINOWEGO BĘBNA ====================
+        function startCinematicDraw() {
             const available = localParticipants.filter(p => !winnersList.includes(p));
             
             if (available.length === 0) {
@@ -458,30 +521,70 @@
                 return;
             }
 
+            // 1. Losujemy zwycięzcę
             const randomIndex = Math.floor(Math.random() * available.length);
             const winner = available[randomIndex];
+
+            // 2. Budujemy tablicę bębna (35 elementów, żeby ładnie pędziło)
+            const itemWidth = 170; 
+            const targetIndex = 28; // Zwycięzca wyląduje na 28 pozycji na pasku
+            const totalItems = 36;
             
-            winnersList.push(winner);
-            const tcValue = tcInput.value || "0";
+            ribbon.innerHTML = "";
+            ribbon.style.transition = "none";
+            ribbon.style.transform = "translateX(0px)";
 
-            // Dodanie wiersza (Tylko Nick i Nagroda - bez kolumny miejsca)
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${winner}</td>
-                <td class="td-tc">${tcValue} TC</td>
-            `;
-            winnersTableBody.appendChild(tr);
-
-            // Podświetlenie neonowym fioletem na arenie
-            const card = document.getElementById('p-' + winner);
-            if (card) {
-                card.style.borderColor = 'var(--accent-glow)';
-                card.style.backgroundColor = 'rgba(182, 36, 255, 0.2)';
-                card.style.color = 'var(--accent-glow)';
-                card.style.boxShadow = '0 0 15px rgba(182, 36, 255, 0.6)';
+            for (let i = 0; i < totalItems; i++) {
+                const el = document.createElement('div');
+                el.className = 'ticker-item';
+                
+                if (i === targetIndex) {
+                    el.innerText = winner;
+                    el.style.color = 'var(--accent-glow)';
+                    el.style.textShadow = '0 0 10px var(--accent-glow)';
+                } else {
+                    // Wypełniamy resztę paska losowymi osobami
+                    const randP = localParticipants[Math.floor(Math.random() * localParticipants.length)];
+                    el.innerText = randP || "...";
+                }
+                ribbon.appendChild(el);
             }
 
-            statusDisplay.innerText = `Wygrywa: ${winner}!`;
+            // Pokazujemy okno losowania
+            modal.style.display = 'flex';
+            statusDisplay.innerText = "Maszyna losująca w ruchu!";
+
+            // 3. Obliczamy pozycję stopu (wyśrodkowanie targetIndex w oknie + mały losowy offset, żeby nie stawało co do piksela tak samo)
+            setTimeout(() => {
+                const wrapperWidth = wrapper.offsetWidth;
+                const randomInnerOffset = Math.floor(Math.random() * 60) - 30; // +/- 30px losowości
+                const stopPosition = (targetIndex * itemWidth) + (itemWidth / 2) - (wrapperWidth / 2) + randomInnerOffset;
+
+                // Animacja pędu z pięknym efektem hamowania (cubic-bezier)
+                ribbon.style.transition = "transform 4.5s cubic-bezier(0.1, 1, 0.1, 1)";
+                ribbon.style.transform = `translateX(-${stopPosition}px)`;
+            }, 50);
+
+            // 4. Koniec animacji (po 4.5 sekundy)
+            setTimeout(() => {
+                winnersList.push(winner);
+                const tcValue = tcInput.value || "0";
+
+                // Dodanie do tabeli
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td>${winner}</td><td class="td-tc">${tcValue} TC</td>`;
+                winnersTableBody.appendChild(tr);
+
+                // Podświetlenie na głównej arenie
+                applyWinnerStyle(winner);
+                statusDisplay.innerText = `Wygrał: ${winner}!`;
+
+                // Trzymamy okno otwarte przez kolejne 3 sekundy dla "hype'u" i zamykamy
+                setTimeout(() => {
+                    modal.style.display = 'none';
+                }, 3000);
+
+            }, 4550);
         }
     </script>
 </body>
