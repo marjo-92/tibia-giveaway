@@ -142,6 +142,7 @@
             left: 0; 
             top: 0; 
             height: 100%; 
+            will-change: transform;
         }
         
         .ticker-item {
@@ -459,7 +460,6 @@
             localParticipants.forEach(p => renderParticipant(p));
         }
 
-        // UNIKALNY SILNIK MATEMATYCZNY JAVASCRIPT - 100% BLOKADA RUCHU WSTECZ
         function startCinematicDraw() {
             if (animationFrameId) cancelAnimationFrame(animationFrameId);
 
@@ -477,11 +477,9 @@
             const randomIndex = Math.floor(Math.random() * available.length);
             const winner = available[randomIndex];
 
-            // Wracamy do zwartej wstążki (65 kafelków bez szpar)
             const itemWidth = 170; const targetIndex = 52; const totalItems = 65;
             
-            ribbon.style.transition = "none"; 
-            ribbon.style.transform = "translateX(0px)";
+            ribbon.style.transform = "translate3d(0px, 0, 0)";
             ribbon.innerHTML = ""; 
 
             for (let i = 0; i < totalItems; i++) {
@@ -499,33 +497,30 @@
             
             wrapper.style.display = 'block';
             
-            const wrapperCenterPoint = wrapper.offsetWidth / 2;
+            // KLUCZ: Używamy clientWidth zamiast offsetWidth. Omija to ramki CSS, centrując idealnie co do milimetra!
+            const wrapperCenterPoint = wrapper.clientWidth / 2;
             const itemCenterPoint = itemWidth / 2;
             const stopPosition = (targetIndex * itemWidth) + itemCenterPoint - wrapperCenterPoint;
 
-            const startTime = performance.now();
-            let lastX = 0; // Przechowuje ostatnią skrajną pozycję paska
+            let startTime = null;
 
             function animateTicker(now) {
+                if (!startTime) startTime = now;
                 const elapsed = now - startTime;
-                const progress = Math.min(elapsed / drawDurationMs, 1);
+                let progress = elapsed / drawDurationMs;
 
-                // Bardzo agresywny początek pędu (potężna potęga 4) i długie wygaszanie
-                const easeOutCurve = 1 - Math.pow(1 - progress, 4); 
-                let calculatedX = easeOutCurve * stopPosition;
+                if (progress >= 1) progress = 1;
 
-                // ABSOLUTNY BEZWZGLĘDNY STRAŻNIK: Nowa pozycja nie może być mniejsza niż poprzednia.
-                // To fizycznie uniemożliwia silnikowi przeglądarki wykonanie jakiegokolwiek ruchu w tył (cofnięcia).
-                let currentX = Math.max(lastX, calculatedX);
-                lastX = currentX;
+                // Bezpieczna funkcja zwalniania (nigdy nie wykracza poza cel)
+                const ease = 1 - Math.pow(1 - progress, 5);
+                const currentX = ease * stopPosition;
 
-                ribbon.style.transform = `translateX(-${currentX}px)`;
+                // GPU Acceleration: Używamy translate3d i zero wymuszania snapowania wstecz na koniec
+                ribbon.style.transform = `translate3d(-${currentX}px, 0, 0)`;
 
-                if (progress < 1 && currentX < stopPosition) {
+                if (progress < 1) {
                     animationFrameId = requestAnimationFrame(animateTicker);
                 } else {
-                    ribbon.style.transform = `translateX(-${stopPosition}px)`;
-                    
                     const winningCell = document.getElementById('winning-ticker-cell');
                     if (winningCell) {
                         winningCell.classList.add('winning-cell-active');
