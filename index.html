@@ -155,7 +155,7 @@
             top: 0; 
             height: 100%; 
             will-change: transform;
-            animation-fill-mode: forwards !important; /* Gwarantuje zatrzymanie w miejscu docelowym */
+            animation-fill-mode: forwards !important;
         }
         
         .ticker-item {
@@ -521,25 +521,25 @@
             
             wrapper.style.display = 'block';
             
+            // ZAAWANSOWANE CENTROWANIE POD WSKAŹNIKIEM ORAZ BLOKADA TRANSLACJI CSS
             const wrapperCenterPoint = wrapper.offsetWidth / 2;
             const itemCenterPoint = itemWidth / 2;
             const stopPosition = (targetIndex * itemWidth) + itemCenterPoint - wrapperCenterPoint;
 
             setTimeout(() => {
-                // KRZYWA: Bardzo agresywny początek (rozmazanie) i idealnie czyste wygaszanie prędkości bez szarpnięć
-                ribbon.style.transition = `transform ${drawDurationSeconds}s cubic-bezier(0.1, 0.95, 0.2, 1)`;
+                // NOWA KRZYWA: Perfekcyjne, czyste wygaszanie pędu od max prędkości do zera bez odskakiwania
+                ribbon.style.transition = `transform ${drawDurationSeconds}s cubic-bezier(0.25, 1, 0.5, 1)`;
                 ribbon.style.transform = `translateX(-${stopPosition}px)`;
             }, 50);
 
             setTimeout(() => {
-                // POPRAWKA: Usunąłem twarde zerowanie transition w JS, które powodowało uciekanie o 2 kafelki!
                 const winningCell = document.getElementById('winning-ticker-cell');
                 if (winningCell) {
                     winningCell.classList.add('winning-cell-active');
                 }
                 statusDisplay.innerText = `Wylosowano: ${winner}! Czekam na znak na czacie...`;
                 startVerificationStage(winner);
-            }, drawDurationMs + 100); // 100ms zapasu na pełne, płynne wygaszenie silnika przeglądarki
+            }, drawDurationMs + 50); 
         }
 
         function startVerificationStage(winnerNick) {
