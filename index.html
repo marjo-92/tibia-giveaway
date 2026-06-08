@@ -499,9 +499,9 @@
             const randomIndex = Math.floor(Math.random() * available.length);
             const winner = available[randomIndex];
 
-            const itemWidth = 170; const targetIndex = 45; const totalItems = 55; // Więcej elementów zwiększa rozbujanie prędkości
+            const itemWidth = 170; const targetIndex = 45; const totalItems = 55;
             
-            // CAŁKOWITY RESET STYLÓW
+            ribbon.style.dynamicTargetPosition = "";
             ribbon.style.transition = "none"; 
             ribbon.style.transform = "translateX(0px)";
             ribbon.innerHTML = ""; 
@@ -521,19 +521,18 @@
             
             wrapper.style.display = 'block';
             
-            // KLUCZOWA POPRAWKA MATEMATYCZNA: Dynamicznie pobieramy szerokość okna w milisekundzie startu
             const wrapperCenterPoint = wrapper.offsetWidth / 2;
             const itemCenterPoint = itemWidth / 2;
             const stopPosition = (targetIndex * itemWidth) + itemCenterPoint - wrapperCenterPoint;
 
             setTimeout(() => {
-                // NOWA KRZYWA BEZIERA: Ekstremalny hiper-start (rozmazanie) i bardzo, bardzo długie wytracanie prędkości
-                ribbon.style.transition = `transform ${drawDurationSeconds}s cubic-bezier(0, 1.3, 0.05, 1)`;
+                // POPRAWKA: Nowy bezier gwarantuje ekstremalny start i idealnie czyste hamowanie do zera bez odskakiwania wstecz
+                ribbon.style.transition = `transform ${drawDurationSeconds}s cubic-bezier(0.1, 1.05, 0.2, 1)`;
                 ribbon.style.transform = `translateX(-${stopPosition}px)`;
             }, 50);
 
             setTimeout(() => {
-                // LOCK POSITION: Blokujemy pasek na wyliczonych pikselach środka kontenera
+                // LOCK POSITION
                 ribbon.style.transition = "none";
                 ribbon.style.transform = `translateX(-${stopPosition}px)`;
 
