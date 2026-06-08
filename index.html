@@ -2,343 +2,45 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KICK BOSS RAFFLE - LIVE CHAT</title>
+    <title>RAFFLE SYSTEM</title>
     <script src="/socket.io/socket.io.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
     <style>
-        :root {
-            --bg-main: #0e0f14;
-            --bg-card: #181922;
-            --bg-input: #212431;
-            --kick-green: #00e701;
-            --kick-green-hover: #00b301;
-            --text-main: #ffffff;
-            --text-muted: #8e92a4;
-            --danger: #ea4335;
-            --warning: #f1c40f;
-        }
-
-        body {
-            margin: 0; padding: 20px; background-color: var(--bg-main);
-            color: var(--text-main); font-family: 'Segoe UI', sans-serif; box-sizing: border-box;
-        }
-
-        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        header h1 { font-size: 24px; font-weight: 800; margin: 0; }
-        header h1 span { color: var(--kick-green); }
-
-        .dashboard-grid { display: grid; grid-template-columns: 300px 1fr 300px; gap: 20px; align-items: start; }
-        .card { background-color: var(--bg-card); border-radius: 12px; padding: 20px; border: 1px solid #222531; }
-        .card-title { font-size: 14px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 15px; font-weight: 700; }
-        
-        .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 6px; }
-        input[type="text"] { width: 100%; padding: 10px; background-color: var(--bg-input); border: 1px solid #2e3245; border-radius: 6px; color: white; box-sizing: border-box; }
-
-        #game-container { width: 100%; height: 440px; background-color: #0b0c10; border-radius: 12px; border: 2px solid #1f222e; overflow: hidden; }
-        
-        .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px; }
-        .stat-mini-card { background: var(--bg-card); padding: 15px; border-radius: 10px; border: 1px solid #222531; }
-        .stat-mini-card .label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; }
-        .stat-mini-card .value { font-size: 18px; font-weight: bold; margin-top: 5px; }
-
-        .actions-row { display: flex; gap: 10px; margin-top: 20px; }
-        button.btn { padding: 12px 24px; font-size: 14px; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; transition: 0.2s; }
-        .btn-primary { background: var(--kick-green); color: black; }
-        .btn-secondary { background: #2e3245; color: white; }
-        .btn-danger { background: var(--danger); color: white; }
-
-        .winner-display {
-            background: rgba(0, 231, 1, 0.1); border: 1px solid var(--kick-green);
-            padding: 12px; border-radius: 6px; text-align: center; font-weight: bold;
-            color: var(--kick-green); font-size: 18px; margin-top: 20px; display: none;
-        }
-
-        .status-text { font-size: 12px; font-weight: bold; margin-top: 5px; display: block; }
-        .status-disconnected { color: var(--danger); }
-        .status-connecting { color: var(--warning); }
-        .status-connected { color: var(--kick-green); }
+        body { background: #0e0f14; color: white; font-family: sans-serif; display: grid; grid-template-columns: 300px 1fr; gap: 20px; padding: 20px; }
+        .panel { background: #181922; padding: 20px; border-radius: 12px; }
+        #participants-list { height: 300px; overflow-y: auto; border: 1px solid #333; padding: 10px; margin: 10px 0; }
+        button { background: #00e701; border: none; padding: 15px; width: 100%; cursor: pointer; font-weight: bold; border-radius: 6px; }
+        .reset-btn { background: #ea4335; margin-top: 10px; }
     </style>
 </head>
 <body>
-
-    <header>
-        <h1>KICK <span>BOSS RAFFLE LIVE</span></h1>
-    </header>
-
-    <div class="dashboard-grid">
-        <aside class="card">
-            <div class="card-title">Ustawienia Walki</div>
-            
-            <div class="form-group">
-                <label>ID Czatu Kick (Chatroom ID):</label>
-                <div style="display: flex; gap: 5px;">
-                    <input type="text" id="chatroom-input" placeholder="Np. 70864923">
-                    <button class="btn btn-secondary" style="padding: 10px;" onclick="connectToKick()">Połącz</button>
-                </div>
-                <span id="kick-status" class="status-text status-disconnected">🔴 Status: Rozłączono</span>
-            </div>
-
-            <div class="form-group">
-                <label>Nazwa Bossa (Streamer):</label>
-                <input type="text" id="boss-name" value="STREAMER BOSS" oninput="updateBossName()">
-            </div>
-            
-            <div class="form-group">
-                <label>Słowo kluczowe (Czat):</label>
-                <input type="text" id="keyword-input" value="!losuj" oninput="updateKeyword()">
-            </div>
-            
-            <button class="btn btn-primary" style="width: 100%; padding: 14px; margin-top: 10px;" onclick="triggerBossFight()">URUCHOM ATAK NA BOSSA</button>
-            
-            <div class="winner-display" id="winner-banner">
-                ZWYCIĘZCA: <br><span id="winner-name">-</span>
-            </div>
-        </aside>
-
-        <main>
-            <div class="stats-row">
-                <div class="stat-mini-card">
-                    <span class="label">👿 Boss</span>
-                    <span class="value" id="stat-boss-name">STREAMER BOSS</span>
-                </div>
-                <div class="stat-mini-card">
-                    <span class="label">🔑 Hasło czatu</span>
-                    <span class="value" id="stat-keyword">!LOSUJ</span>
-                </div>
-                <div class="stat-mini-card">
-                    <span class="label">⚔️ Wojowników</span>
-                    <span class="value" id="stat-count">0</span>
-                </div>
-            </div>
-
-            <div id="game-container"></div>
-
-            <div class="actions-row">
-                <button class="btn btn-danger" onclick="resetRaffle()">Resetuj Raid</button>
-            </div>
-        </main>
-
-        <aside class="card">
-            <div class="card-title">Logi bitwy</div>
-            <div id="battle-logs" style="font-size: 12px; color: var(--text-muted); display:flex; flex-direction:column; gap:5px; height: 350px; overflow-y:auto;">
-                <div>Oczekiwanie na połączenie z czatem...</div>
-            </div>
-        </aside>
+    <div class="panel">
+        <h3>USTAWIENIA</h3>
+        <label>Hasło do losowania:</label>
+        <input type="text" id="keyword" value="!losuj" oninput="updateKeyword(this.value)">
+        <button onclick="startFight()" style="margin-top:20px;">START WALKI</button>
+        <button class="reset-btn" onclick="resetRaffle()">RESETUJ LISTĘ</button>
+    </div>
+    <div class="panel">
+        <h3>LISTA WOJOWNIKÓW (<span id="count">0</span>)</h3>
+        <div id="participants-list"></div>
     </div>
 
     <script>
         const socket = io();
-        let participantList = [];
-        let game, phaserScene, boss, bossHPBar, playerGroup;
-        let bossHP = 100;
-        let isFighting = false;
+        const listEl = document.getElementById('participants-list');
+        const countEl = document.getElementById('count');
+
+        socket.on('init', (data) => { document.getElementById('keyword').value = data.keyword; });
+        socket.on('newParticipant', (user) => {
+            const div = document.createElement('div'); div.innerText = user;
+            listEl.appendChild(div);
+            countEl.innerText = listEl.children.length;
+        });
+        socket.on('participantsReset', () => { listEl.innerHTML = ''; countEl.innerText = 0; });
         
-        let kickWs = null;
-        let currentKeyword = "!losuj";
-        const ignoredBots = ['botrix', 'kickbot', 'streamelements', 'nightbot'];
-
-        const config = {
-            type: Phaser.AUTO, parent: 'game-container', width: 750, height: 440, backgroundColor: '#0b0c10',
-            physics: { default: 'arcade', arcade: { gravity: { y: 0 }, debug: false } },
-            scene: { preload: preload, create: create, update: update }
-        };
-
-        game = new Phaser.Game(config);
-        function preload() {}
-
-        function create() {
-            phaserScene = this;
-            playerGroup = this.physics.add.group();
-            boss = this.add.circle(600, 220, 50, 0xea4335);
-            this.physics.add.existing(boss);
-            boss.body.setImmovable(true);
-
-            this.bossText = this.add.text(600, 140, 'STREAMER BOSS', { font: 'bold 16px Arial', fill: '#ffffff' }).setOrigin(0.5);
-            bossHPBar = this.add.graphics();
-            drawBossHP(100);
-        }
-
-        function update() {
-            playerGroup.getChildren().forEach(player => {
-                player.nameTag.x = player.x;
-                player.nameTag.y = player.y - 25;
-            });
-        }
-
-        function drawBossHP(hp) {
-            bossHPBar.clear();
-            bossHPBar.fillStyle(0x333333, 1); bossHPBar.fillRect(500, 110, 200, 15);
-            bossHPBar.fillStyle(0x00e701, 1); bossHPBar.fillRect(500, 110, 200 * (hp / 100), 15);
-        }
-
-        function updateBossName() {
-            const name = document.getElementById('boss-name').value;
-            document.getElementById('stat-boss-name').innerText = name.toUpperCase();
-            if(phaserScene && phaserScene.bossText) phaserScene.bossText.setText(name);
-        }
-
-        // --- BEZPOŚREDNIE POŁĄCZENIE Z KICKEM PRZEZ PRZEGLĄDARKĘ ---
-        function startKickBrowserConnection(chatroomId) {
-            if (kickWs) { try { kickWs.close(); } catch(e){} }
-
-            const statusEl = document.getElementById('kick-status');
-            statusEl.className = "status-text status-connecting";
-            statusEl.innerText = "🟡 Łączenie z Kick z przeglądarki...";
-
-            const kickPusherKey = "eb1d5f2830e9ce97b905";
-            const wsUrl = `wss://ws-us2.pusher.com/app/${kickPusherKey}?protocol=7&client=js&version=7.4.0&flash=false`;
-
-            kickWs = new WebSocket(wsUrl);
-
-            kickWs.onopen = () => {
-                const subscribeMessage = {
-                    event: "pusher:subscribe",
-                    data: { channel: `chatrooms.${chatroomId}.v2` }
-                };
-                kickWs.send(JSON.stringify(subscribeMessage));
-                statusEl.className = "status-text status-connected";
-                statusEl.innerText = "🟢 Połączono stabilnie!";
-                logBattle("🟢 Sukces: Przeglądarka podpięła się pod czat Kick!");
-            };
-
-            kickWs.onmessage = (event) => {
-                try {
-                    const msg = JSON.parse(event.data);
-                    
-                    if (msg.event === "pusher:ping") {
-                        kickWs.send(JSON.stringify({ event: "pusher:pong" }));
-                        return;
-                    }
-
-                    if (msg.event === "App\\Events\\ChatMessageEvent") {
-                        const chatData = JSON.parse(msg.data);
-                        const sender = chatData.sender.username;
-                        const content = chatData.content;
-                        
-                        if (ignoredBots.includes(sender.toLowerCase())) return;
-
-                        if (content.toLowerCase().includes(currentKeyword.toLowerCase())) {
-                            socket.emit('addPlayer', sender);
-                        }
-                    }
-                } catch(e) {}
-            };
-
-            kickWs.onclose = () => {
-                statusEl.className = "status-text status-disconnected";
-                statusEl.innerText = "🔴 Rozłączono z Kick";
-                setTimeout(() => startKickBrowserConnection(chatroomId), 5000);
-            };
-        }
-
-        // --- OBSŁUGA SOCKET.IO (STAN SERWERA) ---
-        socket.on('init', (data) => {
-            currentKeyword = data.keyword;
-            document.getElementById('keyword-input').value = data.keyword;
-            document.getElementById('stat-keyword').innerText = data.keyword.toUpperCase();
-            if (data.chatroomId) {
-                document.getElementById('chatroom-input').value = data.chatroomId;
-                startKickBrowserConnection(data.chatroomId);
-            }
-            data.participants.forEach(user => { if(!participantList.includes(user)) { participantList.push(user); spawnPlayer(user); } });
-            document.getElementById('stat-count').innerText = participantList.length;
-        });
-
-        socket.on('newParticipant', (username) => {
-            if(!participantList.includes(username)) {
-                participantList.push(username);
-                document.getElementById('stat-count').innerText = participantList.length;
-                spawnPlayer(username);
-                logBattle(`⚔️ ${username} dołączył do raidu!`);
-            }
-        });
-
-        socket.on('keywordChanged', (newKeyword) => {
-            currentKeyword = newKeyword;
-            document.getElementById('stat-keyword').innerText = newKeyword.toUpperCase();
-        });
-
-        socket.on('chatroomIdUpdated', (chatroomId) => {
-            startKickBrowserConnection(chatroomId);
-        });
-
-        socket.on('participantsReset', () => {
-            participantList = [];
-            document.getElementById('stat-count').innerText = 0;
-            playerGroup.clear(true, true);
-            bossHP = 100; drawBossHP(100); isFighting = false;
-            if(boss) boss.setAlpha(1).setScale(1);
-            document.getElementById('winner-banner').style.display = 'none';
-            logBattle("🔄 Raid wyczyszczony. Czekam na graczy.");
-        });
-
-        function connectToKick() {
-            const id = document.getElementById('chatroom-input').value.trim();
-            if(!id) return alert("Wpisz swoje ID czatu!");
-            socket.emit('saveChatroomId', id);
-        }
-
-        function spawnPlayer(username) {
-            if (!phaserScene) return;
-            const x = Phaser.Math.Between(50, 250); const y = Phaser.Math.Between(80, 380);
-            const playerBlob = phaserScene.add.circle(x, y, 14, 0x00e701);
-            phaserScene.physics.add.existing(playerBlob);
-            playerBlob.username = username;
-            playerBlob.nameTag = phaserScene.add.text(x, y - 25, username, { font: '11px Arial', fill: '#ffffff' }).setOrigin(0.5);
-            playerGroup.add(playerBlob);
-        }
-
-        function triggerBossFight() {
-            if (participantList.length === 0 || isFighting) return;
-            isFighting = true;
-            logBattle("🏹 SZARŻA! Drużyna rusza na bossa!");
-            const winnerName = participantList[Math.floor(Math.random() * participantList.length)];
-
-            playerGroup.getChildren().forEach(player => {
-                phaserScene.physics.moveToObject(player, boss, 200 + Phaser.Math.Between(-50, 50));
-                phaserScene.physics.add.overlap(player, boss, () => {
-                    player.body.setVelocity(Phaser.Math.Between(-150, -50), Phaser.Math.Between(-100, 100));
-                    if (bossHP > 5) { bossHP -= 2; drawBossHP(bossHP); }
-                });
-            });
-
-            setTimeout(() => { finishBoss(winnerName); }, 4000);
-        }
-
-        function finishBoss(winnerName) {
-            bossHP = 0; drawBossHP(0);
-            logBattle(`💥 BOSS POKONANY!`);
-            logBattle(`🏆 Zwycięzca raidu: ${winnerName}!`);
-
-            playerGroup.getChildren().forEach(player => {
-                player.body.setVelocity(0, 0);
-                if (player.username === winnerName) {
-                    player.setFillStyle(0xf1c40f).setScale(2);
-                    player.nameTag.setStyle({ font: 'bold 16px Arial', fill: '#f1c40f' });
-                    player.x = boss.x; player.y = boss.y;
-                } else {
-                    player.setAlpha(0.2); player.nameTag.setAlpha(0.2);
-                }
-            });
-
-            phaserScene.tweens.add({ targets: boss, alpha: 0, scale: 0, duration: 500 });
-            document.getElementById('winner-name').innerText = winnerName;
-            document.getElementById('winner-banner').style.display = 'block';
-        }
-
-        function logBattle(text) {
-            const logs = document.getElementById('battle-logs');
-            const entry = document.createElement('div');
-            entry.innerText = `[${new Date().toLocaleTimeString()}] ${text}`;
-            logs.appendChild(entry); logs.scrollTop = logs.scrollHeight;
-        }
-        function updateKeyword() {
-            const val = document.getElementById('keyword-input').value;
-            socket.emit('updateKeyword', val);
-        }
-        function resetRaffle() { socket.emit('resetParticipants'); }
+        function updateKeyword(val) { socket.emit('updateKeyword', val); }
+        function startFight() { socket.emit('startFight'); }
+        function resetRaffle() { socket.emit('reset'); }
     </script>
 </body>
 </html>
