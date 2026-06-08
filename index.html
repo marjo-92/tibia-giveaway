@@ -173,7 +173,6 @@
             padding: 20px;
             display: flex;
             flex-direction: column;
-            justify-content: center; /* Centrowanie bębna pionowo kiedy się pojawi */
         }
 
         .arena-title {
@@ -209,6 +208,7 @@
             font-weight: 600;
             color: var(--text-main);
             word-break: break-all;
+            transition: all 0.3s ease;
         }
 
         /* Fioletowy pasek przewijania */
@@ -239,7 +239,7 @@
         td { padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.03); font-weight: 600; }
         .td-tc { text-align: right; color: var(--accent-glow); }
 
-        /* ==================== BĘBEN LOSUJĄCY (WBUDOWANY W ARENĘ) ==================== */
+        /* ==================== BĘBEN LOSUJĄCY (U GÓRY ARENY) ==================== */
         .ticker-wrapper {
             display: none;
             position: relative;
@@ -249,8 +249,9 @@
             border: 2px solid var(--border-card);
             border-radius: 12px;
             overflow: hidden;
-            box-shadow: inset 0 0 20px rgba(0,0,0,0.9), 0 0 20px rgba(182, 36, 255, 0.2);
-            margin: auto 0; /* Centrowanie w pionie wewnątrz areny */
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.9);
+            margin-bottom: 20px; /* Margines oddzielający bęben od siatki pod spodem */
+            flex-shrink: 0;
         }
 
         /* Celownik na środku */
@@ -296,6 +297,7 @@
             color: var(--text-main);
             box-sizing: border-box;
             background: linear-gradient(180deg, #1d1430 0%, #130d21 100%);
+            transition: color 0.4s ease, text-shadow 0.4s ease;
         }
     </style>
 </head>
@@ -341,12 +343,12 @@
         <div class="arena-wrapper">
             <div class="arena-title">arena</div>
             
-            <div class="arena" id="participants-grid"></div>
-
             <div class="ticker-wrapper" id="ticker-wrapper">
                 <div class="ticker-pointer"></div>
                 <div id="ticker-ribbon" class="ticker-ribbon"></div>
             </div>
+
+            <div class="arena" id="participants-grid"></div>
         </div>
     </div>
 
@@ -379,7 +381,6 @@
         const tcInput = document.getElementById('tc-input');
         const participantSlider = document.getElementById('participant-slider');
         
-        // Elementy wbudowanego bębna
         const ribbon = document.getElementById('ticker-ribbon');
         const wrapper = document.getElementById('ticker-wrapper');
 
@@ -397,8 +398,6 @@
                 localParticipants.push(sender);
                 renderParticipant(sender);
                 updateCounter();
-                
-                // Autoscroll listy w dół
                 grid.scrollTop = grid.scrollHeight;
             }
         });
@@ -414,10 +413,7 @@
             localParticipants = [];
             winnersList = [];
             statusDisplay.innerText = "Zresetowano system";
-            
-            // Przywrócenie domyślnego widoku siatki na wypadek resetu w trakcie losowania
             wrapper.style.display = 'none';
-            grid.style.display = 'grid';
             updateCounter();
         });
 
@@ -479,7 +475,7 @@
             }
         }
 
-        // ==================== NOWA LOGIKA WBUDOWANEGO BĘBNA ====================
+        // ==================== ZMODYFIKOWANA LOGIKA BĘBNA ====================
         function startCinematicDraw() {
             const available = localParticipants.filter(p => !winnersList.includes(p));
             
@@ -492,22 +488,21 @@
             const winner = available[randomIndex];
 
             const itemWidth = 170; 
-            const targetIndex = 26; // Pozycja zwycięzcy na pasku bębna
+            const targetIndex = 26; 
             const totalItems = 34;
             
             ribbon.innerHTML = "";
             ribbon.style.transition = "none";
             ribbon.style.transform = "translateX(0px)";
 
-            // Generowanie zawartości taśmy losującej
+            // Generujemy taśmę losującą
             for (let i = 0; i < totalItems; i++) {
                 const el = document.createElement('div');
                 el.className = 'ticker-item';
                 
                 if (i === targetIndex) {
                     el.innerText = winner;
-                    el.style.color = 'var(--accent-glow)';
-                    el.style.textShadow = '0 0 12px var(--accent-glow)';
+                    el.id = "winning-ticker-cell"; // Nadajemy ID, żeby podświetlić go dopiero na końcu!
                 } else {
                     const randP = localParticipants[Math.floor(Math.random() * localParticipants.length)];
                     el.innerText = randP || "...";
@@ -515,42 +510,45 @@
                 ribbon.appendChild(el);
             }
 
-            // KLUCZOWA ZMIANA: Ukrywamy siatkę z nickami, odpalamy pasek bębna w tym samym miejscu
-            grid.style.display = 'none';
+            // Pokazujemy bęben U GÓRY tabelki (Siatka pod spodem zostaje widoczna)
             wrapper.style.display = 'block';
-            statusDisplay.innerText = "Trwa losowanie...";
+            statusDisplay.innerText = "Losowanie w toku...";
 
-            // Start przewijania bębna
+            // Rozpoczęcie kręcenia
             setTimeout(() => {
                 const wrapperWidth = wrapper.offsetWidth;
-                const randomInnerOffset = Math.floor(Math.random() * 60) - 30; // Losowość +/- 30px żeby nie stawało idealnie tak samo
+                const randomInnerOffset = Math.floor(Math.random() * 60) - 30; // Losowy offset stanięcia w celowniku (+/- 30px)
                 const stopPosition = (targetIndex * itemWidth) + (itemWidth / 2) - (wrapperWidth / 2) + randomInnerOffset;
 
                 ribbon.style.transition = "transform 4.5s cubic-bezier(0.1, 1, 0.1, 1)";
                 ribbon.style.transform = `translateX(-${stopPosition}px)`;
             }, 50);
 
-            // Po zakończeniu animacji (4.5 sekundy)
+            // Zatrzymanie bębna (po 4.5 sekundy)
             setTimeout(() => {
+                // 1. DOPIERO TERAZ podświetlamy nick na bębnie, kiedy maszyna stoi w miejscu
+                const finalCell = document.getElementById("winning-ticker-cell");
+                if (finalCell) {
+                    finalCell.style.color = 'var(--accent-glow)';
+                    finalCell.style.textShadow = '0 0 12px var(--accent-glow)';
+                }
+
+                // 2. Dodajemy do tablicy i bazy wygranych
                 winnersList.push(winner);
                 const tcValue = tcInput.value || "0";
 
-                // Dodanie rekordu do tabeli po prawej
+                // 3. Dodajemy wiersz po prawej stronie
                 const tr = document.createElement('tr');
                 tr.innerHTML = `<td>${winner}</td><td class="td-tc">${tcValue} TC</td>`;
                 winnersTableBody.appendChild(tr);
 
-                // Zastosowanie stylów wygranego w tle
+                // 4. Zapalamy fiolet na dole w siatce nicków
                 applyWinnerStyle(winner);
-                statusDisplay.innerText = `Zwycięzca: ${winner}!`;
+                statusDisplay.innerText = `Wygrywa: ${winner}!`;
 
-                // Pokazujemy wynik na bębnie przez 3 sekundy, po czym wracamy do listy nicków
+                // Trzymamy podświetlony wynik przez 3 sekundy, po czym chowamy bęben
                 setTimeout(() => {
                     wrapper.style.display = 'none';
-                    grid.style.display = 'grid';
-                    
-                    // Automatycznie zjedź na dół listy po powrocie
-                    grid.scrollTop = grid.scrollHeight;
                 }, 3000);
 
             }, 4550);
