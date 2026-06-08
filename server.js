@@ -16,15 +16,29 @@ app.get('/', (req, res) => {
     res.sendFile(__dirname + '/index.html');
 });
 
+// --- TUTAJ DODANO OBSŁUGĘ DANYCH ZE STREAMELEMENTS ---
+app.post('/new-message', (req, res) => {
+    const { sender, content } = req.body;
+    
+    // Sprawdzamy czy wiadomość zawiera hasło i czy pochodzi od użytkownika
+    if (sender && content && content.toLowerCase().includes(currentKeyword.toLowerCase())) {
+        if (!participants.has(sender)) {
+            participants.add(sender);
+            io.emit('newParticipant', sender);
+            console.log(`[STREAM ELEMENTS] Dodano gracza: ${sender}`);
+        }
+    }
+    res.status(200).send('OK');
+});
+// -----------------------------------------------------
+
 io.on('connection', (socket) => {
-    // Inicjalizacja stanu dla nowego okna
     socket.emit('init', {
         participants: Array.from(participants),
         keyword: currentKeyword,
         chatroomId: currentChatroomId
     });
 
-    // Odebranie nowego gracza zweryfikowanego przez przeglądarkę
     socket.on('addPlayer', (username) => {
         if (!participants.has(username)) {
             participants.add(username);
