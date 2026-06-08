@@ -9,21 +9,25 @@ const io = new Server(server, { cors: { origin: "*" } });
 app.use(express.json());
 
 let participants = new Set();
-let config = { tcAmount: 0, password: "", excluded: [] };
+let config = { tc: 0, pass: "", excluded: [] };
 
 app.get('/', (req, res) => res.sendFile(__dirname + '/index.html'));
 
 app.post('/new-message', (req, res) => {
+    console.log("Dane odebrane:", req.body); // Sprawdź logi na Renderze!
     const { sender, content } = req.body;
-    
-    // Wysyłamy czat do interfejsu
-    io.emit('newChat', { sender, content });
 
-    // Sprawdzamy hasło i czy użytkownik nie jest na czarnej liście
-    if (sender && content && content.toLowerCase().trim() === config.password.toLowerCase().trim()) {
-        if (!config.excluded.includes(sender) && !participants.has(sender)) {
-            participants.add(sender);
-            io.emit('newParticipant', { sender, count: participants.size });
+    if (sender && content) {
+        // Przesyłanie na czat na stronie (nowy event: chatMessage)
+        io.emit('chatMessage', { sender, content });
+
+        // Logika losowania
+        if (content.toLowerCase().trim() === config.pass.toLowerCase().trim()) {
+            if (!config.excluded.includes(sender) && !participants.has(sender)) {
+                participants.add(sender);
+                // Przesyłanie do listy uczestników
+                io.emit('newParticipant', { sender });
+            }
         }
     }
     res.status(200).send('OK');
@@ -32,9 +36,12 @@ app.post('/new-message', (req, res) => {
 io.on('connection', (socket) => {
     socket.on('updateConfig', (data) => {
         config = data;
-        io.emit('configUpdated', config);
+        console.log("Nowa konfiguracja:", config);
     });
-    socket.on('reset', () => { participants.clear(); io.emit('participantsReset'); });
+    socket.on('reset', () => {
+        participants.clear();
+        io.emit('participantsReset');
+    });
 });
 
-server.listen(3000);
+server.listen(3000, () => console.log("Serwer działa na porcie 3000"));
