@@ -5,38 +5,51 @@
     <title>RAFFLE SYSTEM</title>
     <script src="/socket.io/socket.io.js"></script>
     <style>
-        body { background: #0e0f14; color: white; font-family: sans-serif; display: grid; grid-template-columns: 300px 1fr; gap: 20px; padding: 20px; }
-        .panel { background: #181922; padding: 20px; border-radius: 12px; }
-        #participants-list { height: 300px; overflow-y: auto; border: 1px solid #333; padding: 10px; margin: 10px 0; }
+        body { background: #0e0f14; color: white; font-family: sans-serif; display: grid; grid-template-columns: 300px 1fr 1fr; gap: 20px; padding: 20px; }
+        .panel { background: #181922; padding: 20px; border-radius: 12px; height: 80vh; display: flex; flex-direction: column; }
+        #list-container, #chat-container { flex-grow: 1; overflow-y: auto; border: 1px solid #333; padding: 10px; margin: 10px 0; font-size: 0.9em; }
         button { background: #00e701; border: none; padding: 15px; width: 100%; cursor: pointer; font-weight: bold; border-radius: 6px; }
         .reset-btn { background: #ea4335; margin-top: 10px; }
+        .chat-msg { margin-bottom: 5px; border-bottom: 1px solid #222; }
     </style>
 </head>
 <body>
     <div class="panel">
         <h3>USTAWIENIA</h3>
-        <label>Hasło do losowania:</label>
+        <label>Hasło:</label>
         <input type="text" id="keyword" value="a" oninput="updateKeyword(this.value)">
         <button onclick="startFight()" style="margin-top:20px;">START WALKI</button>
         <button class="reset-btn" onclick="resetRaffle()">RESETUJ LISTĘ</button>
     </div>
     <div class="panel">
-        <h3>LISTA WOJOWNIKÓW (<span id="count">0</span>)</h3>
-        <div id="participants-list"></div>
+        <h3>CZAT NA ŻYWO</h3>
+        <div id="chat-container"></div>
+    </div>
+    <div class="panel">
+        <h3>WOJOWNICY (<span id="count">0</span>)</h3>
+        <div id="list-container"></div>
     </div>
 
     <script>
         const socket = io();
-        const listEl = document.getElementById('participants-list');
+        const listEl = document.getElementById('list-container');
+        const chatEl = document.getElementById('chat-container');
         const countEl = document.getElementById('count');
 
-        socket.on('init', (data) => { document.getElementById('keyword').value = data.keyword; });
+        socket.on('newChat', (data) => {
+            const div = document.createElement('div');
+            div.className = 'chat-msg';
+            div.innerHTML = `<b>${data.sender}:</b> ${data.content}`;
+            chatEl.prepend(div);
+        });
+
         socket.on('newParticipant', (user) => {
             const div = document.createElement('div'); div.innerText = user;
             listEl.appendChild(div);
             countEl.innerText = listEl.children.length;
         });
-        socket.on('participantsReset', () => { listEl.innerHTML = ''; countEl.innerText = 0; });
+
+        socket.on('participantsReset', () => { listEl.innerHTML = ''; countEl.innerText = 0; chatEl.innerHTML = ''; });
         
         function updateKeyword(val) { socket.emit('updateKeyword', val); }
         function startFight() { socket.emit('startFight'); }
