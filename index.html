@@ -117,25 +117,13 @@
         td { padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.03); font-weight: 600; }
         .td-tc { text-align: right; color: var(--accent-glow); }
 
-        /* TABELA ZWYCIĘZCÓW - ZIELONA RAMKA DLA WYGRANYCH */
-        .tr-verified {
-            border: 2px solid var(--success-green);
-            background-color: rgba(42, 157, 143, 0.05);
-        }
-        .tr-verified td {
-            color: #d8f3f0 !important;
-            border-top: 1px solid rgba(42, 157, 143, 0.3);
-            border-bottom: 1px solid rgba(42, 157, 143, 0.3);
-        }
+        /* TABELA ZWYCIĘZCÓW */
+        .tr-verified { border: 2px solid var(--success-green); background-color: rgba(42, 157, 143, 0.05); }
+        .tr-verified td { color: #d8f3f0 !important; border-top: 1px solid rgba(42, 157, 143, 0.3); border-bottom: 1px solid rgba(42, 157, 143, 0.3); }
         .tr-verified td:first-child { border-left: 2px solid var(--success-green); }
         .tr-verified td:last-child { border-right: 2px solid var(--success-green); color: var(--success-green) !important; }
 
-        /* TABELA ZWYCIĘZCÓW - CZERWONE PRZEKREŚLENIE DLA POMINIĘTYCH */
-        .tr-disqualified td { 
-            color: var(--danger-red) !important; 
-            text-decoration: line-through; 
-            opacity: 0.5; 
-        }
+        .tr-disqualified td { color: var(--danger-red) !important; text-decoration: line-through; opacity: 0.5; }
         .tr-disqualified .td-tc { color: var(--danger-red) !important; text-decoration: line-through; }
 
         /* BĘBEN LOSUJĄCY */
@@ -160,13 +148,7 @@
         
         .ticker-item {
             min-width: 170px; max-width: 170px; height: 100%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.9rem; border-right: 1px solid rgba(255,255,255,0.04); color: var(--text-main); box-sizing: border-box; background: linear-gradient(180deg, #1d1430 0%, #130d21 100%);
-            padding: 5px 12px;
-            text-align: center;
-            word-break: break-all;
-            line-height: 1.2;
-            overflow: hidden;
-            border-top: 2px solid transparent;
-            border-bottom: 2px solid transparent;
+            padding: 5px 12px; text-align: center; word-break: break-all; line-height: 1.2; overflow: hidden; border-top: 2px solid transparent; border-bottom: 2px solid transparent;
         }
 
         /* ANIMACJA MIGAJĄCEGO FIOLETOWEGO NEONU */
@@ -178,9 +160,7 @@
 
         .winning-cell-active {
             animation: tickerNeonPulse 1.2s infinite ease-in-out !important;
-            color: #e5b3ff !important;
-            font-weight: 800;
-            font-size: 1rem;
+            color: #e5b3ff !important; font-weight: 800; font-size: 1rem;
         }
 
         /* PANEL WERYFIKACJI */
@@ -500,7 +480,9 @@
             const randomIndex = Math.floor(Math.random() * available.length);
             const winner = available[randomIndex];
 
-            const itemWidth = 170; const targetIndex = 45; const totalItems = 55;
+            // PODBIŁEM ILOŚĆ ELEMENTÓW DO 65 (Zwycięzca ląduje na 55 pozycji)
+            // Dzięki temu pasek musi przejechać gigantyczną odległość, co przyśpiesza start do maksimum!
+            const itemWidth = 170; const targetIndex = 55; const totalItems = 65;
             
             ribbon.style.transition = "none"; 
             ribbon.style.transform = "translateX(0px)";
@@ -521,14 +503,16 @@
             
             wrapper.style.display = 'block';
             
-            // ZAAWANSOWANE CENTROWANIE POD WSKAŹNIKIEM ORAZ BLOKADA TRANSLACJI CSS
+            // Pobieranie aktualnego środka okna
             const wrapperCenterPoint = wrapper.offsetWidth / 2;
             const itemCenterPoint = itemWidth / 2;
             const stopPosition = (targetIndex * itemWidth) + itemCenterPoint - wrapperCenterPoint;
 
             setTimeout(() => {
-                // NOWA KRZYWA: Perfekcyjne, czyste wygaszanie pędu od max prędkości do zera bez odskakiwania
-                ribbon.style.transition = `transform ${drawDurationSeconds}s cubic-bezier(0.25, 1, 0.5, 1)`;
+                // NOWA STRATEGICZNA KRZYWA BEZIERA:
+                // Pierwsza wartość (0) daje ultra ostry start. Druga (1.2) wydłuża pęd, ale trzecia i czwarta (0.1, 1) 
+                // powodują, że pod koniec wygaszanie idzie czysto po prostej linii bez cofania na kafelku!
+                ribbon.style.transition = `transform ${drawDurationSeconds}s cubic-bezier(0, 1.2, 0.1, 1)`;
                 ribbon.style.transform = `translateX(-${stopPosition}px)`;
             }, 50);
 
