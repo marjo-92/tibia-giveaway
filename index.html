@@ -6,20 +6,11 @@
     <script src="/socket.io/socket.io.js"></script>
     <style>
         :root {
-            --bg-main: #0c0814;
-            --bg-panel: #160f24;
-            --bg-input: #211633;
-            --accent-glow: #b624ff;
-            --accent-hover: #9f1be0;
-            --text-main: #f1eef5;
-            --text-muted: #8675a1;
-            --border-panel: #2f1e47;
-            --border-card: #3c265c;
-            --danger-red: #e63946;
-            --success-green: #2a9d8f;
+            --bg-main: #0c0814; --bg-panel: #160f24; --bg-input: #211633;
+            --accent-glow: #b624ff; --text-main: #f1eef5; --text-muted: #8675a1;
+            --border-panel: #2f1e47; --border-card: #3c265c; --danger-red: #e63946; --success-green: #2a9d8f;
         }
-
-        body { background-color: var(--bg-main); color: var(--text-main); font-family: 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; display: flex; height: 100vh; box-sizing: border-box; gap: 20px; }
+        body { background-color: var(--bg-main); color: var(--text-main); font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; display: flex; height: 100vh; box-sizing: border-box; gap: 20px; }
         .panel { background-color: var(--bg-panel); border: 1px solid var(--border-panel); border-radius: 12px; padding: 24px; display: flex; flex-direction: column; box-shadow: 0 4px 25px rgba(0, 0, 0, 0.6); }
         .panel-title { font-size: 1.1rem; font-weight: 700; text-transform: uppercase; margin-bottom: 25px; border-left: 3px solid var(--accent-glow); padding-left: 10px; }
         .sidebar-left { width: 320px; min-width: 320px; }
@@ -30,33 +21,18 @@
         button { font-weight: 700; text-transform: uppercase; padding: 12px; border-radius: 8px; cursor: pointer; border: none; transition: 0.2s; }
         .btn-save { background-color: var(--accent-glow); color: #fff; }
         .btn-reset { background-color: var(--danger-red); color: #fff; }
-        
-        /* STATUS W LEWEJ KOLUMNIE */
-        #status-log { 
-            margin-top: auto; padding: 15px; background: rgba(0,0,0,0.3); border-radius: 8px; 
-            font-size: 0.85rem; color: var(--accent-glow); border: 1px solid var(--border-card);
-            text-align: center; font-weight: bold; min-height: 40px;
-        }
-
+        #status-log { margin-top: auto; padding: 15px; background: rgba(0,0,0,0.3); border-radius: 8px; font-size: 0.85rem; color: var(--accent-glow); border: 1px solid var(--border-card); text-align: center; font-weight: bold; min-height: 40px; }
         .main-content { flex: 1; display: flex; flex-direction: column; gap: 15px; }
-        .status-header { background-color: var(--bg-panel); border: 1px solid var(--border-panel); padding: 15px 20px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; }
+        .status-header { background-color: var(--bg-panel); border: 1px solid var(--border-panel); padding: 15px 20px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; }
+        .status-val { color: var(--accent-glow); font-weight: 700; }
         .arena-wrapper { flex: 1; background-color: rgba(0,0,0,0.2); border: 1px solid var(--border-panel); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; }
         .arena { flex: 1; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
         .p-card { background-color: var(--bg-panel); border: 1px solid var(--border-card); padding: 14px; border-radius: 8px; text-align: center; font-weight: 600; }
         .p-card.winner-active { border-color: var(--accent-glow); color: var(--accent-glow); }
-        .p-card.winner-disqualified { border-color: var(--danger-red); text-decoration: line-through; opacity: 0.6; }
-        
         .sidebar-right { width: 320px; min-width: 320px; }
         .table-container { flex: 1; overflow-y: auto; background-color: var(--bg-input); border-radius: 8px; }
         table { width: 100%; border-collapse: collapse; }
         th, td { padding: 12px; border-bottom: 1px solid var(--border-card); font-size: 0.9rem; }
-        
-        .ticker-wrapper { display: none; height: 95px; background: #07040c; border: 2px solid var(--border-card); border-radius: 12px; overflow: hidden; margin-bottom: 15px; position: relative; }
-        .ticker-ribbon { display: flex; position: absolute; left: 0; height: 100%; will-change: transform; }
-        .ticker-item { min-width: 170px; display: flex; align-items: center; justify-content: center; font-weight: 700; border-right: 1px solid rgba(255,255,255,0.04); background: linear-gradient(180deg, #1d1430 0%, #130d21 100%); }
-        
-        .verify-panel { display: none; background: #0f0a1c; border: 2px solid var(--border-card); border-radius: 12px; padding: 15px; margin-bottom: 15px; }
-        .verify-timer { font-size: 1.2rem; font-weight: 800; color: var(--danger-red); }
     </style>
 </head>
 <body>
@@ -71,29 +47,25 @@
             <label>Ilość TC:</label>
             <input id="tc-input" type="number" value="50">
         </div>
+        <div class="form-group">
+            <label>Ilość uczestników: <span id="slider-val">10</span></label>
+            <input id="participant-slider" type="range" min="1" max="100" value="10" oninput="document.getElementById('slider-val').innerText = this.value">
+        </div>
         <div class="btn-container-row">
             <button class="btn-save" onclick="saveKeyword()">Zapisz</button>
             <button class="btn-reset" onclick="triggerReset()">Reset</button>
         </div>
         <button class="btn-save" style="width: 100%; padding: 15px;" onclick="triggerStartFight()">Rozpocznij losowanie</button>
-        
         <div id="status-log">Oczekiwanie...</div>
     </div>
 
     <div class="main-content">
         <div class="status-header">
-            <div>Dołączyło: <span id="count-display" style="color:var(--accent-glow); font-weight:bold;">0</span></div>
+            <div>Hasło: <span id="pass-display" class="status-val">-</span></div>
+            <div>TC: <span id="tc-display" class="status-val">50</span></div>
+            <div>Uczestników: <span id="count-display" class="status-val">0</span></div>
         </div>
         <div class="arena-wrapper">
-            <div class="ticker-wrapper" id="ticker-wrapper">
-                <div id="ticker-ribbon" class="ticker-ribbon"></div>
-            </div>
-            <div class="verify-panel" id="verify-panel">
-                <div style="display:flex; justify-content:space-between;">
-                    <div>Weryfikacja: <span id="verify-nick" style="color:var(--accent-glow);"></span></div>
-                    <div id="verify-timer" class="verify-timer">60s</div>
-                </div>
-            </div>
             <div class="arena" id="participants-grid"></div>
         </div>
     </div>
@@ -108,117 +80,65 @@
     <script>
         const socket = io();
         let localParticipants = [];
-        let winnersList = [];
         let activeVerificationWinner = null;
-        let verificationTimerInterval = null;
-
         const statusLog = document.getElementById('status-log');
-        const grid = document.getElementById('participants-grid');
+        const passDisplay = document.getElementById('pass-display');
+        const tcDisplay = document.getElementById('tc-display');
         const countDisplay = document.getElementById('count-display');
-        const winnersTableBody = document.getElementById('winners-table-body');
-        const verifyPanel = document.getElementById('verify-panel');
-        const verifyNick = document.getElementById('verify-nick');
-        const verifyTimer = document.getElementById('verify-timer');
-        const ribbon = document.getElementById('ticker-ribbon');
-        const wrapper = document.getElementById('ticker-wrapper');
 
         socket.on('init', (data) => {
             localParticipants = data.participants || [];
+            passDisplay.innerText = data.keyword || "a";
             localParticipants.forEach(p => renderParticipant(p));
-            updateCounter();
+            updateStats();
         });
 
         socket.on('newParticipant', (sender) => {
             if(!localParticipants.includes(sender)) {
                 localParticipants.push(sender);
                 renderParticipant(sender);
-                updateCounter();
+                updateStats();
             }
         });
 
         socket.on('newChat', (data) => {
             if (!activeVerificationWinner) return;
-            
             const cleanSender = String(data.sender).replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
             const cleanWinner = String(activeVerificationWinner).replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
 
-            if (cleanSender === cleanWinner && verificationTimerInterval !== null) {
-                clearInterval(verificationTimerInterval);
-                verificationTimerInterval = null;
-                
-                // AKTUALIZACJA LOGU W LEWEJ KOLUMNIE
+            if (cleanSender === cleanWinner) {
                 statusLog.innerText = `@${activeVerificationWinner} potwierdził obecność!`;
                 statusLog.style.color = "var(--success-green)";
-                
-                winnersTableBody.innerHTML += `<tr><td>${activeVerificationWinner}</td><td>${document.getElementById('tc-input').value} TC</td></tr>`;
-                applyWinnerStyle(activeVerificationWinner, 'verified');
-                verifyPanel.style.display = 'none';
+                document.getElementById('winners-table-body').innerHTML += `<tr><td>${activeVerificationWinner}</td><td>${tcDisplay.innerText} TC</td></tr>`;
+                document.getElementById('p-'+activeVerificationWinner)?.classList.add('winner-active');
+                activeVerificationWinner = null;
             }
         });
 
         socket.on('triggerFight', () => {
-            if (localParticipants.length > 0) startCinematicDraw();
-        });
-
-        socket.on('participantsReset', () => {
-            grid.innerHTML = ""; winnersTableBody.innerHTML = ""; localParticipants = []; winnersList = [];
-            statusLog.innerText = "Zresetowano system"; statusLog.style.color = "var(--accent-glow)";
-            wrapper.style.display = 'none'; resetVerificationState(); updateCounter();
-        });
-
-        function startCinematicDraw() {
-            resetVerificationState();
-            const winner = localParticipants[Math.floor(Math.random() * localParticipants.length)];
-            
-            ribbon.innerHTML = "";
-            for(let i=0; i<30; i++) {
-                const el = document.createElement('div'); el.className = 'ticker-item';
-                el.innerText = (i === 26) ? winner : localParticipants[Math.floor(Math.random() * localParticipants.length)];
-                ribbon.appendChild(el);
+            if (localParticipants.length > 0) {
+                activeVerificationWinner = localParticipants[Math.floor(Math.random() * localParticipants.length)];
+                statusLog.innerText = `Wylosowano: ${activeVerificationWinner}! Czekam na czat...`;
+                statusLog.style.color = "var(--accent-glow)";
             }
-            wrapper.style.display = 'block';
-            setTimeout(() => {
-                ribbon.style.transition = "transform 4.5s cubic-bezier(0.1, 1, 0.1, 1)";
-                ribbon.style.transform = `translateX(-${26 * 170 - 100}px)`;
-            }, 50);
+        });
 
-            setTimeout(() => {
-                statusLog.innerText = `Wylosowano: ${winner}!`;
-                startVerificationStage(winner);
-            }, 4550);
+        function saveKeyword() {
+            const kw = document.getElementById('keyword-input').value;
+            socket.emit('updateKeyword', kw);
+            passDisplay.innerText = kw;
         }
 
-        function startVerificationStage(winner) {
-            activeVerificationWinner = winner;
-            verifyNick.innerText = winner;
-            verifyPanel.style.display = 'block';
-            let timeLeft = 60;
-            verificationTimerInterval = setInterval(() => {
-                timeLeft--;
-                verifyTimer.innerText = timeLeft + "s";
-                if (timeLeft <= 0) {
-                    clearInterval(verificationTimerInterval);
-                    statusLog.innerText = `@${winner} nie odpowiedział!`;
-                    statusLog.style.color = "var(--danger-red)";
-                    verifyPanel.style.display = 'none';
-                }
-            }, 1000);
+        function updateStats() {
+            countDisplay.innerText = localParticipants.length;
+            tcDisplay.innerText = document.getElementById('tc-input').value;
         }
 
-        function resetVerificationState() {
-            if (verificationTimerInterval) clearInterval(verificationTimerInterval);
-            activeVerificationWinner = null;
-            verifyPanel.style.display = 'none';
-        }
-
-        function renderParticipant(sender) {
-            const div = document.createElement('div'); div.className = 'p-card'; div.id = 'p-' + sender; div.innerText = sender; grid.appendChild(div);
-        }
-        function updateCounter() { document.getElementById('count-display').innerText = localParticipants.length; }
-        function saveKeyword() { socket.emit('updateKeyword', document.getElementById('keyword-input').value); }
-        function triggerReset() { socket.emit('reset'); }
+        function triggerReset() { socket.emit('reset'); location.reload(); }
         function triggerStartFight() { socket.emit('startFight'); }
-        function applyWinnerStyle(nick, status) { const el = document.getElementById('p-'+nick); if(el) el.classList.add('winner-active'); }
+        function renderParticipant(sender) {
+            const div = document.createElement('div'); div.className = 'p-card'; div.id = 'p-' + sender; div.innerText = sender; document.getElementById('participants-grid').appendChild(div);
+        }
     </script>
 </body>
 </html>
