@@ -142,12 +142,11 @@
             left: 0; 
             top: 0; 
             height: 100%; 
-            will-change: transform;
-            animation-fill-mode: forwards !important;
         }
         
         .ticker-item {
-            min-width: 170px; max-width: 170px; height: 100%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.9rem; border-right: 1px solid rgba(255,255,255,0.04); color: var(--text-main); box-sizing: border-box; background: linear-gradient(180deg, #1d1430 0%, #130d21 100%);
+            position: absolute;
+            width: 170px; height: 100%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.9rem; border-right: 1px solid rgba(255,255,255,0.04); color: var(--text-main); box-sizing: border-box; background: linear-gradient(180deg, #1d1430 0%, #130d21 100%);
             padding: 5px 12px; text-align: center; word-break: break-all; line-height: 1.2; overflow: hidden; border-top: 2px solid transparent; border-bottom: 2px solid transparent;
         }
 
@@ -310,6 +309,12 @@
         const btnVerifyConfirm = document.getElementById('btn-verify-confirm');
         const btnVerifyReroll = document.getElementById('btn-verify-reroll');
 
+        // MECHANIKA POD NOWY SILNIK FIZYCZNY BĘBNA
+        let animationFrameId = null;
+        let cards = [];
+        const cardWidth = 170;
+        const totalVisibleCards = 8; // Liczba kafelków krążących w pętli
+
         socket.on('init', (data) => {
             grid.innerHTML = "";
             localParticipants = data.participants || [];
@@ -446,11 +451,7 @@
             }
         }
         function updateCounter() { countDisplay.innerText = localParticipants.length; }
-        
-        function triggerReset() { 
-            socket.emit('reset'); 
-        }
-        
+        function triggerReset() { socket.emit('reset'); }
         function triggerStartFight() { startCinematicDraw(); }
 
         function shuffleParticipants() {
@@ -460,70 +461,140 @@
                 [localParticipants[i], localParticipants[j]] = [localParticipants[j], localParticipants[i]];
             }
             grid.innerHTML = "";
-            localParticipants.forEach(p => {
-                renderParticipant(p);
-            });
+            localParticipants.forEach(p => renderParticipant(p));
         }
 
+        // NOWY SILNIK INERCOWY (FIZYCZNY) JAVASCRIPT
         function startCinematicDraw() {
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+
             const excludedNicks = winnersList.map(w => w.nick);
             const available = localParticipants.filter(p => !excludedNicks.includes(p));
             
             if (available.length === 0) {
-                statusDisplay.innerText = "Brak dostępnych nowych uczestników do wylosowania!";
-                alert("Wszyscy uczestnicy zostali już wylosowani lub pominięci!");
+                statusDisplay.innerText = "Brak dostępnych nowych uczestników!";
+                alert("Wszyscy uczestnicy zostali już wylosowani!");
                 grid.style.display = 'grid';
                 return;
             }
 
             closeVerificationPanel();
-            const randomIndex = Math.floor(Math.random() * available.length);
-            const winner = available[randomIndex];
+            const winner = available[Math.floor(Math.random() * available.length)];
 
-            // PODBIŁEM ILOŚĆ ELEMENTÓW DO 65 (Zwycięzca ląduje na 55 pozycji)
-            // Dzięki temu pasek musi przejechać gigantyczną odległość, co przyśpiesza start do maksimum!
-            const itemWidth = 170; const targetIndex = 55; const totalItems = 65;
-            
-            ribbon.style.transition = "none"; 
-            ribbon.style.transform = "translateX(0px)";
-            ribbon.innerHTML = ""; 
+            ribbon.innerHTML = "";
+            wrapper.style.display = 'block';
 
-            for (let i = 0; i < totalItems; i++) {
-                const el = document.createElement('div'); el.className = 'ticker-item';
-                if (i === targetIndex) { 
-                    el.innerText = winner; 
-                    el.id = "winning-ticker-cell"; 
-                } 
-                else { el.innerText = available[Math.floor(Math.random() * available.length)] || "..."; }
+            const centerLine = wrapper.offsetWidth / 2;
+            cards = [];
+
+            // Generujemy małą, zapętloną liczbę kafelków startowych
+            for (let i = 0; i < totalVisibleCards; i++) {
+                const el = document.createElement('div');
+                el.className = 'ticker-item';
+                const randNick = available[Math.floor(Math.random() * available.length)];
+                el.innerText = randNick;
+                
+                let posX = i * cardWidth;
+                el.style.transform = `translateX(${posX}px)`;
                 ribbon.appendChild(el);
+
+                cards.push({ dom: el, x: posX, isWinner: false });
             }
 
-            const drawDurationSeconds = parseFloat(timeSlider.value) || 20;
-            const drawDurationMs = drawDurationSeconds * 1000;
+            // Parametry fizyki
+            const totalDuration = (parseFloat(timeSlider.value) || 20) * 1000;
+            const startTime = performance.now();
             
-            wrapper.style.display = 'block';
-            
-            // Pobieranie aktualnego środka okna
-            const wrapperCenterPoint = wrapper.offsetWidth / 2;
-            const itemCenterPoint = itemWidth / 2;
-            const stopPosition = (targetIndex * itemWidth) + itemCenterPoint - wrapperCenterPoint;
+            // Konfiguracja hamowania, by zwycięzca wyskoczył pod koniec
+            let winnerSpawned = false;
+            let phase = "speed"; // speed -> slowing -> targeting
 
-            setTimeout(() => {
-                // NOWA STRATEGICZNA KRZYWA BEZIERA:
-                // Pierwsza wartość (0) daje ultra ostry start. Druga (1.2) wydłuża pęd, ale trzecia i czwarta (0.1, 1) 
-                // powodują, że pod koniec wygaszanie idzie czysto po prostej linii bez cofania na kafelku!
-                ribbon.style.transition = `transform ${drawDurationSeconds}s cubic-bezier(0, 1.2, 0.1, 1)`;
-                ribbon.style.transform = `translateX(-${stopPosition}px)`;
-            }, 50);
+            function updatePhysics(now) {
+                const elapsed = now - startTime;
+                const progress = Math.min(elapsed / totalDuration, 1);
 
-            setTimeout(() => {
-                const winningCell = document.getElementById('winning-ticker-cell');
-                if (winningCell) {
-                    winningCell.classList.add('winning-cell-active');
+                // Matematyczne płynne wygaszanie prędkości w czasie (Zabezpieczenie przed ruchem w tył)
+                const currentSpeed = Math.max(70 * Math.pow(1 - progress, 3.5), 0);
+
+                if (progress >= 0.75 && !winnerSpawned) {
+                    phase = "slowing";
                 }
-                statusDisplay.innerText = `Wylosowano: ${winner}! Czekam na znak na czacie...`;
-                startVerificationStage(winner);
-            }, drawDurationMs + 50); 
+
+                // Przesuwamy każdy kafelek o wyliczoną prędkość (Zawsze w lewo)
+                cards.forEach(card => {
+                    card.x -= currentSpeed;
+
+                    // Infinite loop: jeśli kafelek uciekł za lewą burtę, teleportujemy go na prawy koniec
+                    if (card.x < -cardWidth) {
+                        // Znajdujemy aktualnie najbardziej wysunięty kafelek po prawej
+                        const maxX = Math.max(...cards.map(c => c.x));
+                        card.x = maxX + cardWidth;
+                        
+                        // Podmieniamy nick na losowy
+                        card.dom.className = 'ticker-item';
+                        card.dom.id = '';
+                        
+                        if (phase === "slowing" && !winnerSpawned) {
+                            // Wstrzykujemy zwycięzcę na bezpiecznym, nadchodzącym dystansie po prawej stronie
+                            card.dom.innerText = winner;
+                            card.dom.id = "winning-ticker-cell";
+                            card.isWinner = true;
+                            winnerSpawned = true;
+                            phase = "targeting";
+                        } else {
+                            card.dom.innerText = available[Math.floor(Math.random() * available.length)] || "...";
+                            card.isWinner = false;
+                        }
+                    }
+
+                    card.dom.style.transform = `translateX(${card.x}px)`;
+                });
+
+                // Sprawdzamy czy weszliśmy w fazę precyzyjnego zatrzymania zwycięzcy na środku
+                if (phase === "targeting" && currentSpeed < 1.5) {
+                    const winningCard = cards.find(c => c.isWinner);
+                    if (winningCard) {
+                        // Obliczamy ile brakuje zwycięzcy, aby jego środek znalazł się idealnie na fioletowej kresce
+                        const currentCardCenter = winningCard.x + (cardWidth / 2);
+                        const distanceToCenter = centerLine - currentCardCenter;
+
+                        // Płynne domykanie odległości (Easing liniowy, bezwzględnie bez cofania)
+                        if (Math.abs(distanceToCenter) > 0.5) {
+                            const step = distanceToCenter * 0.08;
+                            cards.forEach(c => {
+                                c.x += step;
+                                c.dom.style.transform = `translateX(${c.x}px)`;
+                            });
+                            animationFrameId = requestAnimationFrame(updatePhysics);
+                            return;
+                        }
+                    }
+                    
+                    // Finisz: Zwycięzca stoi idealnie wycentrowany
+                    finalizeDraw(winner);
+                    return;
+                }
+
+                if (progress < 1 || phase !== "targeting") {
+                    animationFrameId = requestAnimationFrame(updatePhysics);
+                } else {
+                    finalizeDraw(winner);
+                }
+            }
+
+            animationFrameId = requestAnimationFrame(updatePhysics);
+        }
+
+        function finalizeDraw(winner) {
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            animationFrameId = null;
+
+            const winningCell = document.getElementById('winning-ticker-cell');
+            if (winningCell) {
+                winningCell.classList.add('winning-cell-active');
+            }
+            statusDisplay.innerText = `Wylosowano: ${winner}! Czekam na znak na czacie...`;
+            startVerificationStage(winner);
         }
 
         function startVerificationStage(winnerNick) {
@@ -537,7 +608,6 @@
             verifyTimer.innerText = "60s";
             verifyTimer.style.color = "var(--danger-red)";
             verifyTimer.style.borderColor = "rgba(230, 57, 70, 0.2)";
-            
             verifyChatBox.innerHTML = `<div style="color: #55486e; font-style: italic;">Oczekiwanie na dowolną wiadomość od @${winnerNick}...</div>`;
             
             btnVerifyConfirm.style.display = 'none';
@@ -558,12 +628,9 @@
         function handleVerificationTimeout() {
             clearInterval(verificationTimerInterval); 
             verificationTimerInterval = null;
-            
             verifyTimer.innerText = "BRAK!";
             statusDisplay.innerText = `@${activeVerificationWinner} nie odpowiedział w wyznaczonym czasie!`;
-            
             btnVerifyConfirm.style.display = 'none';
-            
             btnVerifyReroll.className = 'btn-action-draw';
             btnVerifyReroll.style.maxWidth = '100%'; 
             btnVerifyReroll.innerText = "❌ Czas minął! Losuj kolejną osobę";
@@ -572,11 +639,9 @@
         function closeVerificationPanel() {
             if (verificationTimerInterval) clearInterval(verificationTimerInterval);
             verificationTimerInterval = null; 
-            
             activeVerificationWinner = null; 
             hasPlayerResponded = false;
             verifyPanel.style.display = 'none';
-            
             grid.style.display = 'grid';
             btnVerifyReroll.style.maxWidth = '240px';
         }
