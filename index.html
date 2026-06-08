@@ -7,28 +7,39 @@
     <style>
         :root {
             --bg-main: #0c0814; --bg-panel: #160f24; --bg-input: #211633;
-            --accent-glow: #b624ff; --text-main: #f1eef5; --text-muted: #8675a1;
-            --border-panel: #2f1e47; --border-card: #3c265c; --danger-red: #e63946; --success-green: #2a9d8f;
+            --accent-glow: #b624ff; --accent-hover: #9f1be0; --text-main: #f1eef5;
+            --text-muted: #8675a1; --border-panel: #2f1e47; --border-card: #3c265c;
+            --danger-red: #e63946; --success-green: #2a9d8f;
         }
         body { background-color: var(--bg-main); color: var(--text-main); font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; display: flex; height: 100vh; box-sizing: border-box; gap: 20px; }
         .panel { background-color: var(--bg-panel); border: 1px solid var(--border-panel); border-radius: 12px; padding: 24px; display: flex; flex-direction: column; box-shadow: 0 4px 25px rgba(0, 0, 0, 0.6); }
         .panel-title { font-size: 1.1rem; font-weight: 700; text-transform: uppercase; margin-bottom: 25px; border-left: 3px solid var(--accent-glow); padding-left: 10px; }
+        
         .sidebar-left { width: 320px; min-width: 320px; }
         .form-group { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
         .form-group label { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600; }
-        input[type="text"], input[type="number"] { background-color: var(--bg-input); border: 1px solid var(--border-card); color: var(--text-main); padding: 12px; border-radius: 8px; outline: none; }
+        input[type="text"], input[type="number"] { background-color: var(--bg-input); border: 1px solid var(--border-card); color: var(--text-main); padding: 12px; border-radius: 8px; outline: none; transition: border 0.2s; }
+        input:focus { border-color: var(--accent-glow); }
+        
         .btn-container-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
-        button { font-weight: 700; text-transform: uppercase; padding: 12px; border-radius: 8px; cursor: pointer; border: none; transition: 0.2s; }
+        button { font-weight: 700; text-transform: uppercase; padding: 12px; border-radius: 8px; cursor: pointer; border: none; transition: 0.3s; }
         .btn-save { background-color: var(--accent-glow); color: #fff; }
+        .btn-save:hover { background-color: var(--accent-hover); box-shadow: 0 0 10px var(--accent-glow); }
         .btn-reset { background-color: var(--danger-red); color: #fff; }
-        #status-log { margin-top: auto; padding: 15px; background: rgba(0,0,0,0.3); border-radius: 8px; font-size: 0.85rem; color: var(--accent-glow); border: 1px solid var(--border-card); text-align: center; font-weight: bold; min-height: 40px; }
+        .btn-reset:hover { filter: brightness(1.2); }
+        
+        /* STATUS NA DOLE LEWEJ */
+        #status-log { margin-top: auto; padding: 15px; background: rgba(0,0,0,0.3); border-radius: 8px; font-size: 0.85rem; color: var(--accent-glow); border: 1px solid var(--border-card); text-align: center; font-weight: bold; }
+
         .main-content { flex: 1; display: flex; flex-direction: column; gap: 15px; }
-        .status-header { background-color: var(--bg-panel); border: 1px solid var(--border-panel); padding: 15px 20px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; }
-        .status-val { color: var(--accent-glow); font-weight: 700; }
-        .arena-wrapper { flex: 1; background-color: rgba(0,0,0,0.2); border: 1px solid var(--border-panel); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; }
-        .arena { flex: 1; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
+        .status-header { background-color: var(--bg-panel); border: 1px solid var(--border-panel); padding: 15px 20px; border-radius: 12px; display: flex; justify-content: space-around; align-items: center; font-size: 0.9rem; }
+        .status-val { color: var(--accent-glow); font-weight: 700; font-size: 1.1rem; }
+        
+        .arena-wrapper { flex: 1; background-color: rgba(0,0,0,0.2); border: 1px solid var(--border-panel); border-radius: 12px; padding: 20px; }
+        .arena { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
         .p-card { background-color: var(--bg-panel); border: 1px solid var(--border-card); padding: 14px; border-radius: 8px; text-align: center; font-weight: 600; }
-        .p-card.winner-active { border-color: var(--accent-glow); color: var(--accent-glow); }
+        .p-card.winner-active { border-color: var(--accent-glow); color: var(--accent-glow); box-shadow: 0 0 10px rgba(182, 36, 255, 0.3); }
+        
         .sidebar-right { width: 320px; min-width: 320px; }
         .table-container { flex: 1; overflow-y: auto; background-color: var(--bg-input); border-radius: 8px; }
         table { width: 100%; border-collapse: collapse; }
@@ -45,7 +56,7 @@
         </div>
         <div class="form-group">
             <label>Ilość TC:</label>
-            <input id="tc-input" type="number" value="50">
+            <input id="tc-input" type="number" value="50" oninput="updateStats()">
         </div>
         <div class="form-group">
             <label>Ilość uczestników: <span id="slider-val">10</span></label>
@@ -56,14 +67,15 @@
             <button class="btn-reset" onclick="triggerReset()">Reset</button>
         </div>
         <button class="btn-save" style="width: 100%; padding: 15px;" onclick="triggerStartFight()">Rozpocznij losowanie</button>
-        <div id="status-log">Oczekiwanie...</div>
+        
+        <div id="status-log">Oczekiwanie na akcję...</div>
     </div>
 
     <div class="main-content">
         <div class="status-header">
             <div>Hasło: <span id="pass-display" class="status-val">-</span></div>
             <div>TC: <span id="tc-display" class="status-val">50</span></div>
-            <div>Uczestników: <span id="count-display" class="status-val">0</span></div>
+            <div>Uczestnicy: <span id="count-display" class="status-val">0</span></div>
         </div>
         <div class="arena-wrapper">
             <div class="arena" id="participants-grid"></div>
@@ -81,6 +93,7 @@
         const socket = io();
         let localParticipants = [];
         let activeVerificationWinner = null;
+        
         const statusLog = document.getElementById('status-log');
         const passDisplay = document.getElementById('pass-display');
         const tcDisplay = document.getElementById('tc-display');
@@ -118,7 +131,7 @@
         socket.on('triggerFight', () => {
             if (localParticipants.length > 0) {
                 activeVerificationWinner = localParticipants[Math.floor(Math.random() * localParticipants.length)];
-                statusLog.innerText = `Wylosowano: ${activeVerificationWinner}! Czekam na czat...`;
+                statusLog.innerText = `Wylosowano: ${activeVerificationWinner}!`;
                 statusLog.style.color = "var(--accent-glow)";
             }
         });
