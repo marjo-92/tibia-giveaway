@@ -22,7 +22,6 @@ body {
     box-sizing: border-box;
 }
 
-/* Górny pasek nawigacji */
 .navbar {
     display: flex;
     justify-content: space-between;
@@ -37,7 +36,6 @@ body {
     letter-spacing: 1px;
 }
 
-/* Główny układ trzech kolumn */
 .app-container {
     display: flex;
     flex: 1;
@@ -54,7 +52,6 @@ body {
     flex-direction: column;
 }
 
-/* Lewa kolumna: Ustawienia */
 .sidebar {
     width: 280px;
 }
@@ -92,7 +89,7 @@ body {
     font-size: 0.75rem;
     color: var(--text-muted);
 }
-input, select {
+input {
     background-color: var(--bg-input);
     border: 1px solid var(--border-color);
     color: var(--text-main);
@@ -114,7 +111,6 @@ input, select {
 }
 .btn-primary:hover { background-color: var(--kick-green-hover); }
 
-/* Środkowa kolumna: Widgety i arena */
 .main-content {
     flex: 1;
     display: flex;
@@ -181,7 +177,6 @@ input, select {
     color: var(--danger-red);
 }
 
-/* Prawa kolumna: Zwycięzcy */
 .winners-sidebar {
     width: 240px;
 }
