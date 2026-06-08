@@ -8,50 +8,33 @@ const io = new Server(server, { cors: { origin: "*" } });
 
 app.use(express.json());
 
-// Ręczne nagłówki CORS
-app.use((req, res, next) => {
-    res.header("Access-Control-Allow-Origin", "*");
-    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-    next();
-});
-
-let participants = new Set(); 
-let currentKeyword = "a";
+let participants = new Set();
+let config = { tcAmount: 0, password: "", excluded: [] };
 
 app.get('/', (req, res) => res.sendFile(__dirname + '/index.html'));
 
 app.post('/new-message', (req, res) => {
     const { sender, content } = req.body;
     
-    if (sender && content) {
-        // Przesyłamy czat bez zmian (oryginalne wielkości liter)
-        io.emit('newChat', { sender, content });
-        
-        // --- KLUCZOWA ZMIANA: porównanie bez względu na wielkość liter ---
-        if (content.toLowerCase().trim() === currentKeyword.toLowerCase().trim()) {
-            if (!participants.has(sender)) {
-                participants.add(sender);
-                io.emit('newParticipant', sender);
-            }
+    // Wysyłamy czat do interfejsu
+    io.emit('newChat', { sender, content });
+
+    // Sprawdzamy hasło i czy użytkownik nie jest na czarnej liście
+    if (sender && content && content.toLowerCase().trim() === config.password.toLowerCase().trim()) {
+        if (!config.excluded.includes(sender) && !participants.has(sender)) {
+            participants.add(sender);
+            io.emit('newParticipant', { sender, count: participants.size });
         }
     }
     res.status(200).send('OK');
 });
 
 io.on('connection', (socket) => {
-    socket.emit('init', { participants: Array.from(participants), keyword: currentKeyword });
-    
-    socket.on('updateKeyword', (kw) => { 
-        currentKeyword = kw; 
-        io.emit('keywordChanged', kw); 
+    socket.on('updateConfig', (data) => {
+        config = data;
+        io.emit('configUpdated', config);
     });
-    
-    socket.on('startFight', () => io.emit('triggerFight'));
-    socket.on('reset', () => { 
-        participants.clear(); 
-        io.emit('participantsReset'); 
-    });
+    socket.on('reset', () => { participants.clear(); io.emit('participantsReset'); });
 });
 
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`Serwer działa na porcie: ${PORT}`));
+server.listen(3000);
