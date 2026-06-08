@@ -130,8 +130,14 @@
         .ticker-pointer::before { content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%); border-left: 10px solid transparent; border-right: 10px solid transparent; border-top: 10px solid var(--accent-glow); }
         .ticker-pointer::after { content: ''; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); border-left: 10px solid transparent; border-right: 10px solid transparent; border-bottom: 10px solid var(--accent-glow); }
         .ticker-ribbon { display: flex; position: absolute; left: 0; top: 0; height: 100%; will-change: transform; }
+        
+        /* ZABEZPIECZENIE PRZED DŁUGIMI NICKAMI W BĘBNIE */
         .ticker-item {
-            min-width: 170px; max-width: 170px; height: 100%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.1rem; border-right: 1px solid rgba(255,255,255,0.04); color: var(--text-main); box-sizing: border-box; background: linear-gradient(180deg, #1d1430 0%, #130d21 100%);
+            min-width: 170px; max-width: 170px; height: 100%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.95rem; border-right: 1px solid rgba(255,255,255,0.04); color: var(--text-main); box-sizing: border-box; background: linear-gradient(180deg, #1d1430 0%, #130d21 100%);
+            padding: 0 10px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         /* PANEL WERYFIKACJI */
@@ -325,7 +331,6 @@
 
             if (cleanSender !== cleanWinner) return;
 
-            // Gracz dał znak życia -> zatrzymujemy licznik czasu
             if (verificationTimerInterval !== null) {
                 clearInterval(verificationTimerInterval);
                 verificationTimerInterval = null;
@@ -336,7 +341,6 @@
                 verifyTimer.style.borderColor = "var(--success-green)";
                 statusDisplay.innerText = `@${activeVerificationWinner} napisał na czacie! Czekam na decyzję streamera.`;
                 
-                // Odblokowujemy możliwość zatwierdzenia, ponieważ gracz odpisał
                 btnVerifyConfirm.style.display = 'block';
             }
 
@@ -347,7 +351,6 @@
             verifyChatBox.scrollTop = verifyChatBox.scrollHeight;
         }
 
-        // RĘCZNE DODANIE WIDZA DO TABELI PRZEZ STREAMERA (Przycisk "Zatwierdź i dodaj")
         function confirmWinnerAndAdd() {
             if (!activeVerificationWinner) return;
 
@@ -365,11 +368,10 @@
             closeVerificationPanel();
         }
 
-        // ODRZUCENIE WIDZA I AUTOMATYCZNY REROLL (Przycisk "Losuj Ponownie")
         function rejectWinnerAndReroll() {
             if (!activeVerificationWinner) return;
 
-            // Zapisujemy gracza jako dyskwalifikacja
+            // Zapisujemy gracza jako pominiętego w winnersList
             winnersList.push({ nick: activeVerificationWinner, status: 'disqualified' });
 
             const tr = document.createElement('tr');
@@ -379,8 +381,9 @@
 
             applyWinnerStyle(activeVerificationWinner, 'disqualified');
             
-            // Czyścimy aktualny stan i automatycznie odpalamy nowe losowanie
             closeVerificationPanel();
+            
+            // SYSTEM AUTOMATYCZNIE URUCHAMIA NOWE LOSOWANIE (Pominięty gracz zostanie wykluczony w startCinematicDraw)
             startCinematicDraw();
         }
 
@@ -433,7 +436,7 @@
             socket.emit('reset'); 
         }
         
-        function triggerStartFight() { socket.emit('startFight'); }
+        function triggerStartFight() { startCinematicDraw(); }
 
         function shuffleParticipants() {
             if (localParticipants.length < 2) return;
@@ -459,10 +462,15 @@
         }
 
         function startCinematicDraw() {
+            // KLUCZOWA POPRAWKA: wyciągamy niki wszystkich dotychczasowych zwycięzców i osób pominiętych/zdyskwalifikowanych
             const excludedNicks = winnersList.map(w => w.nick);
+            
+            // Filtrujemy listę uczestników – odrzucamy każdego, kto już jest na liście wykluczonych
             const available = localParticipants.filter(p => !excludedNicks.includes(p));
+            
             if (available.length === 0) {
-                statusDisplay.innerText = "Brak dostępnych uczestników do wylosowania!";
+                statusDisplay.innerText = "Brak dostępnych nowych uczestników do wylosowania!";
+                alert("Wszyscy uczestnicy zostali już wylosowani lub pominięci!");
                 return;
             }
 
@@ -476,7 +484,7 @@
             for (let i = 0; i < totalItems; i++) {
                 const el = document.createElement('div'); el.className = 'ticker-item';
                 if (i === targetIndex) { el.innerText = winner; el.id = "winning-ticker-cell"; } 
-                else { el.innerText = localParticipants[Math.floor(Math.random() * localParticipants.length)] || "..."; }
+                else { el.innerText = available[Math.floor(Math.random() * available.length)] || "..."; }
                 ribbon.appendChild(el);
             }
 
@@ -505,9 +513,7 @@
             
             verifyChatBox.innerHTML = `<div style="color: #55486e; font-style: italic;">Oczekiwanie na dowolną wiadomość od @${winnerNick}...</div>`;
             
-            // Ukrywamy przycisk "Zatwierdź" na start (póki gracz nic nie napisał)
             btnVerifyConfirm.style.display = 'none';
-            // Przycisk "Losuj ponownie" jest zawsze dostępny dla streamera
             btnVerifyReroll.style.display = 'block';
             btnVerifyReroll.className = 'btn-action-draw';
             btnVerifyReroll.innerText = "❌ Pomiń / Losuj Ponownie";
@@ -521,7 +527,6 @@
             }, 1000);
         }
 
-        // CO SIĘ DZIEJE GDY MINIE 60 SEKUND BEZ ODPOWIEDZI
         function handleVerificationTimeout() {
             clearInterval(verificationTimerInterval); 
             verificationTimerInterval = null;
@@ -529,12 +534,10 @@
             verifyTimer.innerText = "BRAK!";
             statusDisplay.innerText = `@${activeVerificationWinner} nie odpowiedział w wyznaczonym czasie!`;
             
-            // Ukrywamy przycisk zatwierdzania, bo gracz przegrał czas
             btnVerifyConfirm.style.display = 'none';
             
-            // Przycisk odrzucenia zmienia się w wielki, czerwony alert do ponownego losowania
             btnVerifyReroll.className = 'btn-action-draw';
-            btnVerifyReroll.style.gridColumn = '1 / span 2'; // Rozciąga go na całą szerokość panelu
+            btnVerifyReroll.style.gridColumn = '1 / span 2'; 
             btnVerifyReroll.innerText = "❌ Czas minął! Losuj kolejną osobę";
         }
 
@@ -544,8 +547,6 @@
             activeVerificationWinner = null; 
             hasPlayerResponded = false;
             verifyPanel.style.display = 'none';
-            
-            // Resetujemy układ przycisków w stopce do domyślnego
             btnVerifyReroll.style.gridColumn = 'auto';
         }
     </script>
