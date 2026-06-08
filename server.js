@@ -1,29 +1,34 @@
 const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
+
 const app = express();
-const http = require('http').createServer(app);
-const io = require('socket.io')(http, { cors: { origin: "*" } });
+const server = http.createServer(app);
+const io = new Server(server, { cors: { origin: "*" } });
 
 app.use(express.json());
 
-// Logika CORS - musi być na samej górze
+// Ręczne nagłówki CORS – to musi być, żeby StreamElements mogło "rozmawiać" z serwerem
 app.use((req, res, next) => {
     res.header("Access-Control-Allow-Origin", "*");
     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
     next();
 });
 
-let participants = new Set();
-let config = { password: "a" };
+let participants = new Set(); 
+let currentKeyword = "a";
+
+app.get('/', (req, res) => res.sendFile(__dirname + '/index.html'));
 
 app.post('/new-message', (req, res) => {
-    // To jest najważniejsza linia. Jeśli jej nie ma w logach, 
-    // to dane nie docierają z widgetu.
-    console.log("OTRZYMANO DANE Z WIDGETU:", JSON.stringify(req.body));
-    
     const { sender, content } = req.body;
     
     if (sender && content) {
-        if (content.toLowerCase().trim() === config.password.toLowerCase().trim()) {
+        // Przesyłamy czat dalej
+        io.emit('newChat', { sender, content });
+        
+        // Logika hasła (bez zmian, Twoja sprawdzona wersja)
+        if (content.toLowerCase().trim() === currentKeyword.toLowerCase().trim()) {
             if (!participants.has(sender)) {
                 participants.add(sender);
                 io.emit('newParticipant', sender);
@@ -33,6 +38,20 @@ app.post('/new-message', (req, res) => {
     res.status(200).send('OK');
 });
 
-app.get('/', (req, res) => res.send('Serwer działa.'));
+io.on('connection', (socket) => {
+    socket.emit('init', { participants: Array.from(participants), keyword: currentKeyword });
+    
+    socket.on('updateKeyword', (kw) => { 
+        currentKeyword = kw; 
+        io.emit('keywordChanged', kw); 
+    });
+    
+    socket.on('startFight', () => io.emit('triggerFight'));
+    socket.on('reset', () => { 
+        participants.clear(); 
+        io.emit('participantsReset'); 
+    });
+});
 
-http.listen(3000, () => console.log("Serwer nasłuchuje na porcie 3000"));
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => console.log(`Serwer działa na porcie: ${PORT}`));
