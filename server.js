@@ -8,7 +8,7 @@ const io = new Server(server, { cors: { origin: "*" } });
 
 app.use(express.json());
 
-// Ręczne dodanie nagłówków CORS, żeby ominąć blokadę
+// Ręczne nagłówki CORS
 app.use((req, res, next) => {
     res.header("Access-Control-Allow-Origin", "*");
     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
@@ -21,12 +21,14 @@ let currentKeyword = "a";
 app.get('/', (req, res) => res.sendFile(__dirname + '/index.html'));
 
 app.post('/new-message', (req, res) => {
-    console.log("Dane odebrane przez serwer:", req.body);
     const { sender, content } = req.body;
     
     if (sender && content) {
+        // Przesyłamy czat bez zmian (oryginalne wielkości liter)
         io.emit('newChat', { sender, content });
-        if (content.toLowerCase().includes(currentKeyword.toLowerCase())) {
+        
+        // --- KLUCZOWA ZMIANA: porównanie bez względu na wielkość liter ---
+        if (content.toLowerCase().trim() === currentKeyword.toLowerCase().trim()) {
             if (!participants.has(sender)) {
                 participants.add(sender);
                 io.emit('newParticipant', sender);
@@ -38,9 +40,17 @@ app.post('/new-message', (req, res) => {
 
 io.on('connection', (socket) => {
     socket.emit('init', { participants: Array.from(participants), keyword: currentKeyword });
-    socket.on('updateKeyword', (kw) => { currentKeyword = kw; io.emit('keywordChanged', kw); });
+    
+    socket.on('updateKeyword', (kw) => { 
+        currentKeyword = kw; 
+        io.emit('keywordChanged', kw); 
+    });
+    
     socket.on('startFight', () => io.emit('triggerFight'));
-    socket.on('reset', () => { participants.clear(); io.emit('participantsReset'); });
+    socket.on('reset', () => { 
+        participants.clear(); 
+        io.emit('participantsReset'); 
+    });
 });
 
 const PORT = process.env.PORT || 3000;
