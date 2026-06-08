@@ -142,16 +142,17 @@
             border-bottom: 2px solid transparent;
         }
 
-        /* ANIMACJA MIGAJĄCEGO FIOLETOWEGO NEONU NA ELEMENT BĘBNA */
+        /* ANIMACJA MIGAJĄCEGO FIOLETOWEGO NEONU */
         @keyframes tickerNeonPulse {
             0% { border-top-color: #b624ff; border-bottom-color: #b624ff; box-shadow: inset 0 0 8px rgba(182, 36, 255, 0.5); background: linear-gradient(180deg, #321654 0%, #130d21 100%); }
             50% { border-top-color: #e2abff; border-bottom-color: #e2abff; box-shadow: inset 0 0 20px rgba(182, 36, 255, 0.9); background: linear-gradient(180deg, #4d1d85 0%, #1a0f30 100%); }
             100% { border-top-color: #b624ff; border-bottom-color: #b624ff; box-shadow: inset 0 0 8px rgba(182, 36, 255, 0.5); background: linear-gradient(180deg, #321654 0%, #130d21 100%); }
         }
 
-        #winning-ticker-cell {
+        /* KLASA AKTYWOWANA PO ZAKOŃCZENIU LOSOWANIA */
+        .winning-cell-active {
             animation: tickerNeonPulse 1.2s infinite ease-in-out !important;
-            color: #fff !important;
+            color: #e5b3ff !important; /* Robi nick na fioletowo */
             font-weight: 800;
             font-size: 1rem;
         }
@@ -351,7 +352,7 @@
                 statusDisplay.innerText = `@${activeVerificationWinner} napisał na czacie! Czekam na decyzję streamera.`;
                 
                 btnVerifyConfirm.style.display = 'block';
-                verifyChatBox.innerHTML = ""; // Czyścimy komunikat oczekiwania przy pierwszej wiadomości
+                verifyChatBox.innerHTML = ""; 
             }
 
             const div = document.createElement('div');
@@ -435,7 +436,6 @@
             socket.emit('reset'); 
         }
         
-        // POPRAWKA: Usunięto triggerReset() stąd, dzięki czemu bęben NIE znika po 1 sekundzie!
         function triggerStartFight() { startCinematicDraw(); }
 
         function shuffleParticipants() {
@@ -470,7 +470,10 @@
 
             for (let i = 0; i < totalItems; i++) {
                 const el = document.createElement('div'); el.className = 'ticker-item';
-                if (i === targetIndex) { el.innerText = winner; el.id = "winning-ticker-cell"; } 
+                if (i === targetIndex) { 
+                    el.innerText = winner; 
+                    el.id = "winning-ticker-cell"; 
+                } 
                 else { el.innerText = available[Math.floor(Math.random() * available.length)] || "..."; }
                 ribbon.appendChild(el);
             }
@@ -482,7 +485,12 @@
                 ribbon.style.transform = `translateX(-${stopPosition}px)`;
             }, 50);
 
+            // AKTUALIZACJA: Neon oraz fioletowy nick aktywują się dokładnie po 4.5s (gdy bęben stanie!)
             setTimeout(() => {
+                const winningCell = document.getElementById('winning-ticker-cell');
+                if (winningCell) {
+                    winningCell.classList.add('winning-cell-active');
+                }
                 statusDisplay.innerText = `Wylosowano: ${winner}! Czekam na znak na czacie...`;
                 startVerificationStage(winner);
             }, 4550);
