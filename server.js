@@ -8,27 +8,24 @@ const io = new Server(server, { cors: { origin: "*" } });
 
 app.use(express.json());
 
+// Ręczne dodanie nagłówków CORS, żeby ominąć blokadę
+app.use((req, res, next) => {
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    next();
+});
+
 let participants = new Set(); 
 let currentKeyword = "a";
 
-app.get('/', (req, res) => {
-    res.sendFile(__dirname + '/index.html');
-});
+app.get('/', (req, res) => res.sendFile(__dirname + '/index.html'));
 
-// Endpoint odbierający dane od StreamElements
 app.post('/new-message', (req, res) => {
-    // Logujemy wszystko, co przychodzi, aby debugować w logach Rendera
-    console.log("Otrzymano dane:", req.body);
+    console.log("Dane odebrane przez serwer:", req.body);
+    const { sender, content } = req.body;
     
-    // Pobieramy dane z obiektu (uwzględniając, że czasem mogą być zagnieżdżone)
-    const sender = req.body.sender || "Nieznany";
-    const content = req.body.content || "";
-    
-    if (content) {
-        // Przesyłamy do frontendu
-        io.emit('newChat', { sender: sender, content: content });
-        
-        // Sprawdzamy hasło
+    if (sender && content) {
+        io.emit('newChat', { sender, content });
         if (content.toLowerCase().includes(currentKeyword.toLowerCase())) {
             if (!participants.has(sender)) {
                 participants.add(sender);
@@ -47,4 +44,4 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => { console.log(`Serwer startuje na porcie: ${PORT}`); });
+server.listen(PORT, () => console.log(`Serwer działa na porcie: ${PORT}`));
