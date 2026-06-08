@@ -6,32 +6,37 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });
 
-// SERWUJE PLIKI Z TEGO FOLDERU (index.html, style.css, itd.)
-app.use(express.static(__dirname));
 app.use(express.json());
 
-let participants = new Set();
-let currentKeyword = "a";
-
-app.get('/', (req, res) => res.sendFile(__dirname + '/index.html'));
-
+// 1. API - musi być PRZED express.static
 app.post('/new-message', (req, res) => {
+    console.log("OTRZYMANO DANE Z WIDGETU:", req.body);
     const { sender, content } = req.body;
+    
     if (sender && content) {
         if (content.toLowerCase().trim() === currentKeyword.toLowerCase().trim()) {
             if (!participants.has(sender)) {
                 participants.add(sender);
-                io.emit('newParticipant', sender); // Wysyłamy do frontendu
+                io.emit('newParticipant', sender);
             }
         }
     }
     res.status(200).send('OK');
 });
 
+// 2. PLIKI STATYCZNE (index.html, style.css)
+app.use(express.static(__dirname));
+
+let participants = new Set();
+let currentKeyword = "a";
+
 io.on('connection', (socket) => {
     socket.emit('init', { participants: Array.from(participants), keyword: currentKeyword });
     socket.on('updateKeyword', (kw) => { currentKeyword = kw; });
-    socket.on('reset', () => { participants.clear(); io.emit('participantsReset'); });
+    socket.on('reset', () => { 
+        participants.clear(); 
+        io.emit('participantsReset'); 
+    });
 });
 
 const PORT = process.env.PORT || 10000;
