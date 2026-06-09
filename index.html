@@ -404,6 +404,7 @@
         }
 
         function switchTab(mode) {
+            // POPRAWKA: Usunięto wywoływanie pełnego resetu bazy przy zmianie zakładki, by nic nie znikało
             currentMode = mode;
             const tabAuto = document.getElementById('tab-auto');
             const tabManual = document.getElementById('tab-manual');
@@ -423,7 +424,6 @@
                 wrapManual.style.display = "flex";
                 passwordTitleLbl.innerText = "TRYB RAFFLE:";
             }
-            triggerResetLogic();
         }
 
         function saveSettings() {
@@ -858,17 +858,21 @@
             }
         }
 
+        // POPRAWKA: Przebudowano funkcję zapisu, aby prawidłowo kończyła rundę, czyściła ekrany kontrolne i przywracała arenę
         function submitGroupVerificationDecisions() {
             if (autoVerificationInterval) clearInterval(autoVerificationInterval);
 
             const tcValue = tcInput.value || "0";
 
             currentWinnersPicks.forEach(p => {
+                // Jeśli gracz nie napisał i streamer go nie odrzucił, dajemy pominięty
                 if (p.status === 'pending') {
                     p.status = 'disqualified';
                 }
 
+                // Zapisujemy stan do bocznej historii zwycięzców
                 winnersList.unshift({ nick: p.nick, status: p.status, tc: tcValue });
+                // Wywalamy z kolejnych losowań i przekreślamy
                 roundExcludedNicks.push(p.nick);
                 markParticipantAsDisqualified(p.nick);
             });
@@ -876,11 +880,12 @@
             saveWinnersToStorage();
             renderWinnersTable();
 
+            // Powrót do czystej struktury bębna i areny bez resetowania hasła i listy!
             currentWinnersPicks = [];
             verifyPanel.style.display = 'none';
             tickersContainer.style.display = 'none';
             tickersContainer.innerHTML = "";
-            grid.style.display = 'grid';
+            grid.style.display = 'grid'; // Powrót areny uczestników
             
             statusDisplay.innerText = "Zapisano zbiorcze decyzje losowania.";
             updateRerollButtonVisibility();
