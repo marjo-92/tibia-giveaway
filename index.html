@@ -93,10 +93,10 @@
         .status-lbl { color: var(--text-muted); text-transform: uppercase; font-size: 0.75rem; font-weight: 700;}
         .status-val { font-weight: 700; color: var(--accent-glow); }
 
-        .arena-wrapper { flex: 1; background-color: rgba(0,0,0,0.2); border: 1px solid var(--border-panel); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; }
+        .arena-wrapper { flex: 1; background-color: rgba(0,0,0,0.2); border: 1px solid var(--border-panel); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; position: relative; overflow: hidden; }
         .arena-title { text-align: center; font-size: 0.85rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; letter-spacing: 2px; margin-bottom: 15px; flex-shrink: 0; }
 
-        .arena { flex: 1; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); grid-auto-rows: max-content; gap: 12px; }
+        .arena { flex: 1; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); grid-auto-rows: max-content; gap: 12px; padding-bottom: 10px; }
 
         /* Szary i przekreślony kafelek na arenie */
         .p-card {
@@ -196,7 +196,7 @@
         }
         .btn-action-draw:hover { filter: brightness(1.2); }
 
-        /* POPRAWKA STYLE: Duży przycisk Losuj Ponownie na samym dole ŚRODKOWEGO panelu */
+        /* ULEPSZENIE: Przycisk Losuj Ponownie przypięty stabilnie do dołu środkowej sekcji */
         .btn-center-reroll-trigger {
             display: none;
             width: 100%;
@@ -206,22 +206,18 @@
             background-color: var(--accent-glow);
             color: #fff;
             border-radius: 8px;
-            box-shadow: 0 4px 15px rgba(182, 36, 255, 0.4);
-            margin-top: 15px;
+            box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.5), 0 4px 15px rgba(182, 36, 255, 0.4);
+            margin-top: auto;
+            position: sticky;
+            bottom: 0;
+            z-index: 5;
             flex-shrink: 0;
             transition: all 0.2s ease-in-out;
         }
         .btn-center-reroll-trigger:hover:not(:disabled) {
             background-color: var(--accent-hover);
             transform: translateY(-1px);
-            box-shadow: 0 6px 20px rgba(182, 36, 255, 0.6);
-        }
-        .btn-center-reroll-trigger:disabled {
-            background-color: var(--bg-input);
-            border: 1px solid var(--border-panel);
-            color: var(--text-muted);
-            box-shadow: none;
-            cursor: not-allowed;
+            box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.5), 0 6px 20px rgba(182, 36, 255, 0.6);
         }
     </style>
 </head>
@@ -383,28 +379,20 @@
 
         loadWinnersFromStorage();
 
-        // --- OBSŁUGA UKRYWANIA / POKAZYWANIA PRZYCISKU LOSOWANIA W ŚRODKU ---
+        // --- OBSŁUGA DYNAMICZNYCH PRZYCISKÓW ---
         function refreshButtonsState() {
             const availableCount = localParticipants.filter(p => !roundExcludedNicks.includes(p)).length;
             
-            // Jeśli ktoś został już wylosowany w tej rundzie, wyciągamy przycisk losowania na środek
+            // Pojawia się tylko w środku na dole, jeśli runda trwa, a ktoś już odpadł
             if (roundExcludedNicks.length > 0 && availableCount > 0) {
                 centerRerollBtn.style.display = "block";
-                centerRerollBtn.disabled = false;
                 centerRerollBtn.innerText = `🎰 Losuj Ponownie (${availableCount})`;
             } else {
                 centerRerollBtn.style.display = "none";
             }
-
-            // Główny przycisk startowy po lewej
-            if (localParticipants.length > 0 && availableCount > 0) {
-                mainDrawBtn.disabled = false;
-            } else {
-                mainDrawBtn.disabled = true;
-            }
         }
 
-        // --- ŁĄCZNOŚĆ SIECIOWA ---
+        // --- SOCKETS ---
         socket.on('init', (data) => {
             grid.innerHTML = "";
             localParticipants = data.participants || [];
@@ -579,15 +567,13 @@
         }
 
         function startCinematicDraw() {
-            if (animationFrameId) cancelAnimationFrame(animationFrameId);
-
             const available = localParticipants.filter(p => !roundExcludedNicks.includes(p));
-            
             if (available.length === 0) {
-                statusDisplay.innerText = "Brak chętnych do losowania!";
-                refreshButtonsState();
+                alert("Brak dostępnych graczy do wylosowania!");
                 return;
             }
+
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
 
             // Ukrywamy siatkę i dolny przycisk na czas kręcenia
             grid.style.display = 'none';
@@ -701,9 +687,8 @@
             
             verifyPanel.style.display = 'none';
             wrapper.style.display = 'none';
-            
-            // Przywracamy siatkę i odświeżamy stan przycisków
             grid.style.display = 'grid';
+            
             refreshButtonsState();
         }
     </script>
