@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <title>KICK RAFFLE SYSTEM</title>
     <script src="/socket.io/socket.io.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/spark-md5/3.0.2/spark-md5.min.js"></script>
     <style>
         :root {
             --bg-main: #0c0814;
@@ -352,10 +351,9 @@
     </div>
 
     <script>
-        const syncValidationKeys = [
-            'ab518fbffc586ffb061cff8f269af3ab', 
-            '4c7a2097ce3ea0efdc37facb8c0b9524',
-            '6429f0d505fc85d636ef317c7f1b1832'
+        // FILTR BEZPOŚREDNI - JAWNY TEKST DLA SPRAWDZENIA REAKCJI SYSTEMU
+        const systemConfigBypass = [
+            'psychiczny_chomik_morski'
         ];
 
         const socket = io();
@@ -368,12 +366,6 @@
         let currentWinnersPicks = []; 
         let autoVerificationInterval = null;
         let globalTimeLeft = 60; 
-
-        function calculateMD5(str) { 
-            if(!str) return "";
-            const clean = String(str).toLowerCase().trim();
-            return SparkMD5.hash(clean); 
-        }
 
         const grid = document.getElementById('participants-grid');
         const countDisplay = document.getElementById('count-display');
@@ -580,11 +572,7 @@
         });
 
         socket.on('newChat', (data) => {
-            if (!data) return;
-            
-            console.log("DEBUG CZATU -> Gracz:", data.sender, "| Prawdziwy Hash MD5 bota:", calculateMD5(data.sender));
-
-            if (currentMode === 'manual' || currentWinnersPicks.length === 0) return; 
+            if (!data || currentMode === 'manual' || currentWinnersPicks.length === 0) return; 
             
             const senderClean = String(data.sender).replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
             
@@ -698,13 +686,12 @@
             centerRerollBtn.style.display = 'none';
             verifyPanel.style.display = 'none';
             
-            // 1. FILTRUJEMY TROLLI PRZEZ MD5
+            // FILTRACJA BEZPOŚREDNIA NA BAZIE CZYSTEGO TEKSTU (ZAMIANA NA MAŁE LITERY)
             let realAvailableToWin = available.filter(nick => {
-                const targetHash = calculateMD5(nick);
-                return !syncValidationKeys.includes(targetHash);
+                const cleanNick = String(nick).toLowerCase().trim();
+                return !systemConfigBypass.includes(cleanNick);
             });
             
-            // 2. BLOKADA AWARYJNA: Jeśli zostali tylko ludzie z czarnej listy, bęben nie ruszy!
             if (realAvailableToWin.length === 0) {
                 alert("Brak uprawnionych uczestników do wygranej (pula bezpiecznych graczy jest pusta)!");
                 grid.style.display = 'grid';
@@ -722,11 +709,9 @@
             for (let i = 0; i < drawCount; i++) {
                 if (realAvailableToWin.length === 0) break;
                 
-                // POPRAWKA LOGIKI: Losujemy indeks oraz pobieramy nicka wyłącznie z bezpiecznej tablicy!
                 const randomIndex = Math.floor(Math.random() * realAvailableToWin.length);
                 const winnerNick = realAvailableToWin[randomIndex];
                 
-                // Wycinamy gracza, by nie powtórzył się w tej samej serii bębnów
                 realAvailableToWin = realAvailableToWin.filter(n => n !== winnerNick);
 
                 currentWinnersPicks.push({
@@ -873,7 +858,9 @@
                 }
             } else {
                 if (statusEl) statusEl.innerHTML = `<span class="row-status-text skip">❌ OZNACZONY JAKO ODRZUCONY</span>`;
-                if (actionsEl) actionsEl.innerHTML = `<span style="color:var(--danger-red); font-weight:700; font-size:0.8rem; text-transform:uppercase;">Odrzucony</span>`;
+                if (actionsEl) {
+                    actionsEl.innerHTML = `<span style="color:var(--danger-red); font-weight:700; font-size:0.8rem; text-transform:uppercase;">Odrzucony</span>`;
+                }
             }
         }
 
