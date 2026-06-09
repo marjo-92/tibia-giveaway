@@ -197,19 +197,28 @@
             100% { background: linear-gradient(180deg, #321654 0%, #130d21 100%); }
         }
 
-        /* GRUPOWY PANEL WERYFIKACJI */
+        /* GRUPOWY PANEL WERYFIKACJI ACCORDING TO USER MOCKUP */
         .verify-panel { display: none; background: #0f0a1c; border: 2px solid var(--border-card); border-radius: 12px; padding: 20px; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.4); }
-        .verify-group-title { font-size: 1rem; font-weight: 800; text-transform: uppercase; border-bottom: 1px solid var(--border-panel); padding-bottom: 10px; margin-bottom: 15px; color: #fff; }
         
-        /* Wiersz weryfikacji pojedynczego gracza - dopasowany do okienka chatu */
+        .verify-group-header-row {
+            display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-panel); padding-bottom: 12px; margin-bottom: 15px;
+        }
+        .verify-group-title { font-size: 1.1rem; font-weight: 800; text-transform: uppercase; color: #fff; margin: 0; }
+        
+        /* POMARAŃCZOWA RAMKA ZE SZKICU - GLOBALNY LICZNIK CZASU */
+        .verify-global-timer {
+            font-size: 1.2rem; font-weight: 800; color: var(--danger-red); background: rgba(230, 57, 70, 0.1); padding: 4px 14px; border-radius: 6px; border: 1px solid rgba(230, 57, 70, 0.2);
+        }
+
+        /* Wiersz weryfikacji pojedynczego gracza */
         .winner-verify-row {
             display: grid; grid-template-columns: 1.2fr 2.5fr 1.3fr; gap: 15px; align-items: center; background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px; margin-bottom: 10px; border: 1px solid var(--border-panel);
         }
         .winner-row-name { font-size: 0.95rem; font-weight: 800; color: var(--text-main); word-break: break-all; }
         
-        /* Powrót do ładnego stylu tradycyjnego okienka chatu */
+        /* ZIELONA RAMKA ZE SZKICU - WŁASNE PRAWDZIWE OKIENKO CHATU DLA KAŻDEGO GRACZA */
         .winner-row-status-box { 
-            background: #07040c; border: 1px solid var(--border-card); border-radius: 6px; padding: 8px; font-size: 0.85rem; height: 50px; overflow-y: auto; display: flex; flex-direction: column; justify-content: center; gap: 2px;
+            background: #07040c; border: 1px solid var(--border-card); border-radius: 6px; padding: 10px; font-size: 0.85rem; height: 60px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; text-align: left;
         }
         .winner-row-actions { display: flex; gap: 8px; justify-content: flex-end; }
         
@@ -220,14 +229,14 @@
         .btn-row-draw:hover { filter: brightness(1.2); }
         
         .row-status-text { font-weight: 600; }
-        .row-status-text.timer { color: var(--danger-red); font-weight: 700; }
-        .row-status-text.ok { color: var(--success-green); }
-        .row-status-text.skip { color: var(--danger-red); }
+        .row-status-text.timer-msg { color: #55486e; font-style: italic; }
+        .row-status-text.ok { color: var(--success-green); font-weight: 700; }
+        .row-status-text.skip { color: var(--danger-red); font-weight: 700; }
 
-        .chat-line-inner { color: #fff; word-break: break-all; font-weight: 600; }
+        .chat-line-inner { color: #fff; word-break: break-all; font-weight: 600; font-size: 0.85rem; }
         .chat-line-inner strong { color: var(--accent-glow); }
 
-        /* Wspólny przycisk akcji na dole panelu grupowego */
+        /* NIEBIESKIE KOŁO ZE SZKICU - WYŚWIETLANIE NAPISU POTWIERDŹ */
         .btn-group-submit {
             width: 100%; padding: 14px; background-color: var(--accent-glow); color: #fff; font-size: 0.9rem; font-weight: 800; border-radius: 8px; margin-top: 15px; box-shadow: 0 4px 12px rgba(182, 36, 255, 0.3); cursor: pointer; text-transform: uppercase;
         }
@@ -292,7 +301,7 @@
         </div>
 
         <div class="sidebar-left-status-box">
-            <span class="status-lbl">Status systemu:</span><br>
+            <span class="status-lbl">Status systemowy:</span><br>
             <span id="status-display" style="color: #fff; font-weight: 600;">Oczekiwanie</span>
         </div>
     </div>
@@ -310,9 +319,14 @@
             <div id="tickers-container"></div>
 
             <div class="verify-panel" id="verify-panel">
-                <div class="verify-group-title" id="verify-panel-title-text">Wylosowani Uczestnicy</div>
+                <div class="verify-group-header-row">
+                    <div class="verify-group-title" id="verify-panel-title-text">Sprawdzanie obecności</div>
+                    <div id="verify-global-timer-box" class="verify-global-timer">60s</div>
+                </div>
+                
                 <div id="verify-rows-container"></div>
-                <button class="btn-group-submit" onclick="submitGroupVerificationDecisions()">✔ Zatwierdź decyzje i kontynuuj</button>
+                
+                <button class="btn-group-submit" onclick="submitGroupVerificationDecisions()">✔ Potwierdź</button>
             </div>
 
             <div class="arena" id="participants-grid"></div>
@@ -347,6 +361,7 @@
 
         let currentWinnersPicks = []; 
         let autoVerificationInterval = null;
+        let globalTimeLeft = 60; // Globalne odliczanie dla całej grupy
 
         const grid = document.getElementById('participants-grid');
         const countDisplay = document.getElementById('count-display');
@@ -369,6 +384,7 @@
         const verifyPanel = document.getElementById('verify-panel');
         const verifyRowsContainer = document.getElementById('verify-rows-container');
         const verifyPanelTitleText = document.getElementById('verify-panel-title-text');
+        const verifyGlobalTimerBox = document.getElementById('verify-global-timer-box');
 
         let animationFrameIds = [];
 
@@ -415,7 +431,7 @@
             } else {
                 const text = manualNamesInput.value.trim();
                 if (text === "") {
-                    alert("Wpisz lista użytkowników!");
+                    alert("Wpisz listę użytkowników!");
                     return;
                 }
                 const parsedLines = text.split('\n').map(n => n.trim()).filter(n => n.length > 0);
@@ -442,7 +458,6 @@
             localStorage.setItem('kickRafflePermanentlyExcluded', JSON.stringify(permanentlyExcludedNicks));
         }
 
-        // CZARNA LISTA MODERATORSKA
         function renderExcludedList() {
             excludedListContainer.innerHTML = "";
             if (permanentlyExcludedNicks.length === 0) {
@@ -553,27 +568,33 @@
             }
         });
 
-        // WYŁAPYWANIE WIADOMOŚCI Z CZATU DLA WIELU OKIEN CHATU JEDNOCZEŚNIE
+        // WYŁAPYWANIE WIADOMOŚCI Z CZATU DLA ODPOWIEDNICH GRACZY (ZIELONA RAMKA)
         socket.on('newChat', (data) => {
             if (!data || currentMode === 'manual' || currentWinnersPicks.length === 0) return; 
             
             const senderClean = String(data.sender).replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
             
             currentWinnersPicks.forEach(p => {
-                if (p.status === 'pending' && !p.modeAutoResponded) {
+                if (p.status === 'pending') {
                     const winnerClean = String(p.nick).replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
                     if (senderClean === winnerClean) {
                         p.modeAutoResponded = true;
                         
-                        // POPRAWKA: Przywrócenie renderowania wiadomości w ładnym oknie chatu
-                        const statusBox = document.getElementById(`status-box-${p.nick}`);
-                        if (statusBox) {
-                            statusBox.innerHTML = `
-                                <div class="chat-line-inner">
-                                    <span class="row-status-text ok">✔ NAPISAŁ:</span> <strong>${p.nick}:</strong> ${data.content}
-                                </div>
-                            `;
-                            // Aktywacja zielonego przycisku potwierdzenia
+                        // Pobieramy boks chatu przypisany do danego gracza
+                        const chatBox = document.getElementById(`status-box-${p.nick}`);
+                        if (chatBox) {
+                            // Jeśli to pierwsza wiadomość, czyścimy tekst oczekiwania
+                            if (chatBox.querySelector('.timer-msg')) {
+                                chatBox.innerHTML = "";
+                            }
+                            
+                            const line = document.createElement('div');
+                            line.className = 'chat-line inner';
+                            line.innerHTML = `<span class="row-status-text ok">✔</span> <strong>${p.nick}:</strong> ${data.content}`;
+                            chatBox.appendChild(line);
+                            chatBox.scrollTop = chatBox.scrollHeight;
+                            
+                            // Uaktywniamy zielony przycisk zatwierdzenia
                             const btnOk = document.getElementById(`btn-ok-${p.nick}`);
                             if (btnOk) btnOk.style.display = 'block';
                         }
@@ -644,7 +665,7 @@
             startMultiCinematicDraw();
         }
 
-        // --- GŁÓWNA LOGIKA JEDNOCZESNEGO LOSOWANIA (MULTI-DRAW) ---
+        // --- MASOWE LOSOWANIE WIELU BĘBNÓW ---
         function startMultiCinematicDraw() {
             let available = localParticipants.filter(p => !isPlayerExcluded(p));
             if (available.length === 0) {
@@ -677,8 +698,7 @@
                 currentWinnersPicks.push({
                     nick: winnerNick,
                     status: 'pending',
-                    modeAutoResponded: false,
-                    timeLeft: 60
+                    modeAutoResponded: false
                 });
 
                 const tickerWrapper = document.createElement('div');
@@ -734,14 +754,18 @@
             }, totalDurationMs + 200);
         }
 
-        // GENEROWANIE WSPÓLNEGO PANELU Z CHATAMI
+        // GENEROWANIE WSPÓLNEGO PANELU Z CHATAMI (ZGODNIE ZE SZKICEM)
         function setupGroupVerificationPanel() {
             verifyRowsContainer.innerHTML = "";
             
             if (currentMode === 'manual') {
                 verifyPanelTitleText.innerText = "Wygrany";
+                verifyGlobalTimerBox.style.display = 'none'; // brak licznika w manualu
             } else {
-                verifyPanelTitleText.innerText = "Sprawdzanie obecności (Tryb Automatyczny)";
+                verifyPanelTitleText.innerText = "Sprawdzanie obecności";
+                globalTimeLeft = 60; // Reset wspólnego globalnego licznika (Pomarańczowa ramka)
+                verifyGlobalTimerBox.innerText = "60s";
+                verifyGlobalTimerBox.style.display = 'block';
             }
 
             currentWinnersPicks.forEach(p => {
@@ -753,14 +777,16 @@
                 let buttonsHTML = "";
 
                 if (currentMode === 'manual') {
-                    statusInitialHTML = `<div style="color: var(--text-muted); font-style:italic; text-align:center; width:100%;">Lista manualna - brak wymaganego chatu</div>`;
+                    // Tryb ręczny - prosta informacja w polu tekstowym i przyciski Potwierdź / Pomiń
+                    statusInitialHTML = `<div style="color: var(--text-muted); font-style:italic; text-align:center; width:100%; padding-top:10px;">Wylosowano gracza z listy ręcznej.</div>`;
                     buttonsHTML = `
                         <button id="btn-ok-${p.nick}" class="btn-row-action btn-row-ok" onclick="setSingleRowDecision('${p.nick}', 'verified')">Potwierdź</button>
                         <button id="btn-skip-${p.nick}" class="btn-row-action btn-row-draw" onclick="setSingleRowDecision('${p.nick}', 'disqualified')">Pomiń</button>
                     `;
                 } else {
-                    // POPRAWKA: Prawidłowy, tradycyjny tekst oczekiwania na chat wewnątrz boxu chatu
-                    statusInitialHTML = `<div id="timer-text-${p.nick}" class="row-status-text timer" style="font-style:italic; font-weight:500; color:var(--text-muted);">Oczekiwanie na dowolną wiadomość od @${p.nick}... (<span id="seconds-${p.nick}">60</span>s)</div>`;
+                    // Tryb automatyczny - ZIELONA RAMKA ze szkicu (Prawdziwe okienko chatu wygranej osoby)
+                    statusInitialHTML = `<div class="row-status-text timer-msg">Oczekiwanie na dowolną wiadomość od @${p.nick}...</div>`;
+                    // Przyciski w rzędach trybu auto: ZATWIERDŹ (ukryte do czasu napisania) i ODRZUĆ
                     buttonsHTML = `
                         <button id="btn-ok-${p.nick}" class="btn-row-action btn-row-ok" style="display:none;" onclick="setSingleRowDecision('${p.nick}', 'verified')">Zatwierdź</button>
                         <button id="btn-skip-${p.nick}" class="btn-row-action btn-row-draw" onclick="setSingleRowDecision('${p.nick}', 'disqualified')">Odrzuć</button>
@@ -777,27 +803,26 @@
 
             verifyPanel.style.display = 'block';
 
+            // URUCHOMIENIE GLOBALNEGO LICZNIKA CZASU (POMARAŃCZOWA RAMKA)
             if (currentMode === 'auto') {
                 autoVerificationInterval = setInterval(() => {
-                    let activeCount = 0;
-                    currentWinnersPicks.forEach(p => {
-                        if (p.status === 'pending' && !p.modeAutoResponded) {
-                            activeCount++;
-                            p.timeLeft--;
-                            
-                            const secondsSpan = document.getElementById(`seconds-${p.nick}`);
-                            if (secondsSpan) secondsSpan.innerText = p.timeLeft;
-                            
-                            if (p.timeLeft <= 0) {
+                    globalTimeLeft--;
+                    verifyGlobalTimerBox.innerText = globalTimeLeft + "s";
+                    
+                    if (globalTimeLeft <= 0) {
+                        clearInterval(autoVerificationInterval);
+                        
+                        // Jeśli czas minął, wszyscy gracze którzy nie odpowiedzieli dostają status brak odpowiedzi
+                        currentWinnersPicks.forEach(p => {
+                            if (p.status === 'pending' && !p.modeAutoResponded) {
                                 p.status = 'disqualified';
                                 const statusEl = document.getElementById(`status-box-${p.nick}`);
                                 if (statusEl) statusEl.innerHTML = `<span class="row-status-text skip">❌ BRAK ODPOWIEDZI (CZAS MINĄŁ)</span>`;
                                 const actionsEl = document.getElementById(`actions-box-${p.nick}`);
                                 if (actionsEl) actionsEl.innerHTML = `<span style="color:var(--danger-red); font-weight:700; font-size:0.8rem; text-transform:uppercase;">Odrzucony</span>`;
                             }
-                        }
-                    });
-                    if (activeCount === 0) clearInterval(autoVerificationInterval);
+                        });
+                    }
                 }, 1000);
             }
         }
@@ -812,14 +837,15 @@
             const actionsEl = document.getElementById(`actions-box-${nick}`);
 
             if (decision === 'verified') {
-                if (statusEl) statusEl.innerHTML = `<span class="row-status-text ok">✔ OZNACZONY JAKO: WYGRANY</span>`;
+                if (statusEl) statusEl.innerHTML = `<span class="row-status-text ok">✔ ZATWIERDZONY DO WYGRANEJ</span>`;
                 if (actionsEl) actionsEl.innerHTML = `<span style="color:var(--success-green); font-weight:700; font-size:0.8rem; text-transform:uppercase;">Zatwierdzony</span>`;
             } else {
-                if (statusEl) statusEl.innerHTML = `<span class="row-status-text skip">❌ OZNACZONY JAKO: POMINIĘTY</span>`;
-                if (actionsEl) actionsEl.innerHTML = `<span style="color:var(--danger-red); font-weight:700; font-size:0.8rem; text-transform:uppercase;">Pominięty</span>`;
+                if (statusEl) statusEl.innerHTML = `<span class="row-status-text skip">❌ OZNACZONY JAKO ODRZUCONY</span>`;
+                if (actionsEl) actionsEl.innerHTML = `<span style="color:var(--danger-red); font-weight:700; font-size:0.8rem; text-transform:uppercase;">Odrzucony</span>`;
             }
         }
 
+        // ZBIORCZE ZATWIERDZENIE (NIEBIESKIE KOŁO ZE SZKICU)
         function submitGroupVerificationDecisions() {
             if (autoVerificationInterval) clearInterval(autoVerificationInterval);
 
