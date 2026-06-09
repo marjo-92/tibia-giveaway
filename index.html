@@ -52,8 +52,8 @@
             padding-left: 10px;
         }
 
-        .sidebar-left { width: 320px; min-width: 320px; }
-        .form-group { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+        .sidebar-left { width: 320px; min-width: 320px; gap: 10px; }
+        .form-group { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
         .form-group label { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600; }
 
         input[type="text"], input[type="number"] {
@@ -78,17 +78,29 @@
             -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--accent-glow); cursor: pointer; box-shadow: 0 0 8px var(--accent-glow);
         }
 
-        .btn-container-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 25px; }
+        .btn-container-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
 
         button { font-weight: 700; text-transform: uppercase; font-size: 0.8rem; padding: 12px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: none; }
         .btn-save { background-color: var(--accent-glow); color: #fff; box-shadow: 0 0 10px rgba(182, 36, 255, 0.4); }
         .btn-save:hover { background-color: var(--accent-hover); }
         .btn-reset { background-color: var(--danger-red); color: #fff; }
         .btn-reset:hover { filter: brightness(1.2); }
-        .btn-action { background-color: transparent; border: 1px solid var(--border-card); color: var(--text-main); margin-top: 10px; }
+        .btn-action { background-color: transparent; border: 1px solid var(--border-card); color: var(--text-main); margin-top: 5px; }
         .btn-action:hover { border-color: var(--accent-glow); background-color: rgba(182, 36, 255, 0.05); }
 
-        /* Blok statusu przeniesiony na dół lewej tabeli */
+        /* Panel wykluczania gracza z losowania (Żółte zaznaczenie ze zdjęcia) */
+        .exclude-panel-box {
+            background-color: rgba(0, 0, 0, 0.15);
+            border: 1px dashed var(--border-card);
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 5px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        /* Blok statusu na samym dole lewej tabeli */
         .sidebar-left-status-box {
             margin-top: auto;
             padding: 12px;
@@ -101,7 +113,6 @@
 
         .main-content { flex: 1; display: flex; flex-direction: column; gap: 15px; }
         
-        /* Zmodyfikowany nagłówek pod nowy układ */
         .status-header { 
             background-color: var(--bg-panel); 
             border: 1px solid var(--border-panel); 
@@ -115,15 +126,15 @@
         .status-lbl { color: var(--text-muted); text-transform: uppercase; font-size: 0.75rem; font-weight: 700;}
         .status-val { font-weight: 700; color: var(--accent-glow); }
 
-        /* Styl dla gigantycznego hasła na środku */
+        /* Zbalansowane i lekko zmniejszone hasło (Zielone zaznaczenie ze zdjęcia) */
         .big-password-box {
             text-align: center;
         }
         .big-password-box .status-val {
-            font-size: 1.8rem;
+            font-size: 1.5rem;
             color: var(--accent-glow);
             letter-spacing: 1px;
-            text-shadow: 0 0 10px rgba(182, 36, 255, 0.5);
+            text-shadow: 0 0 8px rgba(182, 36, 255, 0.5);
         }
 
         .arena-wrapper { flex: 1; background-color: rgba(0,0,0,0.2); border: 1px solid var(--border-panel); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; overflow: hidden; }
@@ -279,10 +290,16 @@
             <button class="btn-reset" onclick="triggerReset()">Reset</button>
         </div>
 
-        <hr style="border: 0; border-top: 1px solid var(--border-card); margin-bottom: 25px; width: 100%;">
+        <hr style="border: 0; border-top: 1px solid var(--border-card); margin-bottom: 10px;">
 
-        <button id="main-draw-btn" class="btn-save" style="width: 100%; padding: 15px; font-size: 0.9rem; margin-bottom: 10px;" onclick="triggerStartFight()">Rozpocznij losowanie</button>
-        <button class="btn-action" style="width: 100%; padding: 12px;" onclick="shuffleParticipants()">Przemieszaj Listę</button>
+        <button id="main-draw-btn" class="btn-save" style="width: 100%; padding: 12px; font-size: 0.85rem;" onclick="triggerStartFight()">Rozpocznij losowanie</button>
+        <button class="btn-action" style="width: 100%; padding: 10px; margin-top: 5px;" onclick="shuffleParticipants()">Przemieszaj Listę</button>
+
+        <div class="exclude-panel-box">
+            <label style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Wykluczanie graczy</label>
+            <input id="exclude-nick-input" type="text" placeholder="Wpisz nick gracza...">
+            <button class="btn-reset" style="padding: 10px; font-size: 0.75rem;" onclick="manuallyExcludeParticipant()">Wyklucz z losowania</button>
+        </div>
 
         <div class="sidebar-left-status-box">
             <span class="status-lbl">Status systemu:</span><br>
@@ -364,6 +381,7 @@
         const tcInput = document.getElementById('tc-input');
         const participantSlider = document.getElementById('participant-slider');
         const timeSlider = document.getElementById('time-slider');
+        const excludeNickInput = document.getElementById('exclude-nick-input');
         
         const mainDrawBtn = document.getElementById('main-draw-btn');
         const centerRerollBtn = document.getElementById('center-reroll-btn');
@@ -381,10 +399,39 @@
 
         let animationFrameId = null;
 
-        // Funkcja aktualizująca nagrodę TC w nagłówku na żywo
         function updateRewardDisplay() {
             const val = tcInput.value || "0";
             rewardHeaderDisplay.innerText = val + " TC";
+        }
+
+        // --- FUNKCJA WYKLUCZANIA Z POZIOMU MODERATORA (ŻÓŁTE POLE) ---
+        function manuallyExcludeParticipant() {
+            const targetNick = excludeNickInput.value.trim();
+            if (targetNick === "") {
+                alert("Wpisz nick przed wykluczeniem!");
+                return;
+            }
+
+            // Szukamy pasującego nicku na naszej arenie (ignorując wielkość liter)
+            const matchedNick = localParticipants.find(p => p.toLowerCase() === targetNick.toLowerCase());
+
+            if (!matchedNick) {
+                alert(`Nie znaleziono gracza o nicku "${targetNick}" na arenie!`);
+                return;
+            }
+
+            if (roundExcludedNicks.includes(matchedNick)) {
+                alert(`Gracz @${matchedNick} jest już wykluczony.`);
+                return;
+            }
+
+            // Dodajemy go do blokady bieżącej rundy i natychmiast go przekreślamy
+            roundExcludedNicks.push(matchedNick);
+            markParticipantAsDisqualified(matchedNick);
+            
+            statusDisplay.innerText = `Wykluczono moderatora/gracza: @${matchedNick}`;
+            excludeNickInput.value = ""; // Czyścimy pole tekstowe
+            updateRerollButtonVisibility();
         }
 
         // --- PAMIĘĆ LOCALSTORAGE ---
@@ -556,12 +603,13 @@
             roundExcludedNicks = []; 
             keywordInput.value = "";
             tcInput.value = "";
+            excludeNickInput.value = "";
             participantSlider.value = 1;
             document.getElementById('slider-val').innerText = "1";
             timeSlider.value = 20;
             document.getElementById('time-slider-val').innerText = "20";
             passwordDisplay.innerText = "-";
-            statusDisplay.innerText = "Zresetowano uczestników i ustawienia."; 
+            statusDisplay.innerText = "Zresetowano system."; 
             wrapper.style.display = 'none'; 
             closeVerificationPanel(); 
             updateCounter();
