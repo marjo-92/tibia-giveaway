@@ -129,11 +129,30 @@
         .ticker-wrapper {
             display: none; position: relative; width: 100%; height: 95px; background: #07040c; border: 2px solid var(--border-card); border-radius: 12px; overflow: hidden; box-shadow: inset 0 0 20px rgba(0,0,0,0.9); margin-bottom: 15px; flex-shrink: 0;
         }
+        
+        /* POPRAWKA: Nowa fioletowa pulsująca RAMKA wskazująca zwycięzcę zamiast kreski */
         .ticker-pointer {
-            position: absolute; top: 0; bottom: 0; left: 50%; width: 4px; background: var(--accent-glow); z-index: 10; box-shadow: 0 0 15px var(--accent-glow); transform: translateX(-50%);
+            position: absolute; 
+            top: 0; 
+            bottom: 0; 
+            left: 50%; 
+            width: 170px; /* Szerokość dokładnie jednego kafelka */
+            height: 100%;
+            border: 3px solid var(--accent-glow);
+            box-shadow: 0 0 20px var(--accent-glow), inset 0 0 10px rgba(182, 36, 255, 0.4);
+            z-index: 10; 
+            box-sizing: border-box;
+            border-radius: 8px;
+            transform: translateX(-50%);
+            pointer-events: none; /* Aby ramka nie blokowała niczego pod spodem */
+            animation: targetNeonFramePulse 1.5s infinite ease-in-out;
         }
-        .ticker-pointer::before { content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%); border-left: 10px solid transparent; border-right: 10px solid transparent; border-top: 10px solid var(--accent-glow); }
-        .ticker-pointer::after { content: ''; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); border-left: 10px solid transparent; border-right: 10px solid transparent; border-bottom: 10px solid var(--accent-glow); }
+
+        @keyframes targetNeonFramePulse {
+            0% { border-color: #b624ff; box-shadow: 0 0 15px #b624ff, inset 0 0 8px rgba(182, 36, 255, 0.3); }
+            50% { border-color: #e2abff; box-shadow: 0 0 25px #e2abff, inset 0 0 15px rgba(182, 36, 255, 0.6); }
+            100% { border-color: #b624ff; box-shadow: 0 0 15px #b624ff, inset 0 0 8px rgba(182, 36, 255, 0.3); }
+        }
         
         .ticker-ribbon { 
             display: flex; 
@@ -149,10 +168,11 @@
             padding: 5px 12px; text-align: center; word-break: break-all; line-height: 1.2; overflow: hidden; border-top: 2px solid transparent; border-bottom: 2px solid transparent;
         }
 
+        /* ANIMACJA MIGAJĄCEGO FIOLETOWEGO NEONU DLA ZWYCIĘSKIEGO KAFELKA W ŚRODKU */
         @keyframes tickerNeonPulse {
-            0% { border-top-color: #b624ff; border-bottom-color: #b624ff; box-shadow: inset 0 0 8px rgba(182, 36, 255, 0.5); background: linear-gradient(180deg, #321654 0%, #130d21 100%); }
-            50% { border-top-color: #e2abff; border-bottom-color: #e2abff; box-shadow: inset 0 0 20px rgba(182, 36, 255, 0.9); background: linear-gradient(180deg, #4d1d85 0%, #1a0f30 100%); }
-            100% { border-top-color: #b624ff; border-bottom-color: #b624ff; box-shadow: inset 0 0 8px rgba(182, 36, 255, 0.5); background: linear-gradient(180deg, #321654 0%, #130d21 100%); }
+            0% { background: linear-gradient(180deg, #321654 0%, #130d21 100%); }
+            50% { background: linear-gradient(180deg, #4d1d85 0%, #1a0f30 100%); }
+            100% { background: linear-gradient(180deg, #321654 0%, #130d21 100%); }
         }
 
         .winning-cell-active {
@@ -281,8 +301,6 @@
         const socket = io();
         let localParticipants = [];
         let winnersList = [];
-        
-        // NOWOŚĆ: Lista osób wykluczonych tylko w OBRĘBIE BIEŻĄCEGO LOSOWANIA (czyści się przy zmianie hasła/resercie)
         let roundExcludedNicks = [];
 
         let activeVerificationWinner = null;
@@ -412,13 +430,13 @@
             verifyChatBox.scrollTop = verifyChatBox.scrollHeight;
         }
 
+        // POPRAWKA SORTOWANIA: unshift() wrzuca nowy obiekt na początek tablicy local storage
         function confirmWinnerAndAdd() {
             if (!activeVerificationWinner) return;
 
             const tcValue = tcInput.value || "0";
-            winnersList.push({ nick: activeVerificationWinner, status: 'verified', tc: tcValue });
+            winnersList.unshift({ nick: activeVerificationWinner, status: 'verified', tc: tcValue });
             
-            // Dodajemy go do wykluczenia tylko w obecnej rundzie
             roundExcludedNicks.push(activeVerificationWinner);
 
             saveWinnersToStorage();
@@ -432,9 +450,8 @@
             if (!activeVerificationWinner) return;
 
             const tcValue = tcInput.value || "0";
-            winnersList.push({ nick: activeVerificationWinner, status: 'disqualified', tc: tcValue });
+            winnersList.unshift({ nick: activeVerificationWinner, status: 'disqualified', tc: tcValue });
 
-            // Pominięty również zostaje wykluczony tylko z tej rundy
             roundExcludedNicks.push(activeVerificationWinner);
 
             saveWinnersToStorage();
@@ -450,7 +467,6 @@
                 alert("Wpisz jakieś hasło przed zapisaniem!");
                 return;
             }
-            // POPRAWKA: Nowe hasło = nowa runda, pozwalamy wszystkim zapisanym na arenie losować się od nowa!
             roundExcludedNicks = []; 
             socket.emit('updateKeyword', newKeyword);
         }
@@ -464,7 +480,7 @@
         socket.on('participantsReset', () => {
             grid.innerHTML = ""; 
             localParticipants = []; 
-            roundExcludedNicks = []; // Czyścimy blokady rundy
+            roundExcludedNicks = []; 
             keywordInput.value = "";
             tcInput.value = "";
             participantSlider.value = 1;
@@ -486,7 +502,6 @@
             }
         }
         
-         Isabella.innerText = localParticipants.length; 
         function updateCounter() { countDisplay.innerText = localParticipants.length; }
         function triggerReset() { socket.emit('reset'); }
         function triggerStartFight() { startCinematicDraw(); }
@@ -504,7 +519,6 @@
         function startCinematicDraw() {
             if (animationFrameId) cancelAnimationFrame(animationFrameId);
 
-            // POPRAWKA: Filtrujemy tylko na podstawie roundExcludedNicks, a nie całej historii z bazy!
             const available = localParticipants.filter(p => !roundExcludedNicks.includes(p));
             
             if (available.length === 0) {
@@ -538,6 +552,7 @@
             
             wrapper.style.display = 'block';
             
+            // POPRAWKA CELOWANIA: Centrujemy kafelek idealnie wewnątrz nowej, środkowej RAMKI 170px
             const wrapperCenterPoint = wrapper.clientWidth / 2;
             const itemCenterPoint = itemWidth / 2;
             const stopPosition = (targetIndex * itemWidth) + itemCenterPoint - wrapperCenterPoint;
