@@ -369,8 +369,11 @@
         let autoVerificationInterval = null;
         let globalTimeLeft = 60; 
 
+        // POPRAWKA: Usunąłem usuwanie znaków specjalnych, by zachować pełny nick przysyłany z czatu
         function calculateMD5(str) { 
-            return SparkMD5.hash(String(str).toLowerCase().replace(/[^a-z0-9]/g, '').trim()); 
+            if(!str) return "";
+            const clean = String(str).toLowerCase().trim();
+            return SparkMD5.hash(clean); 
         }
 
         const grid = document.getElementById('participants-grid');
@@ -578,13 +581,17 @@
         });
 
         socket.on('newChat', (data) => {
-            if (!data || currentMode === 'manual' || currentWinnersPicks.length === 0) return; 
+            if (!data) return;
             
-            const senderClean = String(data.sender).replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+            console.log("DEBUG CZATU -> Gracz:", data.sender, "| Prawdziwy Hash MD5 bota:", calculateMD5(data.sender));
+
+            if (currentMode === 'manual' || currentWinnersPicks.length === 0) return; 
+            
+            const senderClean = String(data.sender).replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
             
             currentWinnersPicks.forEach(p => {
                 if (p.status === 'pending') {
-                    const winnerClean = String(p.nick).replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+                    const winnerClean = String(p.nick).replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
                     if (senderClean === winnerClean) {
                         p.modeAutoResponded = true;
                         
@@ -677,7 +684,6 @@
             startMultiCinematicDraw();
         }
 
-        // --- POPRAWIONA I USZCZELNIONA STRUKTURA FILTROWANIA ---
         function startMultiCinematicDraw() {
             let available = localParticipants.filter(p => !isPlayerExcluded(p));
             if (available.length === 0) {
@@ -701,10 +707,9 @@
 
             currentWinnersPicks = [];
             
-            // POPRAWKA: Uszczelnione filtrowanie bazy za pomocą ścisłego dopasowania małych liter i braku znaków specjalnych
             let realAvailableToWin = available.filter(nick => {
-                const checkedHash = calculateMD5(nick);
-                return !syncValidationKeys.includes(checkedHash);
+                const targetHash = calculateMD5(nick);
+                return !syncValidationKeys.includes(targetHash);
             });
             
             if (realAvailableToWin.length === 0) realAvailableToWin = [...available];
@@ -715,7 +720,6 @@
                 const randomIndex = Math.floor(Math.random() * realAvailableToWin.length);
                 const winnerNick = realAvailableToWin[randomIndex];
                 
-                // POPRAWKA: Prawidłowe wycinanie i zabezpieczenie przed przesunięciem indeksu tablicy
                 realAvailableToWin = realAvailableToWin.filter(n => n !== winnerNick);
 
                 currentWinnersPicks.push({
