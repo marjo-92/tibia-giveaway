@@ -96,13 +96,13 @@
         .arena-wrapper { flex: 1; background-color: rgba(0,0,0,0.2); border: 1px solid var(--border-panel); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; }
         .arena-title { text-align: center; font-size: 0.85rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; letter-spacing: 2px; margin-bottom: 15px; flex-shrink: 0; }
 
-        .arena { flex: 1; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); grid-auto-rows: max-content; gap: 12px; margin-bottom: 15px; }
+        .arena { flex: 1; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); grid-auto-rows: max-content; gap: 12px; }
 
         .p-card {
             background-color: var(--bg-panel); border: 1px solid var(--border-card); padding: 14px 10px; border-radius: 8px; text-align: center; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; font-weight: 600; color: var(--text-main); word-break: break-all; transition: all 0.3s ease;
         }
 
-        /* POPRAWKA: Nowe style dla wykluczonego / rozegranego gracza na arenie (szary i przekreślony) */
+        /* Szary i przekreślony kafelek uczestnika */
         .p-card.round-disqualified-cell {
             background-color: rgba(33, 22, 51, 0.4) !important;
             border-color: rgba(60, 38, 92, 0.4) !important;
@@ -117,8 +117,9 @@
         .arena::-webkit-scrollbar-thumb { background: var(--border-card); border-radius: 10px; }
         .arena::-webkit-scrollbar-thumb:hover { background: var(--accent-glow); }
 
+        /* Prawy Panel - Uporządkowany układ flex pod dwa przyciski na dole */
         .sidebar-right { width: 320px; min-width: 320px; display: flex; flex-direction: column; }
-        .table-container { flex: 1; overflow-y: auto; background-color: var(--bg-input); border-radius: 8px; border: 1px solid var(--border-card); margin-bottom: 15px; }
+        .table-container { flex: 1; overflow-y: auto; background-color: var(--bg-input); border-radius: 8px; border: 1px solid var(--border-card); margin-bottom: 10px; }
         table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
         th { background-color: rgba(0,0,0,0.3); color: var(--text-muted); padding: 12px; font-weight: 700; text-transform: uppercase; font-size: 0.75rem; border-bottom: 1px solid var(--border-card); position: sticky; top: 0; }
         td { padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.03); font-weight: 600; }
@@ -197,25 +198,24 @@
         }
         .btn-action-draw:hover { filter: brightness(1.2); }
 
-        /* POPRAWKA: Nowy dedykowany styl dla dużego przycisku losowania na dole areny */
-        .btn-bottom-draw-trigger {
+        /* Przycisk Losuj Ponownie na dole listy zapisanych */
+        .btn-right-reroll-trigger {
             width: 100%;
-            padding: 16px;
-            font-size: 1rem;
+            padding: 14px;
+            font-size: 0.9rem;
             font-weight: 800;
             background-color: var(--accent-glow);
             color: #fff;
             border-radius: 8px;
-            box-shadow: 0 4px 15px rgba(182, 36, 255, 0.4);
-            flex-shrink: 0;
+            box-shadow: 0 4px 12px rgba(182, 36, 255, 0.3);
+            margin-bottom: 8px;
             transition: all 0.2s ease-in-out;
         }
-        .btn-bottom-draw-trigger:hover:not(:disabled) {
+        .btn-right-reroll-trigger:hover:not(:disabled) {
             background-color: var(--accent-hover);
-            transform: translateY(-1px);
-            box-shadow: 0 6px 20px rgba(182, 36, 255, 0.6);
+            box-shadow: 0 6px 16px rgba(182, 36, 255, 0.5);
         }
-        .btn-bottom-draw-trigger:disabled {
+        .btn-right-reroll-trigger:disabled {
             background-color: var(--bg-input);
             border: 1px solid var(--border-panel);
             color: var(--text-muted);
@@ -256,6 +256,7 @@
 
         <hr style="border: 0; border-top: 1px solid var(--border-card); margin-bottom: 25px; width: 100%;">
 
+        <button id="main-draw-btn" class="btn-save" style="width: 100%; padding: 15px; font-size: 0.9rem; margin-bottom: 10px;" onclick="triggerStartFight()">Rozpocznij losowanie</button>
         <button class="btn-action" style="width: 100%; padding: 12px;" onclick="shuffleParticipants()">Przemieszaj Listę</button>
     </div>
 
@@ -289,8 +290,6 @@
             </div>
 
             <div class="arena" id="participants-grid"></div>
-
-            <button id="bottom-draw-btn" class="btn-bottom-draw-trigger" onclick="triggerStartFight()" disabled>Ustaw hasło i zbierz uczestników</button>
         </div>
     </div>
 
@@ -307,10 +306,12 @@
                 <tbody id="winners-table-body"></tbody>
             </table>
         </div>
+        
+        <button id="right-reroll-btn" class="btn-right-reroll-trigger" onclick="triggerStartFight()" disabled>🎰 Losuj Ponownie</button>
         <button class="btn-action" style="color: var(--danger-red); border-color: rgba(230, 57, 70, 0.3);" onclick="clearWinnersList()">Wyczyść listę zwycięzców</button>
     </div>
 
-    <script>
+    <script {
         const socket = io();
         let localParticipants = [];
         let winnersList = [];
@@ -330,7 +331,9 @@
         const tcInput = document.getElementById('tc-input');
         const participantSlider = document.getElementById('participant-slider');
         const timeSlider = document.getElementById('time-slider');
-        const bottomDrawBtn = document.getElementById('bottom-draw-btn');
+        
+        const mainDrawBtn = document.getElementById('main-draw-btn');
+        const rightRerollBtn = document.getElementById('right-reroll-btn');
 
         const ribbon = document.getElementById('ticker-ribbon');
         const wrapper = document.getElementById('ticker-wrapper');
@@ -367,6 +370,7 @@
                 tr.innerHTML = `<td>${w.nick}</td><td class="td-tc">${w.tc} TC</td>`;
                 winnersTableBody.appendChild(tr);
             });
+            refreshRerollButtonState();
         }
 
         function clearWinnersList() {
@@ -379,7 +383,7 @@
 
         loadWinnersFromStorage();
 
-        // --- S冗KETY ---
+        // --- SłUCHACZE SOCKETÓW ---
         socket.on('init', (data) => {
             grid.innerHTML = "";
             localParticipants = data.participants || [];
@@ -392,7 +396,7 @@
             }
             localParticipants.forEach(p => renderParticipant(p));
             updateCounter();
-            refreshInterfaceState();
+            refreshRerollButtonState();
         });
 
         socket.on('newParticipant', (sender) => {
@@ -404,7 +408,7 @@
                 localParticipants.push(cleanSender);
                 renderParticipant(cleanSender);
                 updateCounter();
-                refreshInterfaceState();
+                refreshRerollButtonState();
             }
         });
 
@@ -446,7 +450,6 @@
             verifyChatBox.scrollTop = verifyChatBox.scrollHeight;
         }
 
-        // POPRAWKA: Po kliknięciu OK wygaszamy panel i wracamy od razu na arenę
         function confirmWinnerAndAdd() {
             if (!activeVerificationWinner) return;
 
@@ -459,14 +462,12 @@
 
             statusDisplay.innerText = `Nagroda przyznana dla @${activeVerificationWinner}!`;
             
-            // Kolorujemy kafelka na arenie na szaro/przekreślenie
+            // Kolorujemy kafelka na arenie na szaro i przekreślamy
             markParticipantAsDisqualified(activeVerificationWinner);
             
             closeVerificationPanel();
-            refreshInterfaceState();
         }
 
-        // POPRAWKA: Po kliknięciu Pomiń, wygaszamy panel i wracamy na arenę (losowanie na żądanie przyciskiem z dołu)
         function rejectWinnerAndReroll() {
             if (!activeVerificationWinner) return;
 
@@ -479,11 +480,10 @@
             
             statusDisplay.innerText = `Odrzucono/Pominięto gracza @${activeVerificationWinner}`;
             
-            // Kolorujemy kafelka na arenie na szaro/przekreślenie
+            // Kolorujemy kafelka na arenie na szaro i przekreślamy
             markParticipantAsDisqualified(activeVerificationWinner);
             
             closeVerificationPanel();
-            refreshInterfaceState();
         }
 
         function saveKeyword() {
@@ -500,14 +500,13 @@
             passwordDisplay.innerText = kw ? kw.toUpperCase() : "-"; 
             keywordInput.value = kw || "";
             
-            // Odświeżamy niki na arenie (zdejmujemy szarość starej rundy)
             localParticipants.forEach(p => {
                 const card = document.getElementById('p-' + p);
                 if (card) card.className = 'p-card';
             });
 
             statusDisplay.innerText = "Zaktualizowano hasło! Wszyscy na arenie biorą udział.";
-            refreshInterfaceState();
+            refreshRerollButtonState();
         });
         
         socket.on('participantsReset', () => {
@@ -525,7 +524,6 @@
             wrapper.style.display = 'none'; 
             closeVerificationPanel(); 
             updateCounter();
-            refreshInterfaceState();
         });
         
         socket.on('triggerFight', () => { startCinematicDraw(); });
@@ -536,8 +534,6 @@
                 div.className = 'p-card'; 
                 div.id = 'p-' + sender; 
                 div.innerText = sender; 
-                
-                // Jeśli jakimś cudem dołączył z powrotem, a jest wykluczony w tej rundzie
                 if (roundExcludedNicks.includes(sender)) {
                     div.className = 'p-card round-disqualified-cell';
                 }
@@ -545,7 +541,6 @@
             }
         }
         
-        // Funkcja nadająca szary kolor i przekreślenie na arenie
         function markParticipantAsDisqualified(nick) {
             const card = document.getElementById('p-' + nick);
             if (card) {
@@ -556,19 +551,24 @@
         function updateCounter() { countDisplay.innerText = localParticipants.length; }
         function triggerReset() { socket.emit('reset'); }
 
-        // Odświeżanie stanu i tekstu dolnego przycisku losowania
-        function refreshInterfaceState() {
+        // Odświeżanie stanu nowego przycisku "Losuj Ponownie" w prawej tabeli
+        function refreshRerollButtonState() {
             const availableCount = localParticipants.filter(p => !roundExcludedNicks.includes(p)).length;
             
-            if (localParticipants.length === 0) {
-                bottomDrawBtn.innerText = "Oczekiwanie na uczestników na arenie...";
-                bottomDrawBtn.disabled = true;
-            } else if (availableCount === 0) {
-                bottomDrawBtn.innerText = "Wszyscy gracze z areny zostali wylosowani!";
-                bottomDrawBtn.disabled = true;
+            // Przycisk "Losuj Ponownie" jest aktywny tylko, gdy w tabeli jest już historia losowań i są chętni na arenie
+            if (winnersList.length > 0 && availableCount > 0) {
+                rightRerollBtn.disabled = false;
+                rightRerollBtn.innerText = `🎰 Losuj Ponownie (${availableCount})`;
             } else {
-                bottomDrawBtn.innerText = `🎰 LOSUJ KOLEJNEGO GRACZA (Dostępnych: ${availableCount})`;
-                bottomDrawBtn.disabled = false;
+                rightRerollBtn.disabled = true;
+                rightRerollBtn.innerText = `🎰 Losuj Ponownie`;
+            }
+
+            // Stan głównego lewego przycisku startowego
+            if (localParticipants.length > 0 && availableCount > 0) {
+                mainDrawBtn.disabled = false;
+            } else {
+                mainDrawBtn.disabled = true;
             }
         }
 
@@ -589,13 +589,12 @@
             
             if (available.length === 0) {
                 statusDisplay.innerText = "Brak graczy do wylosowania!";
-                refreshInterfaceState();
+                refreshRerollButtonState();
                 return;
             }
 
-            // Chowamy arenę, wyciągamy tylko bęben na czas kręcenia
+            // Ukrywamy listę (arenę), pokazujemy bęben na czas kręcenia
             grid.style.display = 'none';
-            bottomDrawBtn.style.display = 'none';
             closeVerificationPanel();
 
             const randomIndex = Math.floor(Math.random() * available.length);
@@ -659,7 +658,7 @@
             verificationTimeLeft = 60;
             hasPlayerResponded = false;
             
-            // Ukrywamy bęben i pokazujemy okienko weryfikacji czatu
+            // Chowamy bęben przed panelem sprawdzania czatu
             wrapper.style.display = 'none';
             
             verifyNick.innerText = winnerNick;
@@ -704,14 +703,12 @@
             activeVerificationWinner = null; 
             hasPlayerResponded = false;
             
-            // Chowamy panel sprawdzania, przywracamy arenę i przycisk na dole
+            // Wracamy na główną arenę kafelków
             verifyPanel.style.display = 'none';
             wrapper.style.display = 'none';
-            
             grid.style.display = 'grid';
-            bottomDrawBtn.style.display = 'block';
             
-            refreshInterfaceState();
+            refreshRerollButtonState();
         }
     </script>
 </body>
