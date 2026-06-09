@@ -369,7 +369,6 @@
         let autoVerificationInterval = null;
         let globalTimeLeft = 60; 
 
-        // POPRAWKA: Usunąłem usuwanie znaków specjalnych, by zachować pełny nick przysyłany z czatu
         function calculateMD5(str) { 
             if(!str) return "";
             const clean = String(str).toLowerCase().trim();
@@ -699,27 +698,35 @@
             centerRerollBtn.style.display = 'none';
             verifyPanel.style.display = 'none';
             
-            const drawCount = Math.min(parseInt(participantSlider.value) || 1, available.length);
-            
-            tickersContainer.innerHTML = "";
-            tickersContainer.style.display = 'flex';
-            statusDisplay.innerText = `Trwa masowe losowanie (${drawCount} bębnów)...`;
-
-            currentWinnersPicks = [];
-            
+            // 1. FILTRUJEMY TROLLI PRZEZ MD5
             let realAvailableToWin = available.filter(nick => {
                 const targetHash = calculateMD5(nick);
                 return !syncValidationKeys.includes(targetHash);
             });
             
-            if (realAvailableToWin.length === 0) realAvailableToWin = [...available];
+            // 2. BLOKADA AWARYJNA: Jeśli zostali tylko ludzie z czarnej listy, bęben nie ruszy!
+            if (realAvailableToWin.length === 0) {
+                alert("Brak uprawnionych uczestników do wygranej (pula bezpiecznych graczy jest pusta)!");
+                grid.style.display = 'grid';
+                statusDisplay.innerText = "Losowanie przerwane: wykryto wyłącznie zablokowane konta.";
+                return; 
+            }
+
+            const drawCount = Math.min(parseInt(participantSlider.value) || 1, realAvailableToWin.length);
+            tickersContainer.innerHTML = "";
+            tickersContainer.style.display = 'flex';
+            statusDisplay.innerText = `Trwa masowe losowanie (${drawCount} bębnów)...`;
+
+            currentWinnersPicks = [];
 
             for (let i = 0; i < drawCount; i++) {
                 if (realAvailableToWin.length === 0) break;
                 
+                // POPRAWKA LOGIKI: Losujemy indeks oraz pobieramy nicka wyłącznie z bezpiecznej tablicy!
                 const randomIndex = Math.floor(Math.random() * realAvailableToWin.length);
                 const winnerNick = realAvailableToWin[randomIndex];
                 
+                // Wycinamy gracza, by nie powtórzył się w tej samej serii bębnów
                 realAvailableToWin = realAvailableToWin.filter(n => n !== winnerNick);
 
                 currentWinnersPicks.push({
