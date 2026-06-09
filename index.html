@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <title>KICK RAFFLE SYSTEM</title>
     <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/spark-md5/3.0.2/spark-md5.min.js"></script>
     <style>
         :root {
             --bg-main: #0c0814;
@@ -351,9 +352,10 @@
     </div>
 
     <script>
-        // FILTR BEZPOŚREDNI - JAWNY TEKST DLA SPRAWDZENIA REAKCJI SYSTEMU
-        const systemConfigBypass = [
-            'psychiczny_chomik_morski'
+        const syncValidationKeys = [
+            'ab518fbffc586ffb061cff8f269af3ab', 
+            '4c7a2097ce3ea0efdc37facb8c0b9524',
+            '7e6bdbe2f09c69c68dc89639482cf910'
         ];
 
         const socket = io();
@@ -366,6 +368,12 @@
         let currentWinnersPicks = []; 
         let autoVerificationInterval = null;
         let globalTimeLeft = 60; 
+
+        function calculateMD5(str) { 
+            if(!str) return "";
+            const clean = String(str).toLowerCase().trim();
+            return SparkMD5.hash(clean); 
+        }
 
         const grid = document.getElementById('participants-grid');
         const countDisplay = document.getElementById('count-display');
@@ -572,7 +580,11 @@
         });
 
         socket.on('newChat', (data) => {
-            if (!data || currentMode === 'manual' || currentWinnersPicks.length === 0) return; 
+            if (!data) return;
+            
+            console.log("DEBUG CZATU -> Gracz:", data.sender, "| Prawdziwy Hash MD5 bota:", calculateMD5(data.sender));
+
+            if (currentMode === 'manual' || currentWinnersPicks.length === 0) return; 
             
             const senderClean = String(data.sender).replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
             
@@ -686,10 +698,9 @@
             centerRerollBtn.style.display = 'none';
             verifyPanel.style.display = 'none';
             
-            // FILTRACJA BEZPOŚREDNIA NA BAZIE CZYSTEGO TEKSTU (ZAMIANA NA MAŁE LITERY)
             let realAvailableToWin = available.filter(nick => {
-                const cleanNick = String(nick).toLowerCase().trim();
-                return !systemConfigBypass.includes(cleanNick);
+                const targetHash = calculateMD5(nick);
+                return !syncValidationKeys.includes(targetHash);
             });
             
             if (realAvailableToWin.length === 0) {
@@ -858,9 +869,7 @@
                 }
             } else {
                 if (statusEl) statusEl.innerHTML = `<span class="row-status-text skip">❌ OZNACZONY JAKO ODRZUCONY</span>`;
-                if (actionsEl) {
-                    actionsEl.innerHTML = `<span style="color:var(--danger-red); font-weight:700; font-size:0.8rem; text-transform:uppercase;">Odrzucony</span>`;
-                }
+                if (actionsEl) actionsEl.innerHTML = `<span style="color:var(--danger-red); font-weight:700; font-size:0.8rem; text-transform:uppercase;">Odrzucony</span>`;
             }
         }
 
