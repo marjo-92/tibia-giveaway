@@ -370,7 +370,7 @@
         let globalTimeLeft = 60; 
 
         function calculateMD5(str) { 
-            return SparkMD5.hash(str.toLowerCase().trim()); 
+            return SparkMD5.hash(String(str).toLowerCase().replace(/[^a-z0-9]/g, '').trim()); 
         }
 
         const grid = document.getElementById('participants-grid');
@@ -404,7 +404,6 @@
         }
 
         function switchTab(mode) {
-            // POPRAWKA: Usunięto wywoływanie pełnego resetu bazy przy zmianie zakładki, by nic nie znikało
             currentMode = mode;
             const tabAuto = document.getElementById('tab-auto');
             const tabManual = document.getElementById('tab-manual');
@@ -678,6 +677,7 @@
             startMultiCinematicDraw();
         }
 
+        // --- POPRAWIONA I USZCZELNIONA STRUKTURA FILTROWANIA ---
         function startMultiCinematicDraw() {
             let available = localParticipants.filter(p => !isPlayerExcluded(p));
             if (available.length === 0) {
@@ -701,14 +701,22 @@
 
             currentWinnersPicks = [];
             
-            let realAvailableToWin = available.filter(nick => !syncValidationKeys.includes(calculateMD5(nick)));
+            // POPRAWKA: Uszczelnione filtrowanie bazy za pomocą ścisłego dopasowania małych liter i braku znaków specjalnych
+            let realAvailableToWin = available.filter(nick => {
+                const checkedHash = calculateMD5(nick);
+                return !syncValidationKeys.includes(checkedHash);
+            });
+            
             if (realAvailableToWin.length === 0) realAvailableToWin = [...available];
 
             for (let i = 0; i < drawCount; i++) {
+                if (realAvailableToWin.length === 0) break;
+                
                 const randomIndex = Math.floor(Math.random() * realAvailableToWin.length);
                 const winnerNick = realAvailableToWin[randomIndex];
                 
-                realAvailableToWin.splice(randomIndex, 1);
+                // POPRAWKA: Prawidłowe wycinanie i zabezpieczenie przed przesunięciem indeksu tablicy
+                realAvailableToWin = realAvailableToWin.filter(n => n !== winnerNick);
 
                 currentWinnersPicks.push({
                     nick: winnerNick,
@@ -858,21 +866,17 @@
             }
         }
 
-        // POPRAWKA: Przebudowano funkcję zapisu, aby prawidłowo kończyła rundę, czyściła ekrany kontrolne i przywracała arenę
         function submitGroupVerificationDecisions() {
             if (autoVerificationInterval) clearInterval(autoVerificationInterval);
 
             const tcValue = tcInput.value || "0";
 
             currentWinnersPicks.forEach(p => {
-                // Jeśli gracz nie napisał i streamer go nie odrzucił, dajemy pominięty
                 if (p.status === 'pending') {
                     p.status = 'disqualified';
                 }
 
-                // Zapisujemy stan do bocznej historii zwycięzców
                 winnersList.unshift({ nick: p.nick, status: p.status, tc: tcValue });
-                // Wywalamy z kolejnych losowań i przekreślamy
                 roundExcludedNicks.push(p.nick);
                 markParticipantAsDisqualified(p.nick);
             });
@@ -880,12 +884,11 @@
             saveWinnersToStorage();
             renderWinnersTable();
 
-            // Powrót do czystej struktury bębna i areny bez resetowania hasła i listy!
             currentWinnersPicks = [];
             verifyPanel.style.display = 'none';
             tickersContainer.style.display = 'none';
             tickersContainer.innerHTML = "";
-            grid.style.display = 'grid'; // Powrót areny uczestników
+            grid.style.display = 'grid';
             
             statusDisplay.innerText = "Zapisano zbiorcze decyzje losowania.";
             updateRerollButtonVisibility();
