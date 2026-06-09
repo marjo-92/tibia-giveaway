@@ -88,7 +88,7 @@
         .btn-action { background-color: transparent; border: 1px solid var(--border-card); color: var(--text-main); margin-top: 5px; }
         .btn-action:hover { border-color: var(--accent-glow); background-color: rgba(182, 36, 255, 0.05); }
 
-        /* Panel wykluczania gracza z losowania (Żółte zaznaczenie ze zdjęcia) */
+        /* Panel wykluczania rozbudowany o listę z podglądem i usuwaniem */
         .exclude-panel-box {
             background-color: rgba(0, 0, 0, 0.15);
             border: 1px dashed var(--border-card);
@@ -99,6 +99,46 @@
             flex-direction: column;
             gap: 8px;
         }
+        
+        .excluded-list-container {
+            max-height: 110px;
+            overflow-y: auto;
+            background-color: var(--bg-main);
+            border: 1px solid var(--border-panel);
+            border-radius: 6px;
+            padding: 5px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        
+        .excluded-list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: var(--bg-panel);
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            border: 1px solid rgba(230, 57, 70, 0.1);
+        }
+        
+        .btn-remove-exclude {
+            background: transparent;
+            color: var(--danger-red);
+            font-size: 0.8rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-remove-exclude:hover {
+            background: rgba(230, 57, 70, 0.15);
+        }
+
+        .excluded-list-container::-webkit-scrollbar { width: 4px; }
+        .excluded-list-container::-webkit-scrollbar-thumb { background: var(--border-card); border-radius: 4px; }
 
         /* Blok statusu na samym dole lewej tabeli */
         .sidebar-left-status-box {
@@ -126,10 +166,7 @@
         .status-lbl { color: var(--text-muted); text-transform: uppercase; font-size: 0.75rem; font-weight: 700;}
         .status-val { font-weight: 700; color: var(--accent-glow); }
 
-        /* Zbalansowane i lekko zmniejszone hasło (Zielone zaznaczenie ze zdjęcia) */
-        .big-password-box {
-            text-align: center;
-        }
+        .big-password-box { text-align: center; }
         .big-password-box .status-val {
             font-size: 1.5rem;
             color: var(--accent-glow);
@@ -191,10 +228,7 @@
             100% { border-color: #b624ff; box-shadow: 0 0 15px #b624ff, inset 0 0 8px rgba(182, 36, 255, 0.3); }
         }
         
-        .ticker-ribbon { 
-            display: flex; position: absolute; left: 0; top: 0; height: 100%; will-change: transform;
-        }
-        
+        .ticker-ribbon { display: flex; position: absolute; left: 0; top: 0; height: 100%; will-change: transform; }
         .ticker-item {
             min-width: 170px; max-width: 170px; height: 100%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.9rem; border-right: 1px solid rgba(255,255,255,0.04); color: var(--text-main); box-sizing: border-box; background: linear-gradient(180deg, #1d1430 0%, #130d21 100%);
             padding: 5px 12px; text-align: center; word-break: break-all; line-height: 1.2; overflow: hidden; border-top: 2px solid transparent; border-bottom: 2px solid transparent;
@@ -206,9 +240,7 @@
             100% { background: linear-gradient(180deg, #321654 0%, #130d21 100%); }
         }
 
-        .winning-cell-active {
-            animation: tickerNeonPulse 1.2s infinite ease-in-out !important; color: #e5b3ff !important; font-weight: 800; font-size: 1rem;
-        }
+        .winning-cell-active { animation: tickerNeonPulse 1.2s infinite ease-in-out !important; color: #e5b3ff !important; font-weight: 800; font-size: 1rem; }
 
         /* PANEL WERYFIKACJI */
         .verify-panel {
@@ -227,9 +259,7 @@
         .chat-line { color: #fff; word-break: break-all; font-weight: 600; }
         .chat-line strong { color: var(--accent-glow); }
         
-        .verify-footer-actions {
-            display: flex; justify-content: center; gap: 15px; margin-top: 15px; width: 100%; box-sizing: border-box;
-        }
+        .verify-footer-actions { display: flex; justify-content: center; gap: 15px; margin-top: 15px; width: 100%; box-sizing: border-box; }
         .btn-action-ok {
             background-color: var(--success-green); color: #fff; flex: 1; max-width: 240px; padding: 12px; font-weight: 700; box-shadow: 0 0 10px rgba(42, 157, 143, 0.3); display: flex; align-items: center; justify-content: center;
         }
@@ -240,23 +270,10 @@
         .btn-action-draw:hover { filter: brightness(1.2); }
 
         .btn-center-reroll-trigger {
-            display: none;
-            width: 100%;
-            padding: 16px;
-            font-size: 1rem;
-            font-weight: 800;
-            background-color: var(--accent-glow);
-            color: #fff;
-            border-radius: 8px;
-            box-shadow: 0 4px 15px rgba(182, 36, 255, 0.4);
-            margin-top: 15px;
-            flex-shrink: 0;
-            transition: all 0.2s ease-in-out;
+            display: none; width: 100%; padding: 16px; font-size: 1rem; font-weight: 800; background-color: var(--accent-glow); color: #fff; border-radius: 8px; box-shadow: 0 4px 15px rgba(182, 36, 255, 0.4); margin-top: 15px; flex-shrink: 0; transition: all 0.2s ease-in-out;
         }
         .btn-center-reroll-trigger:hover {
-            background-color: var(--accent-hover);
-            transform: translateY(-1px);
-            box-shadow: 0 6px 20px rgba(182, 36, 255, 0.6);
+            background-color: var(--accent-hover); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(182, 36, 255, 0.6);
         }
     </style>
 </head>
@@ -290,15 +307,19 @@
             <button class="btn-reset" onclick="triggerReset()">Reset</button>
         </div>
 
-        <hr style="border: 0; border-top: 1px solid var(--border-card); margin-bottom: 10px;">
+        <hr style="border: 0; border-top: 1px solid var(--border-card); margin-bottom: 5px;">
 
         <button id="main-draw-btn" class="btn-save" style="width: 100%; padding: 12px; font-size: 0.85rem;" onclick="triggerStartFight()">Rozpocznij losowanie</button>
         <button class="btn-action" style="width: 100%; padding: 10px; margin-top: 5px;" onclick="shuffleParticipants()">Przemieszaj Listę</button>
 
         <div class="exclude-panel-box">
             <label style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Wykluczanie graczy</label>
-            <input id="exclude-nick-input" type="text" placeholder="Wpisz nick gracza...">
-            <button class="btn-reset" style="padding: 10px; font-size: 0.75rem;" onclick="manuallyExcludeParticipant()">Wyklucz z losowania</button>
+            <div style="display: flex; gap: 6px;">
+                <input id="exclude-nick-input" type="text" placeholder="Wpisz nick..." style="flex: 1; padding: 8px;">
+                <button class="btn-reset" style="padding: 8px 12px; font-size: 0.75rem; margin: 0;" onclick="manuallyExcludeParticipant()">Dodaj</button>
+            </div>
+            
+            <div class="excluded-list-container" id="excluded-list-container"></div>
         </div>
 
         <div class="sidebar-left-status-box">
@@ -310,9 +331,7 @@
     <div class="main-content">
         <div class="status-header">
             <div><span class="status-lbl">Nagroda:</span> <span id="reward-header-display" class="status-val">0 TC</span></div>
-            
             <div class="big-password-box"><span class="status-lbl">AKTYWNE HASŁO:</span><br><span id="password-display" class="status-val">-</span></div>
-            
             <div style="text-align: right;"><span class="status-lbl">Dołączyło:</span> <span id="count-display" class="status-val">0</span></div>
         </div>
 
@@ -357,14 +376,15 @@
                 <tbody id="winners-table-body"></tbody>
             </table>
         </div>
-        <button class="btn-action" style="color: var(--danger-red); border-color: rgba(230, 57, 70, 0.3);" onclick="clearWinnersList()">Wyczyść listę zwycięzców</button>
+        <button class="btn-action" style="color: var(--danger-red); border-color: rgba(230, 230, 70, 0.3);" onclick="clearWinnersList()">Wyczyść listę zwycięzców</button>
     </div>
 
     <script>
         const socket = io();
         let localParticipants = [];
         let winnersList = [];
-        let roundExcludedNicks = [];
+        let roundExcludedNicks = []; // Tymczasowi (wylosowani w danej rundzie)
+        let permanentlyExcludedNicks = []; // Trwała czarna lista z bocznego panelu
 
         let activeVerificationWinner = null;
         let verificationTimerInterval = null;
@@ -382,6 +402,7 @@
         const participantSlider = document.getElementById('participant-slider');
         const timeSlider = document.getElementById('time-slider');
         const excludeNickInput = document.getElementById('exclude-nick-input');
+        const excludedListContainer = document.getElementById('excluded-list-container');
         
         const mainDrawBtn = document.getElementById('main-draw-btn');
         const centerRerollBtn = document.getElementById('center-reroll-btn');
@@ -404,37 +425,84 @@
             rewardHeaderDisplay.innerText = val + " TC";
         }
 
-        // --- FUNKCJA WYKLUCZANIA Z POZIOMU MODERATORA (ŻÓŁTE POLE) ---
+        // --- OBSŁUGA TRWAŁEJ CZARNEJ LISTY (MODERATORA) ---
+        function loadExcludedFromStorage() {
+            const stored = localStorage.getItem('kickRafflePermanentlyExcluded');
+            if (stored) {
+                permanentlyExcludedNicks = JSON.parse(stored);
+            }
+            renderExcludedList();
+        }
+
+        function saveExcludedToStorage() {
+            localStorage.setItem('kickRafflePermanentlyExcluded', JSON.stringify(permanentlyExcludedNicks));
+        }
+
+        function renderExcludedList() {
+            excludedListContainer.innerHTML = "";
+            if (permanentlyExcludedNicks.length === 0) {
+                excludedListContainer.innerHTML = `<div style="color: var(--text-muted); font-size: 0.75rem; font-style: italic; text-align: center; padding: 5px;">Brak wykluczonych</div>`;
+                return;
+            }
+
+            permanentlyExcludedNicks.forEach(nick => {
+                const item = document.createElement('div');
+                item.className = 'excluded-list-item';
+                item.innerHTML = `
+                    <span>${nick}</span>
+                    <span class="btn-remove-exclude" onclick="removeParticipantFromExclude('${nick}')">❌</span>
+                `;
+                excludedListContainer.appendChild(item);
+            });
+        }
+
         function manuallyExcludeParticipant() {
-            const targetNick = excludeNickInput.value.trim();
-            if (targetNick === "") {
-                alert("Wpisz nick przed wykluczeniem!");
+            let targetNick = excludeNickInput.value.trim();
+            if (targetNick === "") return;
+
+            // Ujednolicamy wielkość liter na podstawie tego, co jest na arenie, jeśli gracz tam istnieje
+            const matchedOnArena = localParticipants.find(p => p.toLowerCase() === targetNick.toLowerCase());
+            if (matchedOnArena) {
+                targetNick = matchedOnArena;
+            }
+
+            if (permanentlyExcludedNicks.some(n => n.toLowerCase() === targetNick.toLowerCase())) {
+                alert(`Gracz ${targetNick} jest już na czarnej liście.`);
                 return;
             }
 
-            // Szukamy pasującego nicku na naszej arenie (ignorując wielkość liter)
-            const matchedNick = localParticipants.find(p => p.toLowerCase() === targetNick.toLowerCase());
+            permanentlyExcludedNicks.push(targetNick);
+            saveExcludedToStorage();
+            renderExcludedList();
 
-            if (!matchedNick) {
-                alert(`Nie znaleziono gracza o nicku "${targetNick}" na arenie!`);
-                return;
-            }
-
-            if (roundExcludedNicks.includes(matchedNick)) {
-                alert(`Gracz @${matchedNick} jest już wykluczony.`);
-                return;
-            }
-
-            // Dodajemy go do blokady bieżącej rundy i natychmiast go przekreślamy
-            roundExcludedNicks.push(matchedNick);
-            markParticipantAsDisqualified(matchedNick);
+            // Od razu oznaczamy kafelka na arenie jako zablokowanego
+            markParticipantAsDisqualified(targetNick);
             
-            statusDisplay.innerText = `Wykluczono moderatora/gracza: @${matchedNick}`;
-            excludeNickInput.value = ""; // Czyścimy pole tekstowe
+            statusDisplay.innerText = `Dodano do czarnej listy: @${targetNick}`;
+            excludeNickInput.value = "";
             updateRerollButtonVisibility();
         }
 
-        // --- PAMIĘĆ LOCALSTORAGE ---
+        function removeParticipantFromExclude(nick) {
+            permanentlyExcludedNicks = permanentlyExcludedNicks.filter(n => n !== nick);
+            saveExcludedToStorage();
+            renderExcludedList();
+
+            // Jeśli gracz jest na arenie i nie jest wykluczony z rundy z powodu wygranej, odświeżamy jego status
+            const card = document.getElementById('p-' + nick);
+            if (card && !roundExcludedNicks.includes(nick)) {
+                card.className = 'p-card';
+            }
+
+            statusDisplay.innerText = `Usunięto z czarnej listy: @${nick}`;
+            updateRerollButtonVisibility();
+        }
+
+        function isPlayerExcluded(nick) {
+            return roundExcludedNicks.includes(nick) || permanentlyExcludedNicks.some(n => n.toLowerCase() === nick.toLowerCase());
+        }
+
+        // --- PAMIĘĆ LOCALSTORAGE DLA ZWYCIĘZCÓW ---
         function loadWinnersFromStorage() {
             const stored = localStorage.getItem('kickRaffleWinners');
             if (stored) {
@@ -466,10 +534,13 @@
             }
         }
 
+        // Ładowanie zapisanych danych na starcie
         loadWinnersFromStorage();
+        loadExcludedFromStorage();
 
         function updateRerollButtonVisibility() {
-            if (roundExcludedNicks.length > 0) {
+            const anyExcluded = roundExcludedNicks.length > 0 || permanentlyExcludedNicks.length > 0;
+            if (anyExcluded) {
                 centerRerollBtn.style.display = "block";
             } else {
                 centerRerollBtn.style.display = "none";
@@ -590,7 +661,13 @@
             
             localParticipants.forEach(p => {
                 const card = document.getElementById('p-' + p);
-                if (card) card.className = 'p-card';
+                if (card) {
+                    if (isPlayerExcluded(p)) {
+                        card.className = 'p-card round-disqualified-cell';
+                    } else {
+                        card.className = 'p-card';
+                    }
+                }
             });
 
             statusDisplay.innerText = "Zmieniono hasło losowania!";
@@ -624,7 +701,7 @@
                 div.className = 'p-card'; 
                 div.id = 'p-' + sender; 
                 div.innerText = sender; 
-                if (roundExcludedNicks.includes(sender)) {
+                if (isPlayerExcluded(sender)) {
                     div.className = 'p-card round-disqualified-cell';
                 }
                 grid.appendChild(div);
@@ -656,7 +733,7 @@
         }
 
         function startCinematicDraw() {
-            const available = localParticipants.filter(p => !roundExcludedNicks.includes(p));
+            const available = localParticipants.filter(p => !isPlayerExcluded(p));
             if (available.length === 0) {
                 alert("Brak dostępnych graczy do wylosowania!");
                 return;
