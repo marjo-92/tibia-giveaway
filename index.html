@@ -93,12 +93,12 @@
         .status-lbl { color: var(--text-muted); text-transform: uppercase; font-size: 0.75rem; font-weight: 700;}
         .status-val { font-weight: 700; color: var(--accent-glow); }
 
-        .arena-wrapper { flex: 1; background-color: rgba(0,0,0,0.2); border: 1px solid var(--border-panel); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; position: relative; overflow: hidden; }
+        .arena-wrapper { flex: 1; background-color: rgba(0,0,0,0.2); border: 1px solid var(--border-panel); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; overflow: hidden; }
         .arena-title { text-align: center; font-size: 0.85rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; letter-spacing: 2px; margin-bottom: 15px; flex-shrink: 0; }
 
         .arena { flex: 1; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); grid-auto-rows: max-content; gap: 12px; padding-bottom: 10px; }
 
-        /* Szary i przekreślony kafelek na arenie */
+        /* Styl dla szarych i przekreślonych kafelków na arenie */
         .p-card {
             background-color: var(--bg-panel); border: 1px solid var(--border-card); padding: 14px 10px; border-radius: 8px; text-align: center; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; font-weight: 600; color: var(--text-main); word-break: break-all; transition: all 0.3s ease;
         }
@@ -196,7 +196,7 @@
         }
         .btn-action-draw:hover { filter: brightness(1.2); }
 
-        /* ULEPSZENIE: Przycisk Losuj Ponownie przypięty stabilnie do dołu środkowej sekcji */
+        /* Przycisk Losuj Ponownie na samym dole ŚRODKOWEJ kolumny */
         .btn-center-reroll-trigger {
             display: none;
             width: 100%;
@@ -206,18 +206,15 @@
             background-color: var(--accent-glow);
             color: #fff;
             border-radius: 8px;
-            box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.5), 0 4px 15px rgba(182, 36, 255, 0.4);
-            margin-top: auto;
-            position: sticky;
-            bottom: 0;
-            z-index: 5;
+            box-shadow: 0 4px 15px rgba(182, 36, 255, 0.4);
+            margin-top: 15px;
             flex-shrink: 0;
             transition: all 0.2s ease-in-out;
         }
-        .btn-center-reroll-trigger:hover:not(:disabled) {
+        .btn-center-reroll-trigger:hover {
             background-color: var(--accent-hover);
             transform: translateY(-1px);
-            box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.5), 0 6px 20px rgba(182, 36, 255, 0.6);
+            box-shadow: 0 6px 20px rgba(182, 36, 255, 0.6);
         }
     </style>
 </head>
@@ -379,14 +376,10 @@
 
         loadWinnersFromStorage();
 
-        // --- OBSŁUGA DYNAMICZNYCH PRZYCISKÓW ---
-        function refreshButtonsState() {
-            const availableCount = localParticipants.filter(p => !roundExcludedNicks.includes(p)).length;
-            
-            // Pojawia się tylko w środku na dole, jeśli runda trwa, a ktoś już odpadł
-            if (roundExcludedNicks.length > 0 && availableCount > 0) {
+        // --- ZARZĄDZANIE POKAZYWANIEM PRZYCISKU "LOSUJ PONOWNIE" ---
+        function updateRerollButtonVisibility() {
+            if (roundExcludedNicks.length > 0) {
                 centerRerollBtn.style.display = "block";
-                centerRerollBtn.innerText = `🎰 Losuj Ponownie (${availableCount})`;
             } else {
                 centerRerollBtn.style.display = "none";
             }
@@ -405,7 +398,7 @@
             }
             localParticipants.forEach(p => renderParticipant(p));
             updateCounter();
-            refreshButtonsState();
+            updateRerollButtonVisibility();
         });
 
         socket.on('newParticipant', (sender) => {
@@ -417,7 +410,6 @@
                 localParticipants.push(cleanSender);
                 renderParticipant(cleanSender);
                 updateCounter();
-                refreshButtonsState();
             }
         });
 
@@ -511,7 +503,7 @@
             });
 
             statusDisplay.innerText = "Zaktualizowano hasło! Wszyscy na arenie biorą udział.";
-            refreshButtonsState();
+            updateRerollButtonVisibility();
         });
         
         socket.on('participantsReset', () => {
@@ -566,6 +558,10 @@
             localParticipants.forEach(p => renderParticipant(p));
         }
 
+        function triggerStartFight() {
+            socket.emit('startFight');
+        }
+
         function startCinematicDraw() {
             const available = localParticipants.filter(p => !roundExcludedNicks.includes(p));
             if (available.length === 0) {
@@ -575,7 +571,6 @@
 
             if (animationFrameId) cancelAnimationFrame(animationFrameId);
 
-            // Ukrywamy siatkę i dolny przycisk na czas kręcenia
             grid.style.display = 'none';
             centerRerollBtn.style.display = 'none';
             closeVerificationPanel();
@@ -675,7 +670,7 @@
             
             btnVerifyReroll.className = 'btn-action-draw';
             btnVerifyReroll.style.maxWidth = '100%'; 
-            btnVerifyReroll.innerText = "❌ Czas minął! Powrót i losuj kolejną osobę";
+            btnVerifyReroll.innerText = "❌ Czas minął! Powrót do listy";
         }
 
         function closeVerificationPanel() {
@@ -689,7 +684,7 @@
             wrapper.style.display = 'none';
             grid.style.display = 'grid';
             
-            refreshButtonsState();
+            updateRerollButtonVisibility();
         }
     </script>
 </body>
