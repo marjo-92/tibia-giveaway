@@ -98,7 +98,6 @@
 
         .arena { flex: 1; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); grid-auto-rows: max-content; gap: 12px; padding-bottom: 10px; }
 
-        /* Styl dla szarych i przekreślonych kafelków na arenie */
         .p-card {
             background-color: var(--bg-panel); border: 1px solid var(--border-card); padding: 14px 10px; border-radius: 8px; text-align: center; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; font-weight: 600; color: var(--text-main); word-break: break-all; transition: all 0.3s ease;
         }
@@ -196,7 +195,7 @@
         }
         .btn-action-draw:hover { filter: brightness(1.2); }
 
-        /* Przycisk Losuj Ponownie na samym dole ŚRODKOWEJ kolumny */
+        /* Przycisk Losuj Ponownie */
         .btn-center-reroll-trigger {
             display: none;
             width: 100%;
@@ -342,7 +341,6 @@
 
         let animationFrameId = null;
 
-        // --- PAMIĘĆ LOCALSTORAGE ---
         function loadWinnersFromStorage() {
             const stored = localStorage.getItem('kickRaffleWinners');
             if (stored) {
@@ -376,7 +374,6 @@
 
         loadWinnersFromStorage();
 
-        // --- ZARZĄDZANIE POKAZYWANIEM PRZYCISKU "LOSUJ PONOWNIE" ---
         function updateRerollButtonVisibility() {
             if (roundExcludedNicks.length > 0) {
                 centerRerollBtn.style.display = "block";
@@ -385,7 +382,6 @@
             }
         }
 
-        // --- SOCKETS ---
         socket.on('init', (data) => {
             grid.innerHTML = "";
             localParticipants = data.participants || [];
@@ -571,9 +567,10 @@
 
             if (animationFrameId) cancelAnimationFrame(animationFrameId);
 
+            // UKRYWAMY SIATKĘ NICKÓW OD RAZU PRZED LOSOWANIEM
             grid.style.display = 'none';
             centerRerollBtn.style.display = 'none';
-            closeVerificationPanel();
+            verifyPanel.style.display = 'none';
 
             const randomIndex = Math.floor(Math.random() * available.length);
             const winner = available[randomIndex];
@@ -636,7 +633,11 @@
             verificationTimeLeft = 60;
             hasPlayerResponded = false;
             
-            wrapper.style.display = 'none';
+            // POPRAWKA: NIE CHOWAMY BĘBNA (`wrapper.style.display = 'block'`), zostaje na ekranie!
+            wrapper.style.display = 'block';
+            // SIATKA NICKÓW JEST CAŁKOWICIE UKRYTA
+            grid.style.display = 'none';
+            centerRerollBtn.style.display = 'none';
             
             verifyNick.innerText = winnerNick;
             verifyTimer.innerText = "60s";
@@ -681,9 +682,11 @@
             hasPlayerResponded = false;
             
             verifyPanel.style.display = 'none';
+            // CHOWAMY BĘBEN DOPIERO PO ZATWIERDZENIU/POMINIĘCIU DECYZJI
             wrapper.style.display = 'none';
-            grid.style.display = 'grid';
             
+            // PRZYWRACAMY ARENĘ (NICKI) ORAZ PRZYCISK PONOWNEGO LOSOWANIA NA SAM DÓŁ
+            grid.style.display = 'grid';
             updateRerollButtonVisibility();
         }
     </script>
