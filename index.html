@@ -213,7 +213,6 @@
 
         .sidebar-right { width: 320px; min-width: 320px; display: flex; flex-direction: column; }
         
-        /* POPRAWKA: Prawidłowy, stylowy nagłówek panelu ZWYCIĘZCY */
         .panel-right-title {
             font-size: 1.1rem;
             font-weight: 700;
@@ -280,7 +279,6 @@
         .chat-line strong { color: var(--accent-glow); }
         .verify-footer-actions { display: flex; justify-content: center; gap: 15px; margin-top: 15px; }
 
-        /* POPRAWKA: Prawidłowe kolory przycisków OK/Pomiń (z oryginalnej wersji) */
         .btn-verify-ok {
             flex: 1;
             padding: 14px;
@@ -392,15 +390,15 @@
 
             <div class="verify-panel" id="verify-panel">
                 <div class="verify-header">
-                    <div class="verify-user">Sprawdzanie obecności: <span id="verify-nick" style="color: var(--accent-glow);">Nick</span></div>
+                    <div class="verify-user"><span id="verify-header-title-text">Sprawdzanie obecności</span>: <span id="verify-nick" style="color: var(--accent-glow);">Nick</span></div>
                     <div id="verify-timer" class="verify-timer">60s</div>
                 </div>
                 
                 <div id="verify-chat-box" class="verify-chat-box"></div>
                 
                 <div class="verify-footer-actions">
-                    <button id="btn-verify-confirm" class="btn-verify-ok" onclick="confirmWinnerAndAdd()">✔ Zatwierdź i dodaj</button>
-                    <button id="btn-verify-reroll" class="btn-verify-reroll" onclick="rejectWinnerAndReroll()">❌ Pomiń / Odrzuć</button>
+                    <button id="btn-verify-confirm" class="btn-verify-ok" onclick="confirmWinnerAndAdd()">✔ Potwierdź</button>
+                    <button id="btn-verify-reroll" class="btn-verify-reroll" onclick="rejectWinnerAndReroll()">❌ Pomiń</button>
                 </div>
             </div>
 
@@ -432,7 +430,7 @@
         let winnersList = [];
         let roundExcludedNicks = []; 
         let permanentlyExcludedNicks = []; 
-        let currentMode = 'auto'; // 'auto' lub 'manual'
+        let currentMode = 'auto'; 
 
         let activeVerificationWinner = null;
         let verificationTimerInterval = null;
@@ -463,10 +461,10 @@
         const verifyChatBox = document.getElementById('verify-chat-box');
         const btnVerifyConfirm = document.getElementById('btn-verify-confirm');
         const btnVerifyReroll = document.getElementById('btn-verify-reroll');
+        const verifyHeaderTitleText = document.getElementById('verify-header-title-text');
 
         let animationFrameId = null;
 
-        // POPRAWKA: Przycisk resetu też przywraca kolory
         function triggerReset() {
             socket.emit('reset');
             triggerResetLogic();
@@ -650,7 +648,7 @@
         });
 
         socket.on('newChat', (data) => {
-            if (!data || !activeVerificationWinner || currentMode === 'manual') return; // POPRAWKA: blokada chatu w trybie manual
+            if (!data || !activeVerificationWinner || currentMode === 'manual') return; 
             checkAndVerifyPlayer(data.sender, data.content);
         });
 
@@ -815,10 +813,11 @@
             centerRerollBtn.style.display = 'none';
             verifyNick.innerText = winnerNick;
             
-            // POPRAWKA LOGICZNA DLA TRYBU MANUAL:
+            // POPRAWKI DLA TRYBU MANUALNEGO (Zgodnie z życzeniem)
             if (currentMode === 'manual') {
-                // Ukrywamy licznik i chat, zmieniamy napisy na przyciskach
-                verifyTimer.style.display = 'none';
+                verifyHeaderTitleText.innerText = "Wygrany"; // Zmiana napisu na "Wygrany"
+                verifyTimer.style.display = 'none'; // Ukrycie licznika
+                
                 verifyChatBox.innerHTML = `
                     <div style="color: #55486e; font-style: italic; text-align: center; padding: 20px 10px;">
                         Wylosowano gracza z listy ręcznej.
@@ -828,12 +827,13 @@
                         lub Pomiń, by odrzucić i losować dalej.
                     </div>
                 `;
-                btnVerifyConfirm.innerText = "Potwierdź / Następne";
-                btnVerifyReroll.innerText = "Pomiń / Następne";
+                btnVerifyConfirm.innerText = "✔ Potwierdź"; // Prosty napis
+                btnVerifyReroll.innerText = "❌ Pomiń"; // Prosty napis
                 btnVerifyConfirm.style.display = 'block';
                 btnVerifyReroll.style.display = 'block';
             } else {
-                // Tryb Automatyczny - standardowa weryfikacja chat
+                // Tryb Automatyczny bez zmian
+                verifyHeaderTitleText.innerText = "Sprawdzanie obecności";
                 verificationTimeLeft = 60;
                 verifyTimer.innerText = "60s";
                 verifyTimer.style.color = "var(--danger-red)";
