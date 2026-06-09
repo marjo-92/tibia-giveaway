@@ -200,7 +200,6 @@
         /* GRUPOWY PANEL WERYFIKACJI ACCORDING TO USER MOCKUP */
         .verify-panel { display: none; background: #0f0a1c; border: 2px solid var(--border-card); border-radius: 12px; padding: 20px; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.4); }
         
-        /* Tytuł i wycentrowany licznik obok siebie */
         .verify-group-header-row {
             display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; border-bottom: 1px solid var(--border-panel); padding-bottom: 12px; margin-bottom: 15px;
         }
@@ -229,6 +228,17 @@
         .btn-row-draw { background-color: var(--danger-red); box-shadow: 0 2px 6px rgba(230, 57, 70, 0.2); }
         .btn-row-draw:hover { filter: brightness(1.2); }
         
+        /* POPRAWKA: Stylizacja dla statycznego tekstu OK zamiast przycisku */
+        .winner-row-ok-badge {
+            font-size: 1.1rem;
+            font-weight: 900;
+            color: var(--success-green);
+            padding: 5px 15px;
+            letter-spacing: 0.5px;
+            text-shadow: 0 0 10px rgba(42, 157, 143, 0.5);
+            user-select: none;
+        }
+
         .row-status-text { font-weight: 600; }
         .row-status-text.timer-msg { color: #55486e; font-style: italic; }
         .row-status-text.ok { color: var(--success-green); font-weight: 700; }
@@ -594,14 +604,16 @@
                             chatBox.appendChild(line);
                             chatBox.scrollTop = chatBox.scrollHeight;
                             
-                            // POPRAWKA: Automatycznie zatwierdzamy wygraną po wykryciu wiadomości widza
+                            // Automatyczne zatwierdzenie po wykryciu wiadomości widza
                             p.status = 'verified';
 
-                            // Pokazujemy napis/przycisk potwierdzający stan zatwierdzenia
-                            const btnOk = document.getElementById(`btn-ok-${p.nick}`);
-                            if (btnOk) {
-                                btnOk.style.display = 'block';
-                                btnOk.disabled = true; // Zablokowany, bo zatwierdziło się samo automatycznie
+                            // POPRAWKA: Zamiana klikalnego przycisku na zwykły, nieklikalny napis "OK"
+                            const actionsBox = document.getElementById(`actions-box-${p.nick}`);
+                            if (actionsBox) {
+                                actionsBox.innerHTML = `
+                                    <span class="winner-row-ok-badge">OK</span>
+                                    <button id="btn-skip-${p.nick}" class="btn-row-action btn-row-draw" onclick="setSingleRowDecision('${p.nick}', 'disqualified')">Odrzuć</button>
+                                `;
                             }
                         }
                     }
@@ -788,9 +800,8 @@
                     `;
                 } else {
                     statusInitialHTML = `<div class="row-status-text timer-msg">Oczekiwanie na dowolną wiadomość od @${p.nick}...</div>`;
-                    // POPRAWKA: Przycisk ODRZUĆ jest aktywny i dostępny od początku
+                    // Przycisk ODRZUĆ jest aktywny i dostępny od początku
                     buttonsHTML = `
-                        <button id="btn-ok-${p.nick}" class="btn-row-action btn-row-ok" style="display:none;">Zatwierdź</button>
                         <button id="btn-skip-${p.nick}" class="btn-row-action btn-row-draw" onclick="setSingleRowDecision('${p.nick}', 'disqualified')">Odrzuć</button>
                     `;
                 }
@@ -838,9 +849,13 @@
 
             if (decision === 'verified') {
                 if (statusEl) statusEl.innerHTML = `<span class="row-status-text ok">✔ ZATWIERDZONY DO WYGRANEJ</span>`;
-                if (actionsEl) actionsEl.innerHTML = `<span style="color:var(--success-green); font-weight:700; font-size:0.8rem; text-transform:uppercase;">Zatwierdzony</span>`;
+                if (actionsEl) {
+                    actionsEl.innerHTML = `
+                        <span class="winner-row-ok-badge">OK</span>
+                        <button id="btn-skip-${nick}" class="btn-row-action btn-row-draw" onclick="setSingleRowDecision('${nick}', 'disqualified')">Odrzuć</button>
+                    `;
+                }
             } else {
-                // POPRAWKA: Odrzucenie gracza przez streamera ręcznie
                 if (statusEl) statusEl.innerHTML = `<span class="row-status-text skip">❌ OZNACZONY JAKO ODRZUCONY</span>`;
                 if (actionsEl) actionsEl.innerHTML = `<span style="color:var(--danger-red); font-weight:700; font-size:0.8rem; text-transform:uppercase;">Odrzucony</span>`;
             }
