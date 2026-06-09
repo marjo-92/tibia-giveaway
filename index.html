@@ -110,7 +110,6 @@
         .arena::-webkit-scrollbar-thumb { background: var(--border-card); border-radius: 10px; }
         .arena::-webkit-scrollbar-thumb:hover { background: var(--accent-glow); }
 
-        /* Prawy Panel - Zmodyfikowany pod przycisk na dole */
         .sidebar-right { width: 320px; min-width: 320px; display: flex; flex-direction: column; }
         .table-container { flex: 1; overflow-y: auto; background-color: var(--bg-input); border-radius: 8px; border: 1px solid var(--border-card); margin-bottom: 15px; }
         table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
@@ -118,7 +117,6 @@
         td { padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.03); font-weight: 600; }
         .td-tc { text-align: right; color: var(--accent-glow); }
 
-        /* TABELA ZWYCIĘZCÓW */
         .tr-verified { border: 2px solid var(--success-green); background-color: rgba(42, 157, 143, 0.05); }
         .tr-verified td { color: #d8f3f0 !important; border-top: 1px solid rgba(42, 157, 143, 0.3); border-bottom: 1px solid rgba(42, 157, 143, 0.3); }
         .tr-verified td:first-child { border-left: 2px solid var(--success-green); }
@@ -151,7 +149,6 @@
             padding: 5px 12px; text-align: center; word-break: break-all; line-height: 1.2; overflow: hidden; border-top: 2px solid transparent; border-bottom: 2px solid transparent;
         }
 
-        /* ANIMACJA MIGAJĄCEGO FIOLETOWEGO NEONU */
         @keyframes tickerNeonPulse {
             0% { border-top-color: #b624ff; border-bottom-color: #b624ff; box-shadow: inset 0 0 8px rgba(182, 36, 255, 0.5); background: linear-gradient(180deg, #321654 0%, #130d21 100%); }
             50% { border-top-color: #e2abff; border-bottom-color: #e2abff; box-shadow: inset 0 0 20px rgba(182, 36, 255, 0.9); background: linear-gradient(180deg, #4d1d85 0%, #1a0f30 100%); }
@@ -284,6 +281,9 @@
         const socket = io();
         let localParticipants = [];
         let winnersList = [];
+        
+        // NOWOŚĆ: Lista osób wykluczonych tylko w OBRĘBIE BIEŻĄCEGO LOSOWANIA (czyści się przy zmianie hasła/resercie)
+        let roundExcludedNicks = [];
 
         let activeVerificationWinner = null;
         let verificationTimerInterval = null;
@@ -345,7 +345,6 @@
             }
         }
 
-        // Ładujemy dane od razu po otwarciu strony
         loadWinnersFromStorage();
 
         // --- NASŁUCHIWANIE SOCKETÓW ---
@@ -413,13 +412,15 @@
             verifyChatBox.scrollTop = verifyChatBox.scrollHeight;
         }
 
-        // --- MODYFIKACJA DODAWANIA DO LISTY (ZAPIS) ---
         function confirmWinnerAndAdd() {
             if (!activeVerificationWinner) return;
 
             const tcValue = tcInput.value || "0";
             winnersList.push({ nick: activeVerificationWinner, status: 'verified', tc: tcValue });
             
+            // Dodajemy go do wykluczenia tylko w obecnej rundzie
+            roundExcludedNicks.push(activeVerificationWinner);
+
             saveWinnersToStorage();
             renderWinnersTable();
 
@@ -432,6 +433,9 @@
 
             const tcValue = tcInput.value || "0";
             winnersList.push({ nick: activeVerificationWinner, status: 'disqualified', tc: tcValue });
+
+            // Pominięty również zostaje wykluczony tylko z tej rundy
+            roundExcludedNicks.push(activeVerificationWinner);
 
             saveWinnersToStorage();
             renderWinnersTable();
@@ -446,19 +450,21 @@
                 alert("Wpisz jakieś hasło przed zapisaniem!");
                 return;
             }
+            // POPRAWKA: Nowe hasło = nowa runda, pozwalamy wszystkim zapisanym na arenie losować się od nowa!
+            roundExcludedNicks = []; 
             socket.emit('updateKeyword', newKeyword);
         }
 
         socket.on('keywordChanged', (kw) => { 
             passwordDisplay.innerText = kw ? kw.toUpperCase() : "-"; 
             keywordInput.value = kw || "";
-            statusDisplay.innerText = "Zaktualizowano hasło losowania!";
+            statusDisplay.innerText = "Zaktualizowano hasło! Wszyscy na arenie biorą udział.";
         });
         
         socket.on('participantsReset', () => {
-            // TUTAJ WAŻNA ZMIANA: Usunięto czyszczenie tabeli winnersList podczas głównego resetu!
             grid.innerHTML = ""; 
             localParticipants = []; 
+            roundExcludedNicks = []; // Czyścimy blokady rundy
             keywordInput.value = "";
             tcInput.value = "";
             participantSlider.value = 1;
@@ -466,7 +472,7 @@
             timeSlider.value = 20;
             document.getElementById('time-slider-val').innerText = "20";
             passwordDisplay.innerText = "-";
-            statusDisplay.innerText = "Zresetowano uczestników i ustawienia."; 
+            statusDisplay.innerText = "Zresetowano uczestników. Tabela historii została nienaruszona."; 
             wrapper.style.display = 'none'; 
             closeVerificationPanel(); 
             updateCounter();
@@ -479,6 +485,8 @@
                 const div = document.createElement('div'); div.className = 'p-card'; div.id = 'p-' + sender; div.innerText = sender; grid.appendChild(div);
             }
         }
+        
+         Isabella.innerText = localParticipants.length; 
         function updateCounter() { countDisplay.innerText = localParticipants.length; }
         function triggerReset() { socket.emit('reset'); }
         function triggerStartFight() { startCinematicDraw(); }
@@ -496,12 +504,12 @@
         function startCinematicDraw() {
             if (animationFrameId) cancelAnimationFrame(animationFrameId);
 
-            const excludedNicks = winnersList.map(w => w.nick);
-            const available = localParticipants.filter(p => !excludedNicks.includes(p));
+            // POPRAWKA: Filtrujemy tylko na podstawie roundExcludedNicks, a nie całej historii z bazy!
+            const available = localParticipants.filter(p => !roundExcludedNicks.includes(p));
             
             if (available.length === 0) {
-                statusDisplay.innerText = "Brak dostępnych nowych uczestników do wylosowania!";
-                alert("Wszyscy uczestnicy zostali już wylosowani lub pominięci!");
+                statusDisplay.innerText = "Wszyscy aktywni uczestnicy z tej rundy zostali już wylosowani!";
+                alert("Brak nowych osób na arenie do wylosowania w tej rundzie! Zmień hasło lub zresetuj boty.");
                 grid.style.display = 'grid';
                 return;
             }
