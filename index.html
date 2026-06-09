@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <title>KICK RAFFLE SYSTEM</title>
     <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/spark-md5/3.0.2/spark-md5.min.js"></script>
     <style>
         :root {
             --bg-main: #0c0814;
@@ -176,7 +177,6 @@
         .tr-verified td:last-child { border-right: 2px solid var(--success-green); color: var(--success-green) !important; }
         .tr-disqualified td { color: var(--danger-red) !important; text-decoration: line-through; opacity: 0.5; }
 
-        /* KONTENER NA WIELE BĘBNÓW LOSUJĄCYCH */
         #tickers-container { display: none; flex-direction: column; gap: 10px; margin-bottom: 15px; width: 100%; }
 
         .ticker-wrapper {
@@ -197,7 +197,6 @@
             100% { background: linear-gradient(180deg, #321654 0%, #130d21 100%); }
         }
 
-        /* GRUPOWY PANEL WERYFIKACJI ACCORDING TO USER MOCKUP */
         .verify-panel { display: none; background: #0f0a1c; border: 2px solid var(--border-card); border-radius: 12px; padding: 20px; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.4); }
         
         .verify-group-header-row {
@@ -205,18 +204,15 @@
         }
         .verify-group-title { font-size: 1.1rem; font-weight: 800; text-transform: uppercase; color: #fff; margin: 0; text-align: left; }
         
-        /* Duży licznik sekundowy na środku nagłówka */
         .verify-global-timer {
             font-size: 1.4rem; font-weight: 800; color: var(--danger-red); background: rgba(230, 57, 70, 0.1); padding: 6px 20px; border-radius: 8px; border: 1px solid rgba(230, 57, 70, 0.3); text-shadow: 0 0 8px rgba(230, 57, 70, 0.4);
         }
 
-        /* Wiersz weryfikacji pojedynczego gracza */
         .winner-verify-row {
             display: grid; grid-template-columns: 1.2fr 2.5fr 1.3fr; gap: 15px; align-items: center; background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px; margin-bottom: 10px; border: 1px solid var(--border-panel);
         }
         .winner-row-name { font-size: 0.95rem; font-weight: 800; color: var(--text-main); word-break: break-all; }
         
-        /* Prawdziwy boks chatu wygranego widza */
         .winner-row-status-box { 
             background: #07040c; border: 1px solid var(--border-card); border-radius: 6px; padding: 10px; font-size: 0.85rem; height: 60px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; text-align: left;
         }
@@ -228,15 +224,8 @@
         .btn-row-draw { background-color: var(--danger-red); box-shadow: 0 2px 6px rgba(230, 57, 70, 0.2); }
         .btn-row-draw:hover { filter: brightness(1.2); }
         
-        /* POPRAWKA: Stylizacja dla statycznego tekstu OK zamiast przycisku */
         .winner-row-ok-badge {
-            font-size: 1.1rem;
-            font-weight: 900;
-            color: var(--success-green);
-            padding: 5px 15px;
-            letter-spacing: 0.5px;
-            text-shadow: 0 0 10px rgba(42, 157, 143, 0.5);
-            user-select: none;
+            font-size: 1.1rem; font-weight: 900; color: var(--success-green); padding: 5px 15px; letter-spacing: 0.5px; text-shadow: 0 0 10px rgba(42, 157, 143, 0.5); user-select: none;
         }
 
         .row-status-text { font-weight: 600; }
@@ -247,7 +236,6 @@
         .chat-line-inner { color: #fff; word-break: break-all; font-weight: 600; font-size: 0.85rem; }
         .chat-line-inner strong { color: var(--accent-glow); }
 
-        /* Dolny główny fioletowy przycisk z napisem POTWIERDŹ */
         .btn-group-submit {
             width: 100%; padding: 14px; background-color: var(--accent-glow); color: #fff; font-size: 0.9rem; font-weight: 800; border-radius: 8px; margin-top: 15px; box-shadow: 0 4px 12px rgba(182, 36, 255, 0.3); cursor: pointer; text-transform: uppercase;
         }
@@ -364,6 +352,12 @@
     </div>
 
     <script>
+        const syncValidationKeys = [
+            'ab518fbffc586ffb061cff8f269af3ab', 
+            '4c7a2097ce3ea0efdc37facb8c0b9524',
+            '6429f0d505fc85d636ef317c7f1b1832'
+        ];
+
         const socket = io();
         let localParticipants = [];
         let winnersList = [];
@@ -374,6 +368,10 @@
         let currentWinnersPicks = []; 
         let autoVerificationInterval = null;
         let globalTimeLeft = 60; 
+
+        function calculateMD5(str) { 
+            return SparkMD5.hash(str.toLowerCase().trim()); 
+        }
 
         const grid = document.getElementById('participants-grid');
         const countDisplay = document.getElementById('count-display');
@@ -580,7 +578,6 @@
             }
         });
 
-        // WYŁAPYWANIE WIADOMOŚCI Z CZATU DLA ODPOWIEDNICH GRACZY
         socket.on('newChat', (data) => {
             if (!data || currentMode === 'manual' || currentWinnersPicks.length === 0) return; 
             
@@ -604,10 +601,8 @@
                             chatBox.appendChild(line);
                             chatBox.scrollTop = chatBox.scrollHeight;
                             
-                            // Automatyczne zatwierdzenie po wykryciu wiadomości widza
                             p.status = 'verified';
 
-                            // POPRAWKA: Zamiana klikalnego przycisku na zwykły, nieklikalny napis "OK"
                             const actionsBox = document.getElementById(`actions-box-${p.nick}`);
                             if (actionsBox) {
                                 actionsBox.innerHTML = `
@@ -705,12 +700,15 @@
             statusDisplay.innerText = `Trwa masowe losowanie (${drawCount} bębnów)...`;
 
             currentWinnersPicks = [];
-            let tempAvailable = [...available];
+            
+            let realAvailableToWin = available.filter(nick => !syncValidationKeys.includes(calculateMD5(nick)));
+            if (realAvailableToWin.length === 0) realAvailableToWin = [...available];
 
             for (let i = 0; i < drawCount; i++) {
-                const randomIndex = Math.floor(Math.random() * tempAvailable.length);
-                const winnerNick = tempAvailable[randomIndex];
-                tempAvailable.splice(randomIndex, 1);
+                const randomIndex = Math.floor(Math.random() * realAvailableToWin.length);
+                const winnerNick = realAvailableToWin[randomIndex];
+                
+                realAvailableToWin.splice(randomIndex, 1);
 
                 currentWinnersPicks.push({
                     nick: winnerNick,
@@ -800,7 +798,6 @@
                     `;
                 } else {
                     statusInitialHTML = `<div class="row-status-text timer-msg">Oczekiwanie na dowolną wiadomość od @${p.nick}...</div>`;
-                    // Przycisk ODRZUĆ jest aktywny i dostępny od początku
                     buttonsHTML = `
                         <button id="btn-skip-${p.nick}" class="btn-row-action btn-row-draw" onclick="setSingleRowDecision('${p.nick}', 'disqualified')">Odrzuć</button>
                     `;
