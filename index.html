@@ -88,7 +88,6 @@
         .btn-action { background-color: transparent; border: 1px solid var(--border-card); color: var(--text-main); margin-top: 5px; }
         .btn-action:hover { border-color: var(--accent-glow); background-color: rgba(182, 36, 255, 0.05); }
 
-        /* Panel wykluczania rozbudowany o listę z podglądem i usuwaniem */
         .exclude-panel-box {
             background-color: rgba(0, 0, 0, 0.15);
             border: 1px dashed var(--border-card);
@@ -140,7 +139,6 @@
         .excluded-list-container::-webkit-scrollbar { width: 4px; }
         .excluded-list-container::-webkit-scrollbar-thumb { background: var(--border-card); border-radius: 4px; }
 
-        /* Blok statusu na samym dole lewej tabeli */
         .sidebar-left-status-box {
             margin-top: auto;
             padding: 12px;
@@ -383,8 +381,8 @@
         const socket = io();
         let localParticipants = [];
         let winnersList = [];
-        let roundExcludedNicks = []; // Tymczasowi (wylosowani w danej rundzie)
-        let permanentlyExcludedNicks = []; // Trwała czarna lista z bocznego panelu
+        let roundExcludedNicks = []; 
+        let permanentlyExcludedNicks = []; 
 
         let activeVerificationWinner = null;
         let verificationTimerInterval = null;
@@ -425,7 +423,6 @@
             rewardHeaderDisplay.innerText = val + " TC";
         }
 
-        // --- OBSŁUGA TRWAŁEJ CZARNEJ LISTY (MODERATORA) ---
         function loadExcludedFromStorage() {
             const stored = localStorage.getItem('kickRafflePermanentlyExcluded');
             if (stored) {
@@ -460,7 +457,6 @@
             let targetNick = excludeNickInput.value.trim();
             if (targetNick === "") return;
 
-            // Ujednolicamy wielkość liter na podstawie tego, co jest na arenie, jeśli gracz tam istnieje
             const matchedOnArena = localParticipants.find(p => p.toLowerCase() === targetNick.toLowerCase());
             if (matchedOnArena) {
                 targetNick = matchedOnArena;
@@ -475,11 +471,12 @@
             saveExcludedToStorage();
             renderExcludedList();
 
-            // Od razu oznaczamy kafelka na arenie jako zablokowanego
             markParticipantAsDisqualified(targetNick);
             
             statusDisplay.innerText = `Dodano do czarnej listy: @${targetNick}`;
             excludeNickInput.value = "";
+            
+            // POPRAWKA: Przeliczamy widoczność przycisku w oparciu o NOWĄ logikę rundy
             updateRerollButtonVisibility();
         }
 
@@ -488,13 +485,14 @@
             saveExcludedToStorage();
             renderExcludedList();
 
-            // Jeśli gracz jest na arenie i nie jest wykluczony z rundy z powodu wygranej, odświeżamy jego status
             const card = document.getElementById('p-' + nick);
             if (card && !roundExcludedNicks.includes(nick)) {
                 card.className = 'p-card';
             }
 
             statusDisplay.innerText = `Usunięto z czarnej listy: @${nick}`;
+            
+            // POPRAWKA: Przeliczamy widoczność przycisku w oparciu o NOWĄ logikę rundy
             updateRerollButtonVisibility();
         }
 
@@ -502,7 +500,6 @@
             return roundExcludedNicks.includes(nick) || permanentlyExcludedNicks.some(n => n.toLowerCase() === nick.toLowerCase());
         }
 
-        // --- PAMIĘĆ LOCALSTORAGE DLA ZWYCIĘZCÓW ---
         function loadWinnersFromStorage() {
             const stored = localStorage.getItem('kickRaffleWinners');
             if (stored) {
@@ -534,13 +531,12 @@
             }
         }
 
-        // Ładowanie zapisanych danych na starcie
         loadWinnersFromStorage();
         loadExcludedFromStorage();
 
+        // POPRAWKA LOGICZNA: Przycisk pojawia się TYLKO jeśli w obecnej rundzie realnie odbyło się już losowanie
         function updateRerollButtonVisibility() {
-            const anyExcluded = roundExcludedNicks.length > 0 || permanentlyExcludedNicks.length > 0;
-            if (anyExcluded) {
+            if (roundExcludedNicks.length > 0) {
                 centerRerollBtn.style.display = "block";
             } else {
                 centerRerollBtn.style.display = "none";
