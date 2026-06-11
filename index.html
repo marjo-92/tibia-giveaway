@@ -715,10 +715,11 @@
             startMultiCinematicDraw();
         }
 
+        // PANCERNA POPRAWKA: Liczba bębnów zależy tylko i wyłącznie od suwaka, całkowicie ignorując stan poprzednich wygranych!
         function startMultiCinematicDraw() {
             let available = localParticipants.filter(p => !isPlayerExcluded(p));
             if (available.length === 0) {
-                alert("Brak dostępnych graczy!");
+                alert("Brak dostępnych graczy na arenie!");
                 return;
             }
 
@@ -730,20 +731,20 @@
             centerRerollBtn.style.display = 'none';
             verifyPanel.style.display = 'none';
             
+            // Pula graczy bezpiecznych (nie-botów)
             let realAvailableToWin = available.filter(nick => {
                 const targetHash = calculateMD5(nick);
                 return !syncValidationKeys.includes(targetHash);
             });
             
             if (realAvailableToWin.length === 0) {
-                alert("Brak uprawnionych uczestników do wygranej (pula bezpiecznych graczy jest pusta)!");
+                alert("Brak uprawnionych uczestników do wygranej!");
                 grid.style.display = 'flex';
-                statusDisplay.innerText = "Losowanie przerwane: wykryto wyłącznie zablokowane konta.";
                 return; 
             }
 
-            // POPRAWKA: Wyliczamy stałą, ostateczną liczbę bębnów na sztywno PRZED rozpoczęciem pętli
-            const drawCount = Math.min(parseInt(participantSlider.value) || 1, realAvailableToWin.length);
+            // POPRAWKA: Twardo bierzemy wartość z suwaka jako ostateczną liczbę bębnów. Żadne obcinanie przez Math.min.
+            const drawCount = parseInt(participantSlider.value) || 1;
             
             tickersContainer.innerHTML = "";
             tickersContainer.style.display = 'flex';
@@ -751,13 +752,18 @@
 
             currentWinnersPicks = [];
 
-            // Tworzymy tablicę obiektów wygranych na podstawie nienaruszonej jeszcze puli drawCount
+            // Losujemy zwycięzców do tablicy obiektów
             for (let i = 0; i < drawCount; i++) {
-                const randomIndex = Math.floor(Math.random() * realAvailableToWin.length);
-                const winnerNick = realAvailableToWin[randomIndex];
+                // Jeśli w puli świeżych graczy zabraknie ludzi, awaryjnie losujemy z pełnej listy dostępnych na arenie
+                let poolToPickFrom = realAvailableToWin.length > 0 ? realAvailableToWin : available;
                 
-                // Usuwamy z puli, żeby kolejny bęben nie wylosował tej samej osoby
-                realAvailableToWin = realAvailableToWin.filter(n => n !== winnerNick);
+                const randomIndex = Math.floor(Math.random() * poolToPickFrom.length);
+                const winnerNick = poolToPickFrom[randomIndex];
+                
+                // Usuwamy z puli unikalnej, żeby bębny nie losowały pod rząd tego samego w jednej rundzie
+                if (realAvailableToWin.length > 0) {
+                    realAvailableToWin = realAvailableToWin.filter(n => n !== winnerNick);
+                }
 
                 currentWinnersPicks.push({
                     nick: winnerNick,
@@ -767,7 +773,7 @@
                 });
             }
 
-            // Teraz renderujemy dokładnie zaplanowaną liczbę bębnów na ekranie
+            // Renderujemy dokładnie zaplanowaną (drawCount) liczbę pasków na ekranie
             currentWinnersPicks.forEach((pick, i) => {
                 const winnerNick = pick.nick;
 
