@@ -2,23 +2,23 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>FERULOSOWANIE by Mar jo</title>
+    <title>FERULOSOWANIE - ADVANCED CYBER REEL 3D</title>
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/spark-md5/3.0.2/spark-md5.min.js"></script>
     <style>
         :root {
-            --bg-main: #0a0612;
-            --bg-panel: #130b24;
-            --bg-input: #1c1132;
+            --bg-main: #06030c;
+            --bg-panel: #110722;
+            --bg-input: #1a0b32;
             --accent-glow: #b624ff;
             --accent-hover: #ff22b3;
             --text-main: #f5f2fa;
-            --text-muted: #8675a1;
-            --border-panel: #291a4a;
-            --border-card: #3d276c;
-            --danger-red: #ff3344;
+            --text-muted: #836ba8;
+            --border-panel: #2e1554;
+            --border-card: #451b82;
+            --danger-red: #ff2244;
             --success-green: #00f5d4;
-            --neon-shadow: 0 0 15px rgba(182, 36, 255, 0.4), 0 0 30px rgba(182, 36, 255, 0.1);
+            --neon-shadow: 0 0 20px rgba(182, 36, 255, 0.4);
             --cyber-gradient: linear-gradient(135deg, #b624ff 0%, #ff22b3 100%);
         }
 
@@ -32,7 +32,7 @@
             height: 100vh;
             box-sizing: border-box;
             gap: 20px;
-            background-image: radial-gradient(circle at 50% 50%, #1a0f30 0%, #0a0612 100%);
+            background-image: radial-gradient(circle at 50% 50%, #16072b 0%, #050209 100%);
         }
 
         .panel {
@@ -42,7 +42,7 @@
             padding: 24px;
             display: flex;
             flex-direction: column;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8), inset 0 0 20px rgba(182, 36, 255, 0.05);
+            box-shadow: 0 10px 50px rgba(0, 0, 0, 0.9);
         }
 
         .tabs-container {
@@ -73,14 +73,12 @@
             background-color: rgba(0, 245, 212, 0.15);
             color: var(--success-green);
             border: 1px solid rgba(0, 245, 212, 0.3);
-            box-shadow: 0 0 10px rgba(0, 245, 212, 0.2);
         }
 
         .tab-btn.active-tab-manual {
-            background-color: rgba(255, 51, 68, 0.15);
+            background-color: rgba(255, 34, 68, 0.15);
             color: var(--danger-red);
-            border: 1px solid rgba(255, 51, 68, 0.3);
-            box-shadow: 0 0 10px rgba(255, 51, 68, 0.2);
+            border: 1px solid rgba(255, 34, 68, 0.3);
         }
 
         .sidebar-left { width: 340px; min-width: 340px; gap: 8px; }
@@ -101,7 +99,7 @@
 
         input[type="text"]:focus, input[type="number"]:focus, textarea:focus {
             border-color: var(--accent-glow);
-            box-shadow: 0 0 12px rgba(182, 36, 255, 0.3);
+            box-shadow: 0 0 12px rgba(182, 36, 255, 0.4);
         }
 
         textarea { resize: none; height: 110px; font-size: 0.85rem; line-height: 1.5; }
@@ -118,8 +116,8 @@
         button { font-weight: 800; text-transform: uppercase; font-size: 0.8rem; padding: 14px; border-radius: 10px; cursor: pointer; transition: all 0.2s ease; border: none; letter-spacing: 0.5px; }
         .btn-save { background: var(--cyber-gradient); color: #fff; box-shadow: var(--neon-shadow); }
         .btn-save:hover { filter: brightness(1.2); transform: translateY(-1px); box-shadow: 0 0 25px rgba(182, 36, 255, 0.7); }
-        .btn-reset { background-color: rgba(255, 51, 68, 0.1); border: 2px solid var(--danger-red); color: var(--danger-red); }
-        .btn-reset:hover { background-color: var(--danger-red); color: #fff; box-shadow: 0 0 15px rgba(255, 51, 68, 0.4); }
+        .btn-reset { background-color: rgba(255, 34, 68, 0.05); border: 2px solid var(--danger-red); color: var(--danger-red); }
+        .btn-reset:hover { background-color: var(--danger-red); color: #fff; box-shadow: 0 0 15px rgba(255, 34, 68, 0.4); }
         .btn-action { background-color: transparent; border: 2px solid var(--border-card); color: var(--text-main); }
         .btn-action:hover { border-color: var(--accent-glow); background-color: rgba(182, 36, 255, 0.08); }
 
@@ -161,16 +159,32 @@
             font-size: 1.75rem; color: #fff; letter-spacing: 2px; text-shadow: 0 0 15px var(--accent-glow), 0 0 30px var(--accent-hover);
         }
 
-        .arena-wrapper { flex: 1; background-color: rgba(0,0,0,0.5); border: 2px solid var(--border-panel); border-radius: 16px; padding: 24px; display: flex; flex-direction: column; overflow-y: auto; box-shadow: inset 0 4px 40px rgba(0,0,0,0.9); }
+        .arena-wrapper { flex: 1; background-color: rgba(0,0,0,0.5); border: 2px solid var(--border-panel); border-radius: 16px; padding: 24px; display: flex; flex-direction: column; overflow: hidden; box-shadow: inset 0 4px 40px rgba(0,0,0,0.9); position: relative;}
         .arena-title { text-align: center; font-size: 0.9rem; text-transform: uppercase; color: var(--text-muted); font-weight: 800; letter-spacing: 4px; margin-bottom: 20px; flex-shrink: 0; }
         
-        .arena { flex: 1; display: flex; flex-direction: column; gap: 10px; padding-bottom: 10px; }
+        .arena { flex: 1; display: flex; flex-direction: column; gap: 10px; padding-bottom: 10px; overflow-y: auto;}
 
         .p-card {
             background-color: var(--bg-panel); border: 2px solid var(--border-card); padding: 14px 20px; border-radius: 10px; text-align: left; display: flex; align-items: center; justify-content: flex-start; font-size: 1rem; font-weight: 700; color: var(--text-main); word-break: break-all; transition: all 0.2s ease; width: 100%; box-sizing: border-box;
         }
         .p-card.round-disqualified-cell {
             background-color: rgba(20, 12, 36, 0.4) !important; border-color: rgba(61, 39, 108, 0.2) !important; color: var(--text-muted) !important; text-decoration: line-through !important; opacity: 0.4 !important; box-shadow: none !important;
+        }
+
+        /* Główny kontener na zaawansowany silnik rysujący płótno */
+        #canvas-display-box {
+            display: none;
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 50px;
+            left: 0;
+            z-index: 2;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
         }
 
         .sidebar-right { width: 340px; min-width: 340px; display: flex; flex-direction: column; }
@@ -188,112 +202,7 @@
         .tr-verified td { color: #fff !important; }
         .tr-disqualified td { color: var(--danger-red) !important; text-decoration: line-through; opacity: 0.4; }
 
-        /* ======================== SEKCJA KONCEPTU Graficznego 3D REEL (Phaser-style) ======================== */
-        #tickers-container { 
-            display: none; 
-            justify-content: center; 
-            align-items: center; 
-            gap: 20px; 
-            margin-bottom: 20px; 
-            width: 100%;
-            flex-wrap: wrap;
-            padding: 20px 0;
-        }
-
-        /* Pojedyncza Kapsuła 3D Walca */
-        .ticker-wrapper {
-            position: relative; 
-            width: 220px; 
-            height: 320px; 
-            background: rgba(0,0,0,0.8); 
-            border: 3px solid var(--border-card); 
-            border-radius: 20px; 
-            /* Włączenie perspektywy 3D dla wnętrza kapsuły */
-            perspective: 1200px; 
-            overflow: hidden; 
-            box-shadow: 0 15px 35px rgba(0,0,0,0.8), inset 0 0 30px rgba(182, 36, 255, 0.2); 
-            flex-shrink: 0;
-        }
-
-        /* Celownik / Linia wygranej */
-        .ticker-pointer {
-            position: absolute; 
-            top: 50%; 
-            left: 0;
-            right: 0;
-            height: 60px; 
-            border-top: 2px solid #fff;
-            border-bottom: 2px solid #fff;
-            box-shadow: 0 0 15px #fff, inset 0 0 10px rgba(182, 36, 255, 0.3); 
-            z-index: 10; 
-            transform: translateY(-50%); 
-            pointer-events: none; 
-            background-color: rgba(182, 36, 255, 0.02);
-        }
-
-        /* Walec 3D obracający się w przestrzeni */
-        .ticker-ribbon { 
-            position: absolute; 
-            left: 10px;
-            top: 50%;
-            width: 200px; 
-            height: 50px;
-            transform-style: preserve-3d; 
-            will-change: transform;
-            transform: translateY(-50%) rotateX(0deg);
-        }
-
-        /* Każdy pojedynczy klocek wygięty w okręgu walca */
-        .ticker-item {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            font-weight: 800; 
-            font-size: 0.95rem; 
-            color: var(--text-main); 
-            box-sizing: border-box; 
-            background: linear-gradient(180deg, #18092d 0%, #11071e 100%); 
-            border: 1px solid rgba(182, 36, 255, 0.15);
-            border-radius: 8px;
-            padding: 8px; 
-            text-align: center; 
-            word-break: break-all; 
-            backface-visibility: hidden; /* Ukrywa klocki odwrócone tyłem do kamery */
-        }
-
-        /* Błysk i pulsacja wygranego kafelka 3D */
-        .winning-cell-active { 
-            animation: cyberNeonPulse 1s infinite ease-in-out !important; 
-            color: #fff !important; 
-            font-weight: 900; 
-            border-color: #fff !important;
-            text-shadow: 0 0 10px #fff, 0 0 20px var(--accent-glow) !important; 
-        }
-
-        @keyframes cyberNeonPulse {
-            0% { background: linear-gradient(180deg, #3d1b66 0%, #11071e 100%); }
-            50% { background: linear-gradient(180deg, #5b239c 0%, #170d2b 100%); }
-            100% { background: linear-gradient(180deg, #3d1b66 0%, #11071e 100%); }
-        }
-
-        /* Efekty cieniowania walca wewnątrz kapsuły */
-        .ticker-wrapper::before {
-            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 50px;
-            background: linear-gradient(to bottom, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0) 100%); z-index: 5; pointer-events: none;
-        }
-        .ticker-wrapper::after {
-            content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 50px;
-            background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0) 100%); z-index: 5; pointer-events: none;
-        }
-
-        /* ======================================================================================= */
-
-        .verify-panel { display: none; background: #110921; border: 2px solid var(--border-card); border-radius: 16px; padding: 24px; margin-bottom: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.6), 0 0 20px rgba(182, 36, 255, 0.1); }
+        .verify-panel { display: none; background: #110921; border: 2px solid var(--border-card); border-radius: 16px; padding: 24px; margin-bottom: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.6), 0 0 20px rgba(182, 36, 255, 0.1); position: relative; z-index: 10;}
         .verify-group-header-row { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; border-bottom: 2px solid var(--border-panel); padding-bottom: 14px; margin-bottom: 20px; }
         .verify-group-title { font-size: 1.2rem; font-weight: 800; text-transform: uppercase; color: #fff; margin: 0; letter-spacing: 1px; }
         
@@ -328,7 +237,7 @@
         .btn-group-submit:hover { filter: brightness(1.2); box-shadow: 0 0 25px rgba(182, 36, 255, 0.7); }
 
         .btn-center-reroll-trigger {
-            display: none; width: 100%; padding: 18px; font-size: 1.05rem; font-weight: 800; background: var(--cyber-gradient); color: #fff; border-radius: 10px; box-shadow: var(--neon-shadow); margin-top: 15px; flex-shrink: 0; letter-spacing: 1px;
+            display: none; width: 100%; padding: 18px; font-size: 1.05rem; font-weight: 800; background: var(--cyber-gradient); color: #fff; border-radius: 10px; box-shadow: var(--neon-shadow); margin-top: 15px; flex-shrink: 0; letter-spacing: 1px; position: relative; z-index: 5;
         }
         .btn-center-reroll-trigger:hover { filter: brightness(1.2); box-shadow: 0 0 25px rgba(182, 36, 255, 0.7); }
     </style>
@@ -401,7 +310,9 @@
         <div class="arena-wrapper">
             <div class="arena-title">arena</div>
 
-            <div id="tickers-container"></div>
+            <div id="canvas-display-box">
+                <canvas id="reelCanvas"></canvas>
+            </div>
 
             <div class="verify-panel" id="verify-panel">
                 <div class="verify-group-header-row">
@@ -478,12 +389,16 @@
         const mainDrawBtn = document.getElementById('main-draw-btn');
         const centerRerollBtn = document.getElementById('center-reroll-btn');
         
-        const tickersContainer = document.getElementById('tickers-container');
+        const canvasDisplayBox = document.getElementById('canvas-display-box');
+        const reelCanvas = document.getElementById('reelCanvas');
+        const ctx = reelCanvas.getContext('2d');
+
         const verifyPanel = document.getElementById('verify-panel');
         const verifyRowsContainer = document.getElementById('verify-rows-container');
         const verifyPanelTitleText = document.getElementById('verify-panel-title-text');
 
-        let animationFrameIds = [];
+        let isCanvasLoopRunning = false;
+        let canvasReelsData = [];
 
         function triggerReset() {
             socket.emit('reset');
@@ -733,6 +648,8 @@
             localParticipants = []; 
             roundExcludedNicks = []; 
             currentWinnersPicks = [];
+            isCanvasLoopRunning = false;
+            canvasDisplayBox.style.display = 'none';
             if (autoVerificationInterval) clearInterval(autoVerificationInterval);
             keywordInput.value = "";
             manualNamesInput.value = "";
@@ -740,8 +657,6 @@
             passwordDisplay.innerText = "-";
             rewardHeaderDisplay.innerText = "0 TC";
             statusDisplay.innerText = "Zresetowano system."; 
-            tickersContainer.style.display = 'none';
-            tickersContainer.innerHTML = "";
             verifyPanel.style.display = 'none';
             grid.style.display = 'flex';
             countDisplay.innerText = "0";
@@ -782,17 +697,14 @@
             startMultiCinematicDraw();
         }
 
-        // ======================== AKTUALIZACJA: LOGIKA KONCEPTU 3D REEL (Phaser-style) ========================
+        // ======================== PRAWDZIWY HIT: SILNIK GRAFICZNY CANVAS 3D CYLINDER CLONE ========================
         function startMultiCinematicDraw() {
             let poolToDraw = localParticipants.filter(p => !permanentlyExcludedNicks.some(n => n.toLowerCase() === p.toLowerCase()));
-            
             if (poolToDraw.length === 0) {
                 alert("Brak dostępnych graczy na arenie!");
                 return;
             }
 
-            animationFrameIds.forEach(id => cancelAnimationFrame(id));
-            animationFrameIds = [];
             if (autoVerificationInterval) clearInterval(autoVerificationInterval);
 
             grid.style.display = 'none';
@@ -811,10 +723,6 @@
             }
 
             const drawCount = parseInt(participantSlider.value) || 1;
-            tickersContainer.innerHTML = "";
-            tickersContainer.style.display = 'flex';
-            statusDisplay.innerText = `Trwa masowe losowanie (${drawCount} konceptów bębnów)...`;
-
             currentWinnersPicks = [];
 
             for (let i = 0; i < drawCount; i++) {
@@ -834,116 +742,206 @@
                 });
             }
 
-            currentWinnersPicks.forEach((pick, i) => {
-                const winnerNick = pick.nick;
+            // Inicjalizacja płótna (Canvas) i dostosowanie rozdzielczości
+            canvasDisplayBox.style.display = 'block';
+            const rect = canvasDisplayBox.getBoundingClientRect();
+            reelCanvas.width = rect.width;
+            reelCanvas.height = rect.height;
 
-                const tickerWrapper = document.createElement('div');
-                tickerWrapper.className = 'ticker-wrapper';
-                tickerWrapper.innerHTML = `
-                    <div class="ticker-pointer"></div>
-                    <div id="ribbon-${i}" class="ticker-ribbon"></div>
-                `;
-                tickersContainer.appendChild(tickerWrapper);
+            statusDisplay.innerText = `Uruchomiono maszynę losującą (Płótno 3D Matrix)...`;
 
-                const ribbon = document.getElementById(`ribbon-${i}`);
-                ribbon.innerHTML = "";
+            const drawDurationSeconds = parseFloat(timeSlider.value) || 20;
+            const startTime = performance.now();
 
-                // Definiujemy stałą liczbę kafelków w pierścieniu 3D (np. 16 klocków tworzy pełny walec)
-                const faceCount = 16; 
-                const radius = 130; // Promień od środka osi obrotu walca
-                
-                let finalTargetDegree = 0;
-                let finalWinnerElementId = `winning-cell-${i}`;
+            // Budowanie struktury danych dla każdego niezależnego cylindra graficznego
+            canvasReelsData = currentWinnersPicks.map((pick, i) => {
+                const totalFaces = 20; // Liczba krawędzi walca dająca piękny efekt obłości
+                let facesNames = [];
+                const targetStopIdx = 14; // Pozycja zatrzymania zwycięzcy na tarczy
 
-                // Budujemy pulę imion do ułożenia na walcu
-                let reelNames = [];
-                
-                if (poolToDraw.length < 5) {
-                    // Dla małej liczby osób: losowo doklonowujemy pulę
-                    const targetWinnerFaceIndex = 11; // Zwycięzca wyląduje na 11-stym klocku
-                    for (let j = 0; j < faceCount; j++) {
-                        if (j === targetWinnerFaceIndex) {
-                            reelNames.push({ name: winnerNick, isWinner: true });
-                        } else {
-                            let randNick = poolToDraw[Math.floor(Math.random() * poolToDraw.length)];
-                            reelNames.push({ name: randNick, isWinner: false });
-                        }
-                    }
-                    // Wyliczamy kąt obrotu potrzebny do ustawienia klocka na wprost
-                    finalTargetDegree = -(targetWinnerFaceIndex * (360 / faceCount));
-                } else {
-                    // Dla dużej liczby osób: układamy czystą listę w pętli
-                    let nameIdx = 0;
-                    for (let j = 0; j < faceCount; j++) {
-                        let currentNick = poolToDraw[nameIdx % poolToDraw.length];
-                        if (currentNick === winnerNick && j > 8 && j < 14) {
-                            // Jeśli trafimy na zwycięzcę w strefie stopu, oznaczamy go
-                            reelNames.push({ name: currentNick, isWinner: true });
-                        } else {
-                            reelNames.push({ name: currentNick, isWinner: false });
-                        }
-                        nameIdx++;
-                    }
-
-                    // Upewniamy się, że przynajmniej jeden klocek jest oznaczony jako cel wygranej
-                    let targetWinnerFaceIndex = reelNames.findIndex(item => item.isWinner);
-                    if (targetWinnerFaceIndex === -1) {
-                        targetWinnerFaceIndex = 10 % reelNames.length;
-                        reelNames[targetWinnerFaceIndex] = { name: winnerNick, isWinner: true };
-                    }
-                    finalTargetDegree = -(targetWinnerFaceIndex * (360 / faceCount));
-                }
-
-                // Generowanie elementów w trójwymiarowym pierścieniu CSS
-                reelNames.forEach((item, idx) => {
-                    const el = document.createElement('div');
-                    el.className = 'ticker-item';
-                    el.innerText = item.name;
-                    
-                    if (item.isWinner) {
-                        el.id = finalWinnerElementId;
-                    }
-
-                    // Matematyka 3D: obracamy każdy kafelek o odpowiedni kąt i odsuwamy od środka o promień
-                    const currentFaceAngle = idx * (360 / faceCount);
-                    el.style.transform = `rotateX(${currentFaceAngle}deg) translateZ(${radius}px)`;
-                    
-                    ribbon.appendChild(el);
-                });
-
-                const drawDurationSeconds = parseFloat(timeSlider.value) || 20;
-                let startTime = null;
-                
-                // Dodajemy losowe pełne obroty, żeby każdy bęben hamował z innej pozycji
-                const extraSpins = 3 * 360; 
-                const totalDegreesToRotate = finalTargetDegree - extraSpins;
-
-                function animateSingle3DReel(now) {
-                    if (!startTime) startTime = now;
-                    const progress = (now - startTime) / (drawDurationSeconds * 1000);
-                    
-                    if (progress >= 1) {
-                        // Koniec animacji: Ustawienie na idealnym kącie
-                        ribbon.style.transform = `translateY(-50%) rotateX(${finalTargetDegree}deg)`;
-                        const winCell = document.getElementById(finalWinnerElementId);
-                        if (winCell) winCell.classList.add('winning-cell-active');
+                for (let j = 0; j < totalFaces; j++) {
+                    if (j === targetStopIdx) {
+                        facesNames.push(pick.nick);
                     } else {
-                        // Funkcja hamowania bębna (Ease-Out Quintic)
-                        const ease = 1 - Math.pow(1 - progress, 5);
-                        const currentRotation = ease * totalDegreesToRotate;
-                        
-                        ribbon.style.transform = `translateY(-50%) rotateX(${currentRotation}deg)`;
-                        animationFrameIds.push(requestAnimationFrame(animateSingle3DReel));
+                        let randNick = poolToDraw[Math.floor(Math.random() * poolToDraw.length)] || "...";
+                        facesNames.push(randNick);
                     }
                 }
-                animationFrameIds.push(requestAnimationFrame(animateSingle3DReel));
+
+                const faceAngle = 360 / totalFaces;
+                const finalAngle = -(targetStopIdx * faceAngle);
+                const baseSpins = (3 + i) * 360; // Niesymetryczna prędkość obrotowa bębnów
+                const totalRotationNeeded = finalAngle - baseSpins;
+
+                return {
+                    winnerNick: pick.nick,
+                    faces: facesNames,
+                    faceAngle: faceAngle,
+                    finalAngle: finalAngle,
+                    totalRotationNeeded: totalRotationNeeded,
+                    currentRotation: 0,
+                    isFinished: false
+                };
             });
 
-            const totalDurationMs = (parseFloat(timeSlider.value) || 20) * 1000;
-            setTimeout(() => {
-                statusDisplay.innerText = "Losowanie zakończone. Maszyna wytypowała zwycięzców.";
-                setupGroupVerificationPanel();
-            }, totalDurationMs + 200);
+            isCanvasLoopRunning = true;
+
+            // Główna pętla renderująca klatki na sekundę (60 FPS Matrix Animation)
+            function render3DCanvasLoop() {
+                if (!isCanvasLoopRunning) return;
+
+                // Czyszczenie tła głęboką cyberpunkową czernią
+                ctx.fillStyle = '#06030c';
+                ctx.fillRect(0, 0, reelCanvas.width, reelCanvas.height);
+
+                const now = performance.now();
+                const progress = Math.min((now - startTime) / (drawDurationSeconds * 1000), 1);
+                
+                // Krzywa hamowania (Quintic Ease Out) dająca luksusowy feeling spowolnienia slotów
+                const ease = 1 - Math.pow(1 - progress, 5);
+
+                const reelWidth = 240;
+                const reelHeight = 340;
+                const gap = 30;
+                
+                const totalWidth = (canvasReelsData.length * reelWidth) + ((canvasReelsData.length - 1) * gap);
+                let startX = (reelCanvas.width - totalWidth) / 2;
+                const centerY = reelCanvas.height / 2;
+
+                canvasReelsData.forEach((reel, idx) => {
+                    reel.currentRotation = ease * reel.totalRotationNeeded;
+                    if (progress >= 1) reel.isFinished = true;
+
+                    const rx = startX + (idx * (reelWidth + gap));
+                    const ry = centerY - (reelHeight / 2);
+
+                    // --- 1. RYSOWANIE FUTURYSTYCZNEJ KAPSUŁY TURNIEJOWEJ (Mroczny szklany klon) ---
+                    ctx.save();
+                    ctx.strokeStyle = reel.isFinished ? '#00f5d4' : '#9e1be0';
+                    ctx.lineWidth = 4;
+                    ctx.shadowColor = reel.isFinished ? '#00f5d4' : '#b624ff';
+                    ctx.shadowBlur = reel.isFinished ? 25 : 15;
+                    
+                    // Zaokrąglony prostokąt kapsuły slotu
+                    ctx.beginPath();
+                    ctx.roundRect(rx, ry, reelWidth, reelHeight, 24);
+                    ctx.stroke();
+                    ctx.restore();
+
+                    // Przycięcie rysowania klocków do wnętrza szklanej kapsuły
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.roundRect(rx, ry, reelWidth, reelHeight, 24);
+                    ctx.clip();
+
+                    ctx.fillStyle = '#0f0720';
+                    ctx.fillRect(rx, ry, reelWidth, reelHeight);
+
+                    // --- 2. ZAOWANSOWANA MATEMATYKA RYSOWANIA WALCA TRÓJWYMIAROWEGO (Cylinder 3D Pro) ---
+                    const radius = 140; // Promień wewnętrzny osi walca
+                    
+                    reel.faces.forEach((name, fIdx) => {
+                        const angleDeg = (fIdx * reel.faceAngle) + reel.currentRotation;
+                        const angleRad = (angleDeg * Math.PI) / 180;
+
+                        // Rzutowanie współrzędnych sin/cos tworzących złudzenie optyczne obracającego się bębna
+                        const cosX = Math.cos(angleRad);
+                        const sinY = Math.sin(angleRad);
+
+                        // Skalowanie klocka i przezroczystości na podstawie jego pozycji głębi (Z-axis)
+                        if (cosX > 0) { // Rysujemy tylko klocki skierowane przodem do krupiera
+                            const itemY = (reelCanvas.height / 2) + (sinY * radius);
+                            const alpha = Math.max(0, cosX); // Im dalej w głąb tym ciemniejszy
+
+                            ctx.save();
+                            ctx.globalAlpha = alpha;
+
+                            // Rysowanie kafelka wewnątrz walca
+                            const cardH = 44;
+                            const cardW = reelWidth - 30;
+                            const cardX = rx + 15;
+                            const cardY = itemY - (cardH / 2);
+
+                            // Gradient tła kafelka imitujący światłocień
+                            const tileGrad = ctx.createLinearGradient(cardX, cardY, cardX + cardW, cardY);
+                            tileGrad.addColorStop(0, '#18092d');
+                            tileGrad.addColorStop(0.5, '#2a0f4d');
+                            tileGrad.addColorStop(1, '#18092d');
+                            ctx.fillStyle = tileGrad;
+                            
+                            ctx.strokeStyle = 'rgba(182, 36, 255, 0.2)';
+                            ctx.lineWidth = 1;
+                            
+                            ctx.beginPath();
+                            ctx.roundRect(cardX, cardY, cardW, cardH, 8);
+                            ctx.fill();
+                            ctx.stroke();
+
+                            // Rysowanie tekstu nicku gracza
+                            ctx.fillStyle = '#f5f2fa';
+                            ctx.font = 'bold 15px Segoe UI, sans-serif';
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'middle';
+                            ctx.fillText(name, cardX + (cardW / 2), cardY + (cardH / 2));
+
+                            ctx.restore();
+                        }
+                    });
+
+                    // --- 3. SKALOWANIE GRADIENTU MROKU (Zanikanie na krawędziach kapsuły) ---
+                    const edgeGradTop = ctx.createLinearGradient(rx, ry, rx, ry + 70);
+                    edgeGradTop.addColorStop(0, '#06030c');
+                    edgeGradTop.addColorStop(1, 'rgba(6, 3, 12, 0)');
+                    ctx.fillStyle = edgeGradTop;
+                    ctx.fillRect(rx, ry, reelWidth, 75);
+
+                    const edgeGradBot = ctx.createLinearGradient(rx, ry + reelHeight, rx, ry + reelHeight - 70);
+                    edgeGradBot.addColorStop(0, '#06030c');
+                    edgeGradBot.addColorStop(1, 'rgba(6, 3, 12, 0)');
+                    ctx.fillStyle = edgeGradBot;
+                    ctx.fillRect(rx, ry + reelHeight - 75, reelWidth, 75);
+
+                    ctx.restore(); // Koniec clipowania
+
+                    // --- 4. RYSOWANIE STAŁEGO CELOWNIKA WYGRANEJ (Laser Cyan Frame) ---
+                    ctx.save();
+                    ctx.strokeStyle = reel.isFinished ? '#fff' : '#00f5d4';
+                    ctx.lineWidth = 3;
+                    ctx.shadowColor = '#00f5d4';
+                    ctx.shadowBlur = reel.isFinished ? 20 : 8;
+
+                    const ptrH = 52;
+                    const ptrY = centerY - (ptrH / 2);
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(rx - 4, ptrY);
+                    ctx.lineTo(rx + reelWidth + 4, ptrY);
+                    ctx.moveTo(rx - 4, ptrY + ptrH);
+                    ctx.lineTo(rx + reelWidth + 4, ptrY + ptrH);
+                    ctx.stroke();
+
+                    // Rozbłysk podświetlenia środka przy wygranej
+                    if (reel.isFinished) {
+                        ctx.fillStyle = 'rgba(0, 245, 212, 0.04)';
+                        ctx.fillRect(rx, ptrY, reelWidth, ptrH);
+                    }
+                    ctx.restore();
+                });
+
+                if (progress < 1) {
+                    requestAnimationFrame(render3DCanvasLoop);
+                } else {
+                    // Maszyna zakończyła bieg
+                    setTimeout(() => {
+                        isCanvasLoopRunning = false;
+                        canvasDisplayBox.style.display = 'none';
+                        statusDisplay.innerText = "Losowanie ukończone. Wyniki przesłane do paneli weryfikacji.";
+                        setupGroupVerificationPanel();
+                    }, 1000);
+                }
+            }
+
+            requestAnimationFrame(render3DCanvasLoop);
         }
         // =====================================================================================
 
@@ -1073,8 +1071,6 @@
 
             currentWinnersPicks = [];
             verifyPanel.style.display = 'none';
-            tickersContainer.style.display = 'none';
-            tickersContainer.innerHTML = "";
             grid.style.display = 'flex';
             
             statusDisplay.innerText = "Zapisano zbiorcze decyzje losowania.";
