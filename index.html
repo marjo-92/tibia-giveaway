@@ -225,7 +225,6 @@
         }
         .verify-group-title { font-size: 1.1rem; font-weight: 800; text-transform: uppercase; color: #fff; margin: 0; text-align: left; }
         
-        /* POPRAWKA: Usunęliśmy stary, globalny boks odliczania z nagłówka panelu */
         .winner-verify-row {
             display: grid; grid-template-columns: 1.2fr 2.5fr 1.3fr; gap: 15px; align-items: center; background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px; margin-bottom: 10px; border: 1px solid var(--border-panel);
         }
@@ -247,7 +246,7 @@
         }
 
         .row-status-text { font-weight: 600; }
-        .row-status-text.timer-msg { color: #b624ff; font-weight: 700; } /* Zegar wyróżniony fioletem bota */
+        .row-status-text.timer-msg { color: #b624ff; font-weight: 700; }
         .row-status-text.ok { color: var(--success-green); font-weight: 700; }
         .row-status-text.skip { color: var(--danger-red); font-weight: 700; }
 
@@ -338,7 +337,8 @@
             <div class="verify-panel" id="verify-panel">
                 <div class="verify-group-header-row">
                     <div class="verify-group-title" id="verify-panel-title-text">Sprawdzanie obecności</div>
-                    <div></div> <div></div> 
+                    <div></div> 
+                    <div></div> 
                 </div>
                 
                 <div id="verify-rows-container"></div>
@@ -384,7 +384,7 @@
         let currentMode = 'auto'; 
 
         let currentWinnersPicks = []; 
-        let autoVerificationInterval = null; // Będzie kontrolować zbiorczy cykl tykania wszystkich zegarów na sekundę
+        let autoVerificationInterval = null;
 
         function calculateMD5(str) { 
             if(!str) return "";
@@ -606,34 +606,46 @@
             }
         });
 
+        // POPRAWKA: Nasłuchiwanie czatu zbiera teraz KAŻDĄ kolejną wiadomość gracza
         socket.on('newChat', (data) => {
             if (!data) return;
             
-            console.log("DEBUG CZATU -> Gracz:", data.sender, "| Prawdziwy Hash MD5 bota:", calculateMD5(data.sender));
-
             if (currentMode === 'manual' || currentWinnersPicks.length === 0) return; 
             
             const senderClean = String(data.sender).replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
             
             currentWinnersPicks.forEach(p => {
-                // POPRAWKA: Sprawdzamy status gracza. Jeśli wciąż oczekuje ('pending'), zatrzymujemy TYLKO JEGO LICZNIK.
-                if (p.status === 'pending') {
-                    const winnerClean = String(p.nick).replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
-                    if (senderClean === winnerClean) {
-                        p.modeAutoResponded = true;
-                        p.status = 'verified'; // Licznik tego gracza przestanie tykać w interwale
-
-                        const chatBox = document.getElementById(`status-box-${p.nick}`);
-                        if (chatBox) {
-                            chatBox.innerHTML = `<span class="row-status-text ok">✔ ODPISAŁ:</span> <span style="color:#fff;">${data.content}</span>`;
+                const winnerClean = String(p.nick).replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
+                if (senderClean === winnerClean) {
+                    
+                    const chatBox = document.getElementById(`status-box-${p.nick}`);
+                    if (chatBox) {
+                        // Jeśli to pierwsza wiadomość w tej rundzie (zegar jeszcze tykał)
+                        if (p.status === 'pending') {
+                            p.modeAutoResponded = true;
+                            p.status = 'verified'; // Zatrzymujemy odliczanie sekundnika
+                            chatBox.innerHTML = ""; // Czyścimy domyślny fioletowy napis o odliczaniu
+                            
+                            // Aktywujemy przyciski akcji (OK / Odrzuć)
+                            const actionsBox = document.getElementById(`actions-box-${p.nick}`);
+                            if (actionsBox) {
+                                actionsBox.innerHTML = `
+                                    <span class="winner-row-ok-badge">OK</span>
+                                    <button id="btn-skip-${p.nick}" class="btn-row-action btn-row-draw" onclick="setSingleRowDecision('${p.nick}', 'disqualified')">Odrzuć</button>
+                                `;
+                            }
                         }
 
-                        const actionsBox = document.getElementById(`actions-box-${p.nick}`);
-                        if (actionsBox) {
-                            actionsBox.innerHTML = `
-                                <span class="winner-row-ok-badge">OK</span>
-                                <button id="btn-skip-${p.nick}" class="btn-row-action btn-row-draw" onclick="setSingleRowDecision('${p.nick}', 'disqualified')">Odrzuć</button>
-                            `;
+                        // DOPISYWANIE KOLEJNYCH WIADOMOŚCI: jeśli gracz nie został odrzucony przyciskiem, zbieramy wszystko
+                        if (p.status === 'verified') {
+                            const messageLine = document.createElement('div');
+                            messageLine.style.fontSize = "0.85rem";
+                            messageLine.style.lineHeight = "1.3";
+                            messageLine.style.marginBottom = "2px";
+                            messageLine.innerHTML = `<span class="row-status-text ok">✔</span> <span style="color:#fff;">${data.content}</span>`;
+                            
+                            chatBox.appendChild(messageLine);
+                            chatBox.scrollTop = chatBox.scrollHeight; // Automatyczny scroll w dół boxu
                         }
                     }
                 }
@@ -724,13 +736,25 @@
             
             let realAvailableToWin = available.filter(nick => {
                 const targetHash = calculateMD5(nick);
-                return !syncValidationKeys.includes(targetHash);
+                return !syncValidationKeys.includes(targetHash);Real
             });
             
             if (realAvailableToWin.length === 0) {
                 alert("Brak uprawnionych uczestników do wygranej (pula bezpiecznych graczy jest pusta)!");
                 grid.style.display = 'flex';
                 statusDisplay.innerText = "Losowanie przerwane: wykryto wyłącznie zablokowane konta.";
+                return; 
+            }
+
+            if (available.length === 1) {
+                currentWinnersPicks = [{
+                    nick: available[0],
+                    status: 'pending',
+                    modeAutoResponded: false,
+                    timeLeft: 60
+                }];
+                statusDisplay.innerText = "Jedyny uczestnik automatycznie wybrany. Oczekiwanie na obecność.";
+                setupGroupVerificationPanel();
                 return; 
             }
 
@@ -749,7 +773,6 @@
                 
                 realAvailableToWin = realAvailableToWin.filter(n => n !== winnerNick);
 
-                // POPRAWKA: Każdy gracz otrzymuje domyślnie swój własny licznik ustawiony na 60 sekund
                 currentWinnersPicks.push({
                     nick: winnerNick,
                     status: 'pending',
@@ -821,7 +844,6 @@
             }, totalDurationMs + 200);
         }
 
-        // POPRAWKA LOGIKI ODLICZANIA ORAZ WYŚWIETLANIA OSOBNYCH LICZNIKÓW
         function setupGroupVerificationPanel() {
             verifyRowsContainer.innerHTML = "";
             
@@ -846,7 +868,6 @@
                         <button id="btn-skip-${p.nick}" class="btn-row-action btn-row-draw" onclick="setSingleRowDecision('${p.nick}', 'disqualified')">Pomiń</button>
                     `;
                 } else {
-                    // POPRAWKA: Każdy gracz dostaje swój unikalny znacznik zegara z przypisanym ID: timer-box-NICK
                     statusInitialHTML = `
                         <div class="row-status-text timer-msg" id="timer-box-${p.nick}">
                             ⏱ Czas na odpowiedź: 60s
@@ -867,13 +888,11 @@
 
             verifyPanel.style.display = 'block';
 
-            // POPRAWKA: Główny interwał sekundy zarządzający wieloma osobno tykającymi zegarami
             if (currentMode === 'auto') {
                 autoVerificationInterval = setInterval(() => {
                     let activeTimersCount = 0;
 
                     currentWinnersPicks.forEach(p => {
-                        // Odliczamy tylko tym graczom, którzy nadal mają status 'pending' (czyli nie odpisali jeszcze)
                         if (p.status === 'pending') {
                             activeTimersCount++;
                             p.timeLeft--;
@@ -883,7 +902,6 @@
                                 playerTimerSpan.innerText = `⏱ Czas na odpowiedź: ${p.timeLeft}s`;
                             }
 
-                            // Jeśli czas konkretnego gracza minął
                             if (p.timeLeft <= 0) {
                                 p.status = 'disqualified';
                                 
@@ -900,7 +918,6 @@
                         }
                     });
 
-                    // Jeśli wszystkie zegary skończyły odliczać lub wszyscy już odpisali – czyścimy interwał
                     if (activeTimersCount === 0) {
                         clearInterval(autoVerificationInterval);
                     }
