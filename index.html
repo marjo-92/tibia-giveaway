@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>FERULOSOWANIE by Mar jo</title>
+    <title>FERULOSOWANIE by Marjo</title>
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/spark-md5/3.0.2/spark-md5.min.js"></script>
     <style>
@@ -130,6 +130,7 @@
             display: flex;
             flex-direction: column;
             gap: 8px;
+            margin-bottom: auto; /* Popycha panel do góry tworząc zbalansowany dół */
         }
         
         .excluded-list-container {
@@ -141,10 +142,6 @@
         }
         
         .btn-remove-exclude { background: transparent; color: var(--danger-red); font-size: 0.85rem; cursor: pointer; }
-
-        .sidebar-left-status-box {
-            margin-top: auto; padding: 14px; background-color: rgba(182, 36, 255, 0.02); border: 2px solid var(--border-panel); border-radius: 12px; font-size: 0.85rem; line-height: 1.5;
-        }
 
         .main-content { flex: 1; display: flex; flex-direction: column; gap: 20px; overflow: hidden; }
         
@@ -159,7 +156,6 @@
             font-size: 1.75rem; color: #fff; letter-spacing: 2px; text-shadow: 0 0 15px var(--accent-glow), 0 0 30px var(--accent-hover);
         }
 
-        /* POPRAWKA: Wrapper areny pozwala teraz na płynne przewijanie całej zawartości pionowo */
         .arena-wrapper { 
             flex: 1; 
             background-color: rgba(0,0,0,0.5); 
@@ -183,7 +179,6 @@
             background-color: rgba(20, 12, 36, 0.4) !important; border-color: rgba(61, 39, 108, 0.2) !important; color: var(--text-muted) !important; text-decoration: line-through !important; opacity: 0.4 !important; box-shadow: none !important;
         }
 
-        /* POPRAWKA: Okno wyświetlania płótna dopasowuje wysokość dynamicznie w zależności od liczby rzędów bębnów */
         #canvas-display-box {
             display: none;
             width: 100%;
@@ -304,11 +299,6 @@
             </div>
             <div class="excluded-list-container" id="excluded-list-container"></div>
         </div>
-
-        <div class="sidebar-left-status-box">
-            <span class="status-lbl">Status systemowy:</span><br>
-            <span id="status-display" style="color: #fff; font-weight: 700;">Oczekiwanie</span>
-        </div>
     </div>
 
     <div class="main-content">
@@ -387,7 +377,6 @@
         const countDisplay = document.getElementById('count-display');
         const passwordDisplay = document.getElementById('password-display');
         const passwordTitleLbl = document.getElementById('password-title-lbl');
-        const statusDisplay = document.getElementById('status-display');
         const rewardHeaderDisplay = document.getElementById('reward-header-display');
         const winnersTableBody = document.getElementById('winners-table-body');
         const keywordInput = document.getElementById('keyword-input');
@@ -410,11 +399,6 @@
 
         let isCanvasLoopRunning = false;
         let canvasReelsData = [];
-
-        function triggerReset() {
-            socket.emit('reset');
-            triggerResetLogic();
-        }
 
         function switchTab(mode) {
             currentMode = mode;
@@ -471,7 +455,6 @@
                 localParticipants.forEach(p => renderParticipant(p));
                 passwordDisplay.innerText = "MANUALNY";
                 countDisplay.innerText = localParticipants.length;
-                statusDisplay.innerText = "Zapisano listę ręczną!";
                 updateRerollButtonVisibility();
             }
         }
@@ -650,7 +633,6 @@
                 const card = document.getElementById(elementId);
                 if (card) card.className = isPlayerExcluded(p) ? 'p-card round-disqualified-cell' : 'p-card';
             });
-            statusDisplay.innerText = "Zmieniono hasło losowania!";
             updateRerollButtonVisibility();
         });
         
@@ -667,7 +649,6 @@
             tcInput.value = "";
             passwordDisplay.innerText = "-";
             rewardHeaderDisplay.innerText = "0 TC";
-            statusDisplay.innerText = "Zresetowano system."; 
             verifyPanel.style.display = 'none';
             grid.style.display = 'flex';
             countDisplay.innerText = "0";
@@ -708,7 +689,6 @@
             startMultiCinematicDraw();
         }
 
-        // ======================== NOWA LOGIKA GRIDU 4xX Z ODPOWIEDZIALNYM WYMIAROWANIEM ========================
         function startMultiCinematicDraw() {
             let poolToDraw = localParticipants.filter(p => !permanentlyExcludedNicks.some(n => n.toLowerCase() === p.toLowerCase()));
             if (poolToDraw.length === 0) {
@@ -753,7 +733,6 @@
                 });
             }
 
-            // POPRAWKA: Dynamiczne obliczanie wymiarów siatki bębnów (Maksymalnie 4 w jednym rzędzie)
             const maxColumns = 4;
             const reelWidth = 220;
             const reelHeight = 320;
@@ -763,23 +742,17 @@
             const columns = Math.min(drawCount, maxColumns);
             const rows = Math.ceil(drawCount / maxColumns);
 
-            // Aktywacja kontenera płótna
             canvasDisplayBox.style.display = 'block';
             
-            // Dopasowanie wymiaru wewnętrznego canvasa do struktury siatki, aby okno było idealnie scrollowalne
-            const parentWidth = canvasDisplayBox.parentElement.clientWidth - 48; // uwzględnienie paddingów
+            const parentWidth = canvasDisplayBox.parentElement.clientWidth - 48; 
             reelCanvas.width = parentWidth;
             
-            // Wysokość jest obliczana dynamicznie z liczby rzędów + marginesy bezpieczeństwa
             const calculatedCanvasHeight = (rows * reelHeight) + ((rows - 1) * gapY) + 40;
             reelCanvas.height = calculatedCanvasHeight;
-
-            statusDisplay.innerText = `Trwa losowanie (${drawCount} bębnów w układzie siatki)...`;
 
             const drawDurationSeconds = parseFloat(timeSlider.value) || 20;
             const startTime = performance.now();
 
-            // Przypisywanie danych startowych dla każdego niezależnego cylindra
             canvasReelsData = currentWinnersPicks.map((pick, i) => {
                 const totalFaces = 16; 
                 let facesNames = [];
@@ -799,11 +772,9 @@
                 const baseSpins = (3 + i) * 360; 
                 const totalRotationNeeded = finalAngle - baseSpins;
 
-                // Obliczanie stałej pozycji X oraz Y w siatce gridu dla danego indeksu bębna
                 const rowIdx = Math.floor(i / maxColumns);
                 const colIdx = i % maxColumns;
 
-                // Obliczanie wyśrodkowania wewnątrz rzędu (przydatne gdy ostatni rząd ma mniej bębnów niż 4)
                 const currentGridItemsCount = (rowIdx === rows - 1) ? (drawCount - (rowIdx * maxColumns)) : columns;
                 const rowTotalWidth = (currentGridItemsCount * reelWidth) + ((currentGridItemsCount - 1) * gapX);
                 const startX = (reelCanvas.width - rowTotalWidth) / 2;
@@ -829,7 +800,6 @@
             function render3DCanvasLoop() {
                 if (!isCanvasLoopRunning) return;
 
-                // Czyszczenie i odświeżanie klatki tła
                 ctx.clearRect(0, 0, reelCanvas.width, reelCanvas.height);
 
                 const now = performance.now();
@@ -844,7 +814,6 @@
                     const ry = reel.y;
                     const centerY = ry + (reelHeight / 2);
 
-                    // --- 1. RENDERING NEONOWEJ KAPSUŁY SLOTU ---
                     ctx.save();
                     ctx.strokeStyle = reel.isFinished ? '#00f5d4' : '#9e1be0';
                     ctx.lineWidth = 4;
@@ -856,7 +825,6 @@
                     ctx.stroke();
                     ctx.restore();
 
-                    // Maskowanie i obcinanie do wnętrza kapsuły
                     ctx.save();
                     ctx.beginPath();
                     ctx.roundRect(rx, ry, reelWidth, reelHeight, 20);
@@ -865,7 +833,6 @@
                     ctx.fillStyle = '#0a0416';
                     ctx.fillRect(rx, ry, reelWidth, reelHeight);
 
-                    // --- 2. ZAOWANSOWANA MATEMATYKA WALCA 3D ---
                     const radius = 120; 
                     
                     reel.faces.forEach((name, fIdx) => {
@@ -911,7 +878,6 @@
                         }
                     });
 
-                    // Cieniowanie krawędzi (Zanikanie na krańcach kapsuły)
                     const edgeGradTop = ctx.createLinearGradient(rx, ry, rx, ry + 60);
                     edgeGradTop.addColorStop(0, '#06030c');
                     edgeGradTop.addColorStop(1, 'rgba(6, 3, 12, 0)');
@@ -926,7 +892,6 @@
 
                     ctx.restore(); 
 
-                    // --- 3. SKALOWALNY CELOWNIK LASEROWY ---
                     ctx.save();
                     ctx.strokeStyle = reel.isFinished ? '#fff' : '#00f5d4';
                     ctx.lineWidth = 3;
@@ -956,7 +921,6 @@
                     setTimeout(() => {
                         isCanvasLoopRunning = false;
                         canvasDisplayBox.style.display = 'none';
-                        statusDisplay.innerText = "Losowanie ukończone. Przejdź do paneli weryfikacji.";
                         setupGroupVerificationPanel();
                     }, 1200);
                 }
@@ -964,7 +928,6 @@
 
             requestAnimationFrame(render3DCanvasLoop);
         }
-        // =====================================================================================
 
         function setupGroupVerificationPanel() {
             verifyRowsContainer.innerHTML = "";
@@ -1009,8 +972,6 @@
             });
 
             verifyPanel.style.display = 'block';
-
-            // Po wygenerowaniu listy weryfikacji, automatycznie przewijamy widok areny na samą górę okna
             document.querySelector('.arena-wrapper').scrollTo({ top: 0, behavior: 'smooth' });
 
             if (currentMode === 'auto') {
@@ -1096,8 +1057,6 @@
             currentWinnersPicks = [];
             verifyPanel.style.display = 'none';
             grid.style.display = 'flex';
-            
-            statusDisplay.innerText = "Zapisano zbiorcze decyzje losowania.";
             updateRerollButtonVisibility();
         }
     </script>
