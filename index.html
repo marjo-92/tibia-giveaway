@@ -2,23 +2,24 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>FERULOSOWANIE - PREMIERE EDITION</title>
+    <title>FERULOSOWANIE - CYBERPUNK 3D REEL EDITION</title>
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/spark-md5/3.0.2/spark-md5.min.js"></script>
     <style>
         :root {
-            --bg-main: #0a0612;
-            --bg-panel: #130b24;
-            --bg-input: #1c1132;
+            --bg-main: #06030d;
+            --bg-panel: #110722;
+            --bg-input: #1a0b32;
             --accent-glow: #b624ff;
-            --accent-hover: #d26eff;
+            --accent-hover: #ff22b3;
             --text-main: #f5f2fa;
-            --text-muted: #9481b5;
-            --border-panel: #291a4a;
-            --border-card: #3d276c;
-            --danger-red: #ff3344;
+            --text-muted: #836ba8;
+            --border-panel: #2e1554;
+            --border-card: #451b82;
+            --danger-red: #ff2244;
             --success-green: #00f5d4;
-            --neon-shadow: 0 0 15px rgba(182, 36, 255, 0.4);
+            --neon-shadow: 0 0 20px rgba(182, 36, 255, 0.5), 0 0 40px rgba(182, 36, 255, 0.2);
+            --cyber-gradient: linear-gradient(135deg, #b624ff 0%, #ff22b3 100%);
         }
 
         body {
@@ -31,7 +32,7 @@
             height: 100vh;
             box-sizing: border-box;
             gap: 20px;
-            background-image: radial-gradient(circle at 50% 50%, #1a0f30 0%, #0a0612 100%);
+            background-image: radial-gradient(circle at 50% 50%, #17072d 0%, #05020a 100%);
         }
 
         .panel {
@@ -41,7 +42,7 @@
             padding: 24px;
             display: flex;
             flex-direction: column;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8), inset 0 0 20px rgba(182, 36, 255, 0.05);
+            box-shadow: 0 10px 50px rgba(0, 0, 0, 0.9), inset 0 0 20px rgba(182, 36, 255, 0.05);
         }
 
         .tabs-container {
@@ -76,10 +77,10 @@
         }
 
         .tab-btn.active-tab-manual {
-            background-color: rgba(255, 51, 68, 0.15);
+            background-color: rgba(255, 34, 68, 0.15);
             color: var(--danger-red);
-            border: 1px solid rgba(255, 51, 68, 0.3);
-            box-shadow: 0 0 10px rgba(255, 51, 68, 0.2);
+            border: 1px solid rgba(255, 34, 68, 0.3);
+            box-shadow: 0 0 10px rgba(255, 34, 68, 0.2);
         }
 
         .sidebar-left { width: 340px; min-width: 340px; gap: 8px; }
@@ -100,7 +101,7 @@
 
         input[type="text"]:focus, input[type="number"]:focus, textarea:focus {
             border-color: var(--accent-glow);
-            box-shadow: 0 0 10px rgba(182, 36, 255, 0.3);
+            box-shadow: 0 0 12px rgba(182, 36, 255, 0.4);
         }
 
         textarea { resize: none; height: 110px; font-size: 0.85rem; line-height: 1.5; }
@@ -110,22 +111,20 @@
         }
         input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%; background: var(--accent-glow); cursor: pointer; box-shadow: 0 0 10px var(--accent-glow);
-            transition: transform 0.1s;
         }
-        input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
 
         .btn-container-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 5px; }
 
         button { font-weight: 800; text-transform: uppercase; font-size: 0.8rem; padding: 14px; border-radius: 10px; cursor: pointer; transition: all 0.2s ease; border: none; letter-spacing: 0.5px; }
-        .btn-save { background-color: var(--accent-glow); color: #fff; box-shadow: var(--neon-shadow); }
-        .btn-save:hover { background-color: var(--accent-hover); transform: translateY(-1px); box-shadow: 0 0 20px rgba(182, 36, 255, 0.6); }
-        .btn-reset { background-color: rgba(255, 51, 68, 0.1); border: 2px solid var(--danger-red); color: var(--danger-red); }
-        .btn-reset:hover { background-color: var(--danger-red); color: #fff; box-shadow: 0 0 15px rgba(255, 51, 68, 0.4); }
+        .btn-save { background: var(--cyber-gradient); color: #fff; box-shadow: var(--neon-shadow); }
+        .btn-save:hover { filter: brightness(1.2); transform: translateY(-1px); box-shadow: 0 0 25px rgba(182, 36, 255, 0.7); }
+        .btn-reset { background-color: rgba(255, 34, 68, 0.05); border: 2px solid var(--danger-red); color: var(--danger-red); }
+        .btn-reset:hover { background-color: var(--danger-red); color: #fff; box-shadow: 0 0 15px rgba(255, 34, 68, 0.4); }
         .btn-action { background-color: transparent; border: 2px solid var(--border-card); color: var(--text-main); }
-        .btn-action:hover { border-color: var(--accent-glow); background-color: rgba(182, 36, 255, 0.08); color: #fff; }
+        .btn-action:hover { border-color: var(--accent-glow); background-color: rgba(182, 36, 255, 0.08); }
 
         .exclude-panel-box {
-            background-color: rgba(0, 0, 0, 0.3);
+            background-color: rgba(0, 0, 0, 0.4);
             border: 2px dashed var(--border-panel);
             border-radius: 10px;
             padding: 14px;
@@ -140,13 +139,13 @@
         }
         
         .excluded-list-item {
-            display: flex; justify-content: space-between; align-items: center; background-color: var(--bg-panel); padding: 8px 12px; border-radius: 6px; font-size: 0.8rem; font-weight: 700; border: 1px solid rgba(255,255,255,0.02);
+            display: flex; justify-content: space-between; align-items: center; background-color: var(--bg-panel); padding: 8px 12px; border-radius: 6px; font-size: 0.8rem; font-weight: 700;
         }
         
-        .btn-remove-exclude { background: transparent; color: var(--danger-red); font-size: 0.85rem; padding: 2px 6px; cursor: pointer; }
+        .btn-remove-exclude { background: transparent; color: var(--danger-red); font-size: 0.85rem; cursor: pointer; }
 
         .sidebar-left-status-box {
-            margin-top: auto; padding: 14px; background-color: rgba(182, 36, 255, 0.03); border: 2px solid var(--border-panel); border-radius: 12px; font-size: 0.85rem; line-height: 1.5; box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+            margin-top: auto; padding: 14px; background-color: rgba(182, 36, 255, 0.02); border: 2px solid var(--border-panel); border-radius: 12px; font-size: 0.85rem; line-height: 1.5;
         }
 
         .main-content { flex: 1; display: flex; flex-direction: column; gap: 20px; overflow: hidden; }
@@ -155,14 +154,14 @@
             background-color: var(--bg-panel); border: 2px solid var(--border-panel); padding: 18px 24px; border-radius: 16px; display: grid; grid-template-columns: 1fr 2fr 1fr; align-items: center; font-size: 0.95rem; box-shadow: 0 4px 20px rgba(0,0,0,0.4);
         }
         .status-lbl { color: var(--text-muted); text-transform: uppercase; font-size: 0.75rem; font-weight: 800; letter-spacing: 1px; }
-        .status-val { font-weight: 800; color: var(--accent-glow); text-shadow: 0 0 10px rgba(182, 36, 255, 0.3); }
+        .status-val { font-weight: 800; color: var(--accent-glow); text-shadow: 0 0 10px rgba(182, 36, 255, 0.4); }
 
         .big-password-box { text-align: center; }
         .big-password-box .status-val {
-            font-size: 1.75rem; color: #fff; letter-spacing: 2px; text-shadow: 0 0 12px var(--accent-glow);
+            font-size: 1.75rem; color: #fff; letter-spacing: 2px; text-shadow: 0 0 15px var(--accent-glow), 0 0 30px var(--accent-hover);
         }
 
-        .arena-wrapper { flex: 1; background-color: rgba(0,0,0,0.4); border: 2px solid var(--border-panel); border-radius: 16px; padding: 24px; display: flex; flex-direction: column; overflow-y: auto; box-shadow: inset 0 4px 30px rgba(0,0,0,0.8); }
+        .arena-wrapper { flex: 1; background-color: rgba(0,0,0,0.5); border: 2px solid var(--border-panel); border-radius: 16px; padding: 24px; display: flex; flex-direction: column; overflow-y: auto; box-shadow: inset 0 4px 40px rgba(0,0,0,0.9); }
         .arena-title { text-align: center; font-size: 0.9rem; text-transform: uppercase; color: var(--text-muted); font-weight: 800; letter-spacing: 4px; margin-bottom: 20px; flex-shrink: 0; }
         
         .arena { flex: 1; display: flex; flex-direction: column; gap: 10px; padding-bottom: 10px; }
@@ -181,33 +180,121 @@
 
         .table-container { flex: 1; overflow-y: auto; background-color: var(--bg-input); border-radius: 12px; border: 2px solid var(--border-card); margin-bottom: 15px; box-shadow: inset 0 4px 20px rgba(0,0,0,0.6); }
         table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
-        th { background-color: rgba(0,0,0,0.4); color: var(--text-muted); padding: 14px; font-weight: 800; text-transform: uppercase; font-size: 0.75rem; border-bottom: 2px solid var(--border-card); position: sticky; top: 0; letter-spacing: 0.5px; }
+        th { background-color: rgba(0,0,0,0.4); color: var(--text-muted); padding: 14px; font-weight: 800; text-transform: uppercase; font-size: 0.75rem; border-bottom: 2px solid var(--border-card); position: sticky; top: 0; }
         td { padding: 14px; border-bottom: 1px solid rgba(255,255,255,0.02); font-weight: 700; }
-        .td-tc { text-align: right; color: var(--success-green); text-shadow: 0 0 8px rgba(0, 245, 212, 0.3); }
+        .td-tc { text-align: right; color: var(--success-green); text-shadow: 0 0 8px rgba(0, 245, 212, 0.4); }
 
         .tr-verified { border-left: 4px solid var(--success-green); background-color: rgba(0, 245, 212, 0.03); }
         .tr-verified td { color: #fff !important; }
         .tr-disqualified td { color: var(--danger-red) !important; text-decoration: line-through; opacity: 0.4; }
 
-        #tickers-container { display: none; flex-direction: column; gap: 14px; margin-bottom: 20px; width: 100%; }
+        /* ======================== NOWA SEKCJA: ULTRA CYBER-REEL 3D DRUM ======================== */
+        #tickers-container { 
+            display: none; 
+            justify-content: center; 
+            align-items: center; 
+            gap: 30px; 
+            margin-bottom: 20px; 
+            width: 100%;
+            flex-wrap: wrap;
+            padding: 30px 0;
+        }
 
         .ticker-wrapper {
-            position: relative; width: 100%; height: 85px; background: #05030a; border: 2px solid var(--border-card); border-radius: 14px; overflow: hidden; box-shadow: inset 0 0 25px rgba(0,0,0,0.95); flex-shrink: 0;
+            position: relative; 
+            width: 220px; 
+            height: 280px; 
+            background: #040108; 
+            border: 3px solid var(--border-card); 
+            border-radius: 20px; 
+            /* Włączenie perspektywy 3D dla wnętrza kapsuły */
+            perspective: 1200px; 
+            overflow: hidden; 
+            box-shadow: 0 15px 35px rgba(0,0,0,0.8), inset 0 0 30px rgba(182, 36, 255, 0.2); 
+            flex-shrink: 0;
+            border-top-color: var(--accent-glow);
+            border-bottom-color: var(--accent-glow);
         }
+
+        /* Celownik / Linia wygranej */
         .ticker-pointer {
-            position: absolute; top: 0; bottom: 0; left: 50%; width: 154px; height: 100%; border: 3px solid var(--accent-glow);
-            box-shadow: 0 0 20px var(--accent-glow), inset 0 0 10px rgba(182, 36, 255, 0.3); z-index: 10; box-sizing: border-box; border-radius: 10px; transform: translateX(-50%); pointer-events: none; background-color: rgba(182, 36, 255, 0.03);
+            position: absolute; 
+            top: 50%; 
+            left: 0;
+            right: 0;
+            height: 54px; 
+            border-top: 2px solid var(--accent-hover);
+            border-bottom: 2px solid var(--accent-hover);
+            box-shadow: 0 0 15px rgba(255, 34, 179, 0.4), inset 0 0 10px rgba(255, 34, 179, 0.2); 
+            z-index: 10; 
+            transform: translateY(-50%); 
+            pointer-events: none; 
+            background-color: rgba(255, 34, 179, 0.04);
         }
-        .ticker-ribbon { display: flex; position: absolute; left: 0; top: 0; height: 100%; will-change: transform; }
+
+        /* Walec 3D obracający się w przestrzeni */
+        .ticker-ribbon { 
+            position: absolute; 
+            left: 10px;
+            top: 50%;
+            width: 200px; 
+            height: 46px;
+            transform-style: preserve-3d; 
+            will-change: transform;
+            transform: translateY(-50%) rotateX(0deg);
+        }
+
+        /* Każdy pojedynczy klocek wygięty w okręgu walca */
         .ticker-item {
-            min-width: 150px; max-width: 150px; height: 100%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.9rem; border-right: 1px solid rgba(255,255,255,0.03); color: var(--text-main); box-sizing: border-box; background: linear-gradient(180deg, #190f2d 0%, #0f091b 100%); padding: 8px; text-align: center; word-break: break-all; text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-weight: 800; 
+            font-size: 0.95rem; 
+            color: var(--text-main); 
+            box-sizing: border-box; 
+            background: linear-gradient(90deg, #18092d 0%, #260f44 50%, #18092d 100%); 
+            border: 1px solid rgba(182, 36, 255, 0.15);
+            border-radius: 8px;
+            padding: 6px; 
+            text-align: center; 
+            word-break: break-all; 
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+            backface-visibility: hidden; /* Ukrywa klocki odwrócone tyłem do kamery */
         }
-        .winning-cell-active { animation: tickerNeonPulse 1.2s infinite ease-in-out !important; color: #fff !important; font-weight: 900; text-shadow: 0 0 10px #fff, 0 0 20px var(--accent-glow) !important; }
-        @keyframes tickerNeonPulse {
-            0% { background: linear-gradient(180deg, #3d1b66 0%, #0f091b 100%); }
-            50% { background: linear-gradient(180deg, #5b239c 0%, #170d2b 100%); }
-            100% { background: linear-gradient(180deg, #3d1b66 0%, #0f091b 100%); }
+
+        /* Błysk i pulsacja wygranego kafelka 3D */
+        .winning-cell-active { 
+            animation: cyberNeonPulse 1s infinite ease-in-out !important; 
+            color: #fff !important; 
+            font-weight: 900; 
+            font-size: 1.05rem;
+            border-color: #fff !important;
+            text-shadow: 0 0 10px #fff, 0 0 20px var(--success-green) !important; 
         }
+
+        @keyframes cyberNeonPulse {
+            0% { background: linear-gradient(90deg, #00f5d4 0%, #11665a 50%, #00f5d4 100%); box-shadow: 0 0 15px var(--success-green); }
+            50% { background: linear-gradient(90deg, #1fc4ad 0%, #1c3d39 50%, #1fc4ad 100%); box-shadow: 0 0 5px var(--success-green); }
+            100% { background: linear-gradient(90deg, #00f5d4 0%, #11665a 50%, #00f5d4 100%); box-shadow: 0 0 15px var(--success-green); }
+        }
+
+        /* Podświetlenia wokół walców */
+        .ticker-wrapper::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 35px;
+            background: linear-gradient(to bottom, rgba(4,1,8,1) 0%, rgba(4,1,8,0) 100%); z-index: 5; pointer-events: none;
+        }
+        .ticker-wrapper::after {
+            content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 35px;
+            background: linear-gradient(to top, rgba(4,1,8,1) 0%, rgba(4,1,8,0) 100%); z-index: 5; pointer-events: none;
+        }
+
+        /* ======================================================================================= */
 
         .verify-panel { display: none; background: #110921; border: 2px solid var(--border-card); border-radius: 16px; padding: 24px; margin-bottom: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.6), 0 0 20px rgba(182, 36, 255, 0.1); }
         .verify-group-header-row { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; border-bottom: 2px solid var(--border-panel); padding-bottom: 14px; margin-bottom: 20px; }
@@ -226,7 +313,7 @@
         .btn-row-action { padding: 12px 16px; font-size: 0.75rem; font-weight: 800; border-radius: 8px; cursor: pointer; text-transform: uppercase; color: #fff; border: none; transition: all 0.15s ease; }
         .btn-row-ok { background-color: var(--success-green); color: #0a0612; font-weight: 900; }
         .btn-row-ok:hover { filter: brightness(1.2); transform: translateY(-1px); }
-        .btn-row-draw { background-color: rgba(255, 51, 68, 0.1); border: 2px solid var(--danger-red); color: var(--danger-red); }
+        .btn-row-draw { background-color: rgba(255, 34, 68, 0.1); border: 2px solid var(--danger-red); color: var(--danger-red); }
         .btn-row-draw:hover { background-color: var(--danger-red); color: #fff; }
         
         .winner-row-ok-badge {
@@ -239,14 +326,14 @@
         .row-status-text.skip { color: var(--danger-red); }
 
         .btn-group-submit {
-            width: 100%; padding: 16px; background-color: var(--accent-glow); color: #fff; font-size: 0.95rem; font-weight: 800; border-radius: 10px; margin-top: 15px; box-shadow: var(--neon-shadow); cursor: pointer; text-transform: uppercase; letter-spacing: 1px;
+            width: 100%; padding: 16px; background: var(--cyber-gradient); color: #fff; font-size: 0.95rem; font-weight: 800; border-radius: 10px; margin-top: 15px; box-shadow: var(--neon-shadow); cursor: pointer; text-transform: uppercase; letter-spacing: 1px;
         }
-        .btn-group-submit:hover { background-color: var(--accent-hover); box-shadow: 0 0 25px rgba(182, 36, 255, 0.7); }
+        .btn-group-submit:hover { filter: brightness(1.2); box-shadow: 0 0 25px rgba(182, 36, 255, 0.7); }
 
         .btn-center-reroll-trigger {
-            display: none; width: 100%; padding: 18px; font-size: 1.05rem; font-weight: 800; background-color: var(--accent-glow); color: #fff; border-radius: 10px; box-shadow: var(--neon-shadow); margin-top: 15px; flex-shrink: 0; letter-spacing: 1px;
+            display: none; width: 100%; padding: 18px; font-size: 1.05rem; font-weight: 800; background: var(--cyber-gradient); color: #fff; border-radius: 10px; box-shadow: var(--neon-shadow); margin-top: 15px; flex-shrink: 0; letter-spacing: 1px;
         }
-        .btn-center-reroll-trigger:hover { background-color: var(--accent-hover); box-shadow: 0 0 25px rgba(182, 36, 255, 0.7); }
+        .btn-center-reroll-trigger:hover { filter: brightness(1.2); box-shadow: 0 0 25px rgba(182, 36, 255, 0.7); }
     </style>
 </head>
 <body>
@@ -350,7 +437,7 @@
                 <tbody id="winners-table-body"></tbody>
             </table>
         </div>
-        <button class="btn-action" style="color: var(--danger-red); border-color: rgba(255, 51, 68, 0.2); padding: 12px;" onclick="clearWinnersList()">Wyczyść historię</button>
+        <button class="btn-action" style="color: var(--danger-red); border-color: rgba(255, 34, 68, 0.2); padding: 12px;" onclick="clearWinnersList()">Wyczyść historię</button>
     </div>
 
     <script>
@@ -698,6 +785,7 @@
             startMultiCinematicDraw();
         }
 
+        // ======================== AKTUALIZACJA: LOGIKA 3D CYBER-WALCA ========================
         function startMultiCinematicDraw() {
             let poolToDraw = localParticipants.filter(p => !permanentlyExcludedNicks.some(n => n.toLowerCase() === p.toLowerCase()));
             
@@ -728,13 +816,12 @@
             const drawCount = parseInt(participantSlider.value) || 1;
             tickersContainer.innerHTML = "";
             tickersContainer.style.display = 'flex';
-            statusDisplay.innerText = `Trwa masowe losowanie (${drawCount} bębnów)...`;
+            statusDisplay.innerText = `Trwa masowe losowanie (${drawCount} trójwymiarowych bębnów)...`;
 
             currentWinnersPicks = [];
 
             for (let i = 0; i < drawCount; i++) {
                 let currentSelectionPool = safePool.length > 0 ? safePool : poolToDraw;
-                
                 const randomIndex = Math.floor(Math.random() * currentSelectionPool.length);
                 const winnerNick = currentSelectionPool[randomIndex];
                 
@@ -762,102 +849,107 @@
                 tickersContainer.appendChild(tickerWrapper);
 
                 const ribbon = document.getElementById(`ribbon-${i}`);
-                const itemWidth = 150;
                 ribbon.innerHTML = "";
 
-                let targetStopPos = 0;
-                let totalPoolWidth = 0;
+                // Definiujemy stałą liczbę kafelków w pierścieniu 3D (np. 24 klocki tworzą pełny walec)
+                const faceCount = 24; 
+                const radius = 160; // Promień od środka osi obrotu walca w pikselach
+                
+                let finalTargetDegree = 0;
+                let finalWinnerElementId = `winning-cell-${i}`;
 
+                // Budujemy pulę imion do ułożenia na walcu
+                let reelNames = [];
+                
                 if (poolToDraw.length < 5) {
-                    const targetIndex = Math.floor(Math.random() * 11) + 40; 
-                    const totalItems = targetIndex + 15;
-                    let lastAddedNick = "";
-
-                    for (let j = 0; j < totalItems; j++) {
-                        const el = document.createElement('div');
-                        el.className = 'ticker-item';
-                        
-                        if (j === targetIndex) {
-                            el.innerText = winnerNick;
-                            el.id = `winning-cell-${i}`;
-                            lastAddedNick = winnerNick;
+                    // Dla małej liczby osób: losowo doklonowujemy pulę, ale dbamy o wygranego na właściwym miejscu
+                    const targetWinnerFaceIndex = 18; // Zwycięzca wyląduje na 18-stym klocku pierścienia
+                    
+                    for (let j = 0; j < faceCount; j++) {
+                        if (j === targetWinnerFaceIndex) {
+                            reelNames.push({ name: winnerNick, isWinner: true });
                         } else {
-                            let randomTickerNick = poolToDraw[Math.floor(Math.random() * poolToDraw.length)] || "...";
-                            if (poolToDraw.length > 1) {
-                                let attempts = 0;
-                                while (randomTickerNick === lastAddedNick && attempts < 20) {
-                                    randomTickerNick = poolToDraw[Math.floor(Math.random() * poolToDraw.length)];
-                                    attempts++;
-                                }
-                            }
-                            el.innerText = randomTickerNick;
-                            lastAddedNick = randomTickerNick;
+                            let randNick = poolToDraw[Math.floor(Math.random() * poolToDraw.length)];
+                            reelNames.push({ name: randNick, isWinner: false });
                         }
-                        ribbon.appendChild(el);
                     }
-                    targetStopPos = (targetIndex * itemWidth) + (itemWidth / 2) - (tickerWrapper.clientWidth / 2);
-                    totalPoolWidth = totalItems * itemWidth;
-
+                    // Wyliczamy kąt obrotu potrzebny do ustawienia klocka na wprost kamery
+                    finalTargetDegree = -(targetWinnerFaceIndex * (360 / faceCount));
                 } else {
-                    const tickerPool = [...poolToDraw];
-                    const winnerIndexInPool = tickerPool.indexOf(winnerNick);
-
-                    tickerPool.forEach((playerNick, idx) => {
-                        const el = document.createElement('div');
-                        el.className = 'ticker-item';
-                        el.innerText = playerNick;
-                        if (idx === winnerIndexInPool) {
-                            el.id = `winning-cell-${i}`;
+                    // Dla dużej liczby osób: układamy czystą listę w pętli wielokrotnej
+                    let nameIdx = 0;
+                    for (let j = 0; j < faceCount; j++) {
+                        let currentNick = poolToDraw[nameIdx % poolToDraw.length];
+                        if (currentNick === winnerNick && j > 12 && j < 22) {
+                            // Jeśli trafimy na zwycięzcę w idealnej strefie stopu, oznaczamy go
+                            reelNames.push({ name: currentNick, isWinner: true });
+                        } else {
+                            reelNames.push({ name: currentNick, isWinner: false });
                         }
-                        ribbon.appendChild(el);
-                    });
+                        nameIdx++;
+                    }
 
-                    tickerPool.forEach((playerNick) => {
-                        const el = document.createElement('div');
-                        el.className = 'ticker-item';
-                        el.innerText = playerNick;
-                        ribbon.appendChild(el);
-                    });
-
-                    totalPoolWidth = tickerPool.length * itemWidth;
-                    targetStopPos = (winnerIndexInPool * itemWidth) + (itemWidth / 2) - (tickerWrapper.clientWidth / 2);
+                    // Upewniamy się, że przynajmniej jeden klocek jest oznaczony jako cel wygranej
+                    let targetWinnerFaceIndex = reelNames.findIndex(item => item.isWinner);
+                    if (targetWinnerFaceIndex === -1) {
+                        targetWinnerFaceIndex = 15 % reelNames.length;
+                        reelNames[targetWinnerFaceIndex] = { name: winnerNick, isWinner: true };
+                    }
+                    finalTargetDegree = -(targetWinnerFaceIndex * (360 / faceCount));
                 }
+
+                // Generowanie elementów HTML w trójwymiarowym pierścieniu CSS
+                reelNames.forEach((item, idx) => {
+                    const el = document.createElement('div');
+                    el.className = 'ticker-item';
+                    el.innerText = item.name;
+                    
+                    if (item.isWinner) {
+                        el.id = finalWinnerElementId;
+                    }
+
+                    // Kluczowa matematyka 3D: obracamy każdy kafelek o odpowiedni kąt i odsuwamy od środka o promień (radius)
+                    const currentFaceAngle = idx * (360 / faceCount);
+                    el.style.transform = `rotateX(${currentFaceAngle}deg) translateZ(${radius}px)`;
+                    
+                    ribbon.appendChild(el);
+                });
 
                 const drawDurationSeconds = parseFloat(timeSlider.value) || 20;
                 let startTime = null;
-                const randomStartOffset = Math.random() * 800; 
+                
+                // Każdy bęben ma losowy rozpęd (dodatkowe pełne obroty), żeby kręciły się niesymetrycznie
+                const extraSpins = (3 + i) * 360; 
+                const totalDegreesToRotate = finalTargetDegree - extraSpins;
 
-                function animateSingleTicker(now) {
+                function animateSingle3DReel(now) {
                     if (!startTime) startTime = now;
                     const progress = (now - startTime) / (drawDurationSeconds * 1000);
                     
                     if (progress >= 1) {
-                        ribbon.style.transform = `translate3d(-${targetStopPos}px, 0, 0)`;
-                        const winCell = document.getElementById(`winning-cell-${i}`);
+                        // Koniec animacji: Ustawienie na idealnym kącie wygranej
+                        ribbon.style.transform = `translateY(-50%) rotateX(${finalTargetDegree}deg)`;
+                        const winCell = document.getElementById(finalWinnerElementId);
                         if (winCell) winCell.classList.add('winning-cell-active');
                     } else {
+                        // Funkcja płynnego hamowania bębna (Quintic Ease-Out)
                         const ease = 1 - Math.pow(1 - progress, 5);
+                        const currentRotation = ease * totalDegreesToRotate;
                         
-                        if (poolToDraw.length < 5) {
-                            const currentPos = ease * targetStopPos + (1 - ease) * randomStartOffset;
-                            ribbon.style.transform = `translate3d(-${currentPos}px, 0, 0)`;
-                        } else {
-                            const speedFactor = 5; 
-                            const currentPos = (ease * (targetStopPos + (totalPoolWidth * speedFactor)) + randomStartOffset) % totalPoolWidth;
-                            ribbon.style.transform = `translate3d(-${currentPos}px, 0, 0)`;
-                        }
-                        animationFrameIds.push(requestAnimationFrame(animateSingleTicker));
+                        ribbon.style.transform = `translateY(-50%) rotateX(${currentRotation}deg)`;
+                        animationFrameIds.push(requestAnimationFrame(animateSingle3DReel));
                     }
                 }
-                animationFrameIds.push(requestAnimationFrame(animateSingleTicker));
+                animationFrameIds.push(requestAnimationFrame(animateSingle3DReel));
             });
 
             const totalDurationMs = (parseFloat(timeSlider.value) || 20) * 1000;
             setTimeout(() => {
-                statusDisplay.innerText = "Losowanie zakończone. Oczekiwanie na decyzje.";
+                statusDisplay.innerText = "Losowanie zakończone. Maszyna wytypowała zwycięzców.";
                 setupGroupVerificationPanel();
             }, totalDurationMs + 200);
         }
+        // =====================================================================================
 
         function setupGroupVerificationPanel() {
             verifyRowsContainer.innerHTML = "";
