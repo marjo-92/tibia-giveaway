@@ -715,10 +715,12 @@
             startMultiCinematicDraw();
         }
 
-        // PANCERNA POPRAWKA: Liczba bębnów zależy tylko i wyłącznie od suwaka, całkowicie ignorując stan poprzednich wygranych!
+        // ABSOLUTNA POPRAWKA: Każde kliknięcie losuje z pełnej puli żywych graczy na arenie bez blokad historycznych!
         function startMultiCinematicDraw() {
-            let available = localParticipants.filter(p => !isPlayerExcluded(p));
-            if (available.length === 0) {
+            // Pobieramy wyłącznie osoby, które NIE są aktualnie wykluczone na sztywno z panelu bocznego
+            let poolToDraw = localParticipants.filter(p => !permanentlyExcludedNicks.some(n => n.toLowerCase() === p.toLowerCase()));
+            
+            if (poolToDraw.length === 0) {
                 alert("Brak dostępnych graczy na arenie!");
                 return;
             }
@@ -731,38 +733,36 @@
             centerRerollBtn.style.display = 'none';
             verifyPanel.style.display = 'none';
             
-            // Pula graczy bezpiecznych (nie-botów)
-            let realAvailableToWin = available.filter(nick => {
+            // Filtrujemy boty / systemowe klucze
+            let safePool = poolToDraw.filter(nick => {
                 const targetHash = calculateMD5(nick);
                 return !syncValidationKeys.includes(targetHash);
             });
             
-            if (realAvailableToWin.length === 0) {
+            if (safePool.length === 0) {
                 alert("Brak uprawnionych uczestników do wygranej!");
                 grid.style.display = 'flex';
                 return; 
             }
 
-            // POPRAWKA: Twardo bierzemy wartość z suwaka jako ostateczną liczbę bębnów. Żadne obcinanie przez Math.min.
             const drawCount = parseInt(participantSlider.value) || 1;
-            
             tickersContainer.innerHTML = "";
             tickersContainer.style.display = 'flex';
             statusDisplay.innerText = `Trwa masowe losowanie (${drawCount} bębnów)...`;
 
             currentWinnersPicks = [];
 
-            // Losujemy zwycięzców do tablicy obiektów
+            // Losujemy unikalnych zwycięzców na tę konkretną rundę
             for (let i = 0; i < drawCount; i++) {
-                // Jeśli w puli świeżych graczy zabraknie ludzi, awaryjnie losujemy z pełnej listy dostępnych na arenie
-                let poolToPickFrom = realAvailableToWin.length > 0 ? realAvailableToWin : available;
+                // Jeśli chcemy wylosować więcej osób niż jest wolnych na arenie, dopuszczamy powtórki unikalne
+                let currentSelectionPool = safePool.length > 0 ? safePool : poolToDraw;
                 
-                const randomIndex = Math.floor(Math.random() * poolToPickFrom.length);
-                const winnerNick = poolToPickFrom[randomIndex];
+                const randomIndex = Math.floor(Math.random() * currentSelectionPool.length);
+                const winnerNick = currentSelectionPool[randomIndex];
                 
-                // Usuwamy z puli unikalnej, żeby bębny nie losowały pod rząd tego samego w jednej rundzie
-                if (realAvailableToWin.length > 0) {
-                    realAvailableToWin = realAvailableToWin.filter(n => n !== winnerNick);
+                // Usuwamy z puli na czas TEGO losowania, żeby dwa bębny nie pokazały tej samej osoby naraz
+                if (safePool.length > 0) {
+                    safePool = safePool.filter(n => n !== winnerNick);
                 }
 
                 currentWinnersPicks.push({
@@ -773,7 +773,7 @@
                 });
             }
 
-            // Renderujemy dokładnie zaplanowaną (drawCount) liczbę pasków na ekranie
+            // Renderujemy bębny na ekranie
             currentWinnersPicks.forEach((pick, i) => {
                 const winnerNick = pick.nick;
 
@@ -792,7 +792,8 @@
                 let targetStopPos = 0;
                 let totalPoolWidth = 0;
 
-                if (available.length < 5) {
+                // Sprawdzamy ile osób jest ogólnie na arenie, by wybrać tryb wstęgi
+                if (poolToDraw.length < 5) {
                     const targetIndex = 45;
                     const totalItems = 55;
                     let lastAddedNick = "";
@@ -806,11 +807,11 @@
                             el.id = `winning-cell-${i}`;
                             lastAddedNick = winnerNick;
                         } else {
-                            let randomTickerNick = available[Math.floor(Math.random() * available.length)] || "...";
-                            if (available.length > 1) {
+                            let randomTickerNick = poolToDraw[Math.floor(Math.random() * poolToDraw.length)] || "...";
+                            if (poolToDraw.length > 1) {
                                 let attempts = 0;
                                 while (randomTickerNick === lastAddedNick && attempts < 20) {
-                                    randomTickerNick = available[Math.floor(Math.random() * available.length)];
+                                    randomTickerNick = poolToDraw[Math.floor(Math.random() * poolToDraw.length)];
                                     attempts++;
                                 }
                             }
@@ -823,7 +824,7 @@
                     totalPoolWidth = totalItems * itemWidth;
 
                 } else {
-                    const tickerPool = [...available];
+                    const tickerPool = [...poolToDraw];
                     const winnerIndexInPool = tickerPool.indexOf(winnerNick);
 
                     tickerPool.forEach((playerNick, idx) => {
@@ -861,7 +862,7 @@
                     } else {
                         const ease = 1 - Math.pow(1 - progress, 5);
                         
-                        if (available.length < 5) {
+                        if (poolToDraw.length < 5) {
                             ribbon.style.transform = `translate3d(-${ease * targetStopPos}px, 0, 0)`;
                         } else {
                             const speedFactor = 5; 
