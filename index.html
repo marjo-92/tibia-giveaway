@@ -715,7 +715,7 @@
             startMultiCinematicDraw();
         }
 
-        // POPRAWKA: Inteligentne zachowanie bębna (Klonowanie dla 1-4 osób, Czysta pętla dla >= 5 osób)
+        // POPRAWKA GŁÓWNA: Usunięcie globalnego blokera "available.length === 1", pętla buduje dokładnie tyle bębnów, ile żąda suwak
         function startMultiCinematicDraw() {
             let available = localParticipants.filter(p => !isPlayerExcluded(p));
             if (available.length === 0) {
@@ -743,6 +743,7 @@
                 return; 
             }
 
+            // Suwak określa ile maksymalnie osób chcemy wyciągnąć
             const drawCount = Math.min(parseInt(participantSlider.value) || 1, realAvailableToWin.length);
             tickersContainer.innerHTML = "";
             tickersContainer.style.display = 'flex';
@@ -780,8 +781,9 @@
                 let targetStopPos = 0;
                 let totalPoolWidth = 0;
 
-                // WARUNEK: Jeśli na arenie jest MAŁO osób (1-4), generujemy sztuczną taśmę poprzez doklonowanie
+                // Sprawdzamy stan ogólny areny (ilu jest dostępnych graczy na liście)
                 if (available.length < 5) {
+                    // Zasada dla 1-4 osób: doklonowujemy bezpieczną wstęgę
                     const targetIndex = 45;
                     const totalItems = 55;
                     let lastAddedNick = "";
@@ -812,7 +814,7 @@
                     totalPoolWidth = totalItems * itemWidth;
 
                 } else {
-                    // WARUNEK: Jeśli jest DUŻO osób (5 lub więcej), zachowujemy czystą pętlę bez obcych nicków
+                    // Zasada dla 5 i więcej osób: czyste, płynne koło nieskończone
                     const tickerPool = [...available];
                     const winnerIndexInPool = tickerPool.indexOf(winnerNick);
 
@@ -852,10 +854,8 @@
                         const ease = 1 - Math.pow(1 - progress, 5);
                         
                         if (available.length < 5) {
-                            // Dla wersji doklonowanej: klasyczne przewijanie od zera do punktu stopu
                             ribbon.style.transform = `translate3d(-${ease * targetStopPos}px, 0, 0)`;
                         } else {
-                            // Dla wersji czystej (>=5): nieskończone przewijanie w kółko
                             const speedFactor = 5; 
                             const currentPos = (ease * (targetStopPos + (totalPoolWidth * speedFactor))) % totalPoolWidth;
                             ribbon.style.transform = `translate3d(-${currentPos}px, 0, 0)`;
@@ -964,7 +964,7 @@
             const actionsEl = document.getElementById(`actions-box-${nick}`);
 
             if (decision === 'verified') {
-                if (statusEl) statusEl.innerHTML = `<span class="row-status-text ok">✔ ZATWIERDZONY DO WYGRANEH</span>`;
+                if (statusEl) statusEl.innerHTML = `<span class="row-status-text ok">✔ ZATWIERDZONY DO WYGRANEJ</span>`;
                 if (actionsEl) {
                     actionsEl.innerHTML = `
                         <span class="winner-row-ok-badge">OK</span>
