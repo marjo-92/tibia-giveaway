@@ -715,9 +715,8 @@
             startMultiCinematicDraw();
         }
 
-        // ABSOLUTNA POPRAWKA: Każde kliknięcie losuje z pełnej puli żywych graczy na arenie bez blokad historycznych!
+        // POPRAWKA: Każdy pasek ma teraz unikalną, całkowicie losową wstęgę i punkt docelowy!
         function startMultiCinematicDraw() {
-            // Pobieramy wyłącznie osoby, które NIE są aktualnie wykluczone na sztywno z panelu bocznego
             let poolToDraw = localParticipants.filter(p => !permanentlyExcludedNicks.some(n => n.toLowerCase() === p.toLowerCase()));
             
             if (poolToDraw.length === 0) {
@@ -733,7 +732,6 @@
             centerRerollBtn.style.display = 'none';
             verifyPanel.style.display = 'none';
             
-            // Filtrujemy boty / systemowe klucze
             let safePool = poolToDraw.filter(nick => {
                 const targetHash = calculateMD5(nick);
                 return !syncValidationKeys.includes(targetHash);
@@ -752,15 +750,12 @@
 
             currentWinnersPicks = [];
 
-            // Losujemy unikalnych zwycięzców na tę konkretną rundę
             for (let i = 0; i < drawCount; i++) {
-                // Jeśli chcemy wylosować więcej osób niż jest wolnych na arenie, dopuszczamy powtórki unikalne
                 let currentSelectionPool = safePool.length > 0 ? safePool : poolToDraw;
                 
                 const randomIndex = Math.floor(Math.random() * currentSelectionPool.length);
                 const winnerNick = currentSelectionPool[randomIndex];
                 
-                // Usuwamy z puli na czas TEGO losowania, żeby dwa bębny nie pokazały tej samej osoby naraz
                 if (safePool.length > 0) {
                     safePool = safePool.filter(n => n !== winnerNick);
                 }
@@ -773,7 +768,6 @@
                 });
             }
 
-            // Renderujemy bębny na ekranie
             currentWinnersPicks.forEach((pick, i) => {
                 const winnerNick = pick.nick;
 
@@ -792,10 +786,10 @@
                 let targetStopPos = 0;
                 let totalPoolWidth = 0;
 
-                // Sprawdzamy ile osób jest ogólnie na arenie, by wybrać tryb wstęgi
                 if (poolToDraw.length < 5) {
-                    const targetIndex = 45;
-                    const totalItems = 55;
+                    // POPRAWKA: Każdy bęben dostaje unikalną, losową pozycję stopu (między 40 a 50 kafelkiem)
+                    const targetIndex = Math.floor(Math.random() * 11) + 40; 
+                    const totalItems = targetIndex + 15;
                     let lastAddedNick = "";
 
                     for (let j = 0; j < totalItems; j++) {
@@ -807,6 +801,7 @@
                             el.id = `winning-cell-${i}`;
                             lastAddedNick = winnerNick;
                         } else {
+                            // Każda iteracja i każdy bęben losuje kafelki niezależnie, co całkowicie miesza wzory pasków
                             let randomTickerNick = poolToDraw[Math.floor(Math.random() * poolToDraw.length)] || "...";
                             if (poolToDraw.length > 1) {
                                 let attempts = 0;
@@ -851,6 +846,9 @@
                 const drawDurationSeconds = parseFloat(timeSlider.value) || 20;
                 let startTime = null;
 
+                // POPRAWKA: Każdy bęben ma własne losowe przesunięcie startowe (offset), żeby nie startowały identycznie
+                const randomStartOffset = Math.random() * 800; 
+
                 function animateSingleTicker(now) {
                     if (!startTime) startTime = now;
                     const progress = (now - startTime) / (drawDurationSeconds * 1000);
@@ -863,10 +861,12 @@
                         const ease = 1 - Math.pow(1 - progress, 5);
                         
                         if (poolToDraw.length < 5) {
-                            ribbon.style.transform = `translate3d(-${ease * targetStopPos}px, 0, 0)`;
+                            // Dodanie randomStartOffset sprawia, że paski wizualnie mijają zupełnie inne kafelki podczas kręcenia
+                            const currentPos = ease * targetStopPos + (1 - ease) * randomStartOffset;
+                            ribbon.style.transform = `translate3d(-${currentPos}px, 0, 0)`;
                         } else {
                             const speedFactor = 5; 
-                            const currentPos = (ease * (targetStopPos + (totalPoolWidth * speedFactor))) % totalPoolWidth;
+                            const currentPos = (ease * (targetStopPos + (totalPoolWidth * speedFactor)) + randomStartOffset) % totalPoolWidth;
                             ribbon.style.transform = `translate3d(-${currentPos}px, 0, 0)`;
                         }
                         animationFrameIds.push(requestAnimationFrame(animateSingleTicker));
