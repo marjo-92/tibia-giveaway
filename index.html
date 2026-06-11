@@ -715,7 +715,6 @@
             startMultiCinematicDraw();
         }
 
-        // POPRAWKA GŁÓWNA: Usunięcie globalnego blokera "available.length === 1", pętla buduje dokładnie tyle bębnów, ile żąda suwak
         function startMultiCinematicDraw() {
             let available = localParticipants.filter(p => !isPlayerExcluded(p));
             if (available.length === 0) {
@@ -743,20 +742,21 @@
                 return; 
             }
 
-            // Suwak określa ile maksymalnie osób chcemy wyciągnąć
+            // POPRAWKA: Wyliczamy stałą, ostateczną liczbę bębnów na sztywno PRZED rozpoczęciem pętli
             const drawCount = Math.min(parseInt(participantSlider.value) || 1, realAvailableToWin.length);
+            
             tickersContainer.innerHTML = "";
             tickersContainer.style.display = 'flex';
             statusDisplay.innerText = `Trwa masowe losowanie (${drawCount} bębnów)...`;
 
             currentWinnersPicks = [];
 
+            // Tworzymy tablicę obiektów wygranych na podstawie nienaruszonej jeszcze puli drawCount
             for (let i = 0; i < drawCount; i++) {
-                if (realAvailableToWin.length === 0) break;
-                
                 const randomIndex = Math.floor(Math.random() * realAvailableToWin.length);
                 const winnerNick = realAvailableToWin[randomIndex];
                 
+                // Usuwamy z puli, żeby kolejny bęben nie wylosował tej samej osoby
                 realAvailableToWin = realAvailableToWin.filter(n => n !== winnerNick);
 
                 currentWinnersPicks.push({
@@ -765,6 +765,11 @@
                     modeAutoResponded: false,
                     timeLeft: 60 
                 });
+            }
+
+            // Teraz renderujemy dokładnie zaplanowaną liczbę bębnów na ekranie
+            currentWinnersPicks.forEach((pick, i) => {
+                const winnerNick = pick.nick;
 
                 const tickerWrapper = document.createElement('div');
                 tickerWrapper.className = 'ticker-wrapper';
@@ -781,9 +786,7 @@
                 let targetStopPos = 0;
                 let totalPoolWidth = 0;
 
-                // Sprawdzamy stan ogólny areny (ilu jest dostępnych graczy na liście)
                 if (available.length < 5) {
-                    // Zasada dla 1-4 osób: doklonowujemy bezpieczną wstęgę
                     const targetIndex = 45;
                     const totalItems = 55;
                     let lastAddedNick = "";
@@ -814,7 +817,6 @@
                     totalPoolWidth = totalItems * itemWidth;
 
                 } else {
-                    // Zasada dla 5 i więcej osób: czyste, płynne koło nieskończone
                     const tickerPool = [...available];
                     const winnerIndexInPool = tickerPool.indexOf(winnerNick);
 
@@ -864,7 +866,7 @@
                     }
                 }
                 animationFrameIds.push(requestAnimationFrame(animateSingleTicker));
-            }
+            });
 
             const totalDurationMs = (parseFloat(timeSlider.value) || 20) * 1000;
             setTimeout(() => {
