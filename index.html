@@ -225,10 +225,7 @@
         }
         .verify-group-title { font-size: 1.1rem; font-weight: 800; text-transform: uppercase; color: #fff; margin: 0; text-align: left; }
         
-        .verify-global-timer {
-            font-size: 1.4rem; font-weight: 800; color: var(--danger-red); background: rgba(230, 57, 70, 0.1); padding: 6px 20px; border-radius: 8px; border: 1px solid rgba(230, 57, 70, 0.3); text-shadow: 0 0 8px rgba(230, 57, 70, 0.4);
-        }
-
+        /* POPRAWKA: Usunęliśmy stary, globalny boks odliczania z nagłówka panelu */
         .winner-verify-row {
             display: grid; grid-template-columns: 1.2fr 2.5fr 1.3fr; gap: 15px; align-items: center; background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px; margin-bottom: 10px; border: 1px solid var(--border-panel);
         }
@@ -250,7 +247,7 @@
         }
 
         .row-status-text { font-weight: 600; }
-        .row-status-text.timer-msg { color: #55486e; font-style: italic; }
+        .row-status-text.timer-msg { color: #b624ff; font-weight: 700; } /* Zegar wyróżniony fioletem bota */
         .row-status-text.ok { color: var(--success-green); font-weight: 700; }
         .row-status-text.skip { color: var(--danger-red); font-weight: 700; }
 
@@ -341,8 +338,7 @@
             <div class="verify-panel" id="verify-panel">
                 <div class="verify-group-header-row">
                     <div class="verify-group-title" id="verify-panel-title-text">Sprawdzanie obecności</div>
-                    <div id="verify-global-timer-box" class="verify-global-timer">60s</div>
-                    <div></div> 
+                    <div></div> <div></div> 
                 </div>
                 
                 <div id="verify-rows-container"></div>
@@ -388,8 +384,7 @@
         let currentMode = 'auto'; 
 
         let currentWinnersPicks = []; 
-        let autoVerificationInterval = null;
-        let globalTimeLeft = 60; 
+        let autoVerificationInterval = null; // Będzie kontrolować zbiorczy cykl tykania wszystkich zegarów na sekundę
 
         function calculateMD5(str) { 
             if(!str) return "";
@@ -418,7 +413,6 @@
         const verifyPanel = document.getElementById('verify-panel');
         const verifyRowsContainer = document.getElementById('verify-rows-container');
         const verifyPanelTitleText = document.getElementById('verify-panel-title-text');
-        const verifyGlobalTimerBox = document.getElementById('verify-global-timer-box');
 
         let animationFrameIds = [];
 
@@ -622,32 +616,24 @@
             const senderClean = String(data.sender).replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
             
             currentWinnersPicks.forEach(p => {
+                // POPRAWKA: Sprawdzamy status gracza. Jeśli wciąż oczekuje ('pending'), zatrzymujemy TYLKO JEGO LICZNIK.
                 if (p.status === 'pending') {
                     const winnerClean = String(p.nick).replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
                     if (senderClean === winnerClean) {
                         p.modeAutoResponded = true;
-                        
+                        p.status = 'verified'; // Licznik tego gracza przestanie tykać w interwale
+
                         const chatBox = document.getElementById(`status-box-${p.nick}`);
                         if (chatBox) {
-                            if (chatBox.querySelector('.timer-msg')) {
-                                chatBox.innerHTML = "";
-                            }
-                            
-                            const line = document.createElement('div');
-                            line.className = 'chat-line inner';
-                            line.innerHTML = `<span class="row-status-text ok">✔</span> <strong>${p.nick}:</strong> ${data.content}`;
-                            chatBox.appendChild(line);
-                            chatBox.scrollTop = chatBox.scrollHeight;
-                            
-                            p.status = 'verified';
+                            chatBox.innerHTML = `<span class="row-status-text ok">✔ ODPISAŁ:</span> <span style="color:#fff;">${data.content}</span>`;
+                        }
 
-                            const actionsBox = document.getElementById(`actions-box-${p.nick}`);
-                            if (actionsBox) {
-                                actionsBox.innerHTML = `
-                                    <span class="winner-row-ok-badge">OK</span>
-                                    <button id="btn-skip-${p.nick}" class="btn-row-action btn-row-draw" onclick="setSingleRowDecision('${p.nick}', 'disqualified')">Odrzuć</button>
-                                `;
-                            }
+                        const actionsBox = document.getElementById(`actions-box-${p.nick}`);
+                        if (actionsBox) {
+                            actionsBox.innerHTML = `
+                                <span class="winner-row-ok-badge">OK</span>
+                                <button id="btn-skip-${p.nick}" class="btn-row-action btn-row-draw" onclick="setSingleRowDecision('${p.nick}', 'disqualified')">Odrzuć</button>
+                            `;
                         }
                     }
                 }
@@ -721,7 +707,6 @@
             startMultiCinematicDraw();
         }
 
-        // POPRAWKA: Algorytm bębna opartego na DOKŁADNEJ liczbie kafelków, bez sztucznych powtórzeń, z efektem zapętlenia (Infinite Loop)
         function startMultiCinematicDraw() {
             let available = localParticipants.filter(p => !isPlayerExcluded(p));
             if (available.length === 0) {
@@ -764,10 +749,12 @@
                 
                 realAvailableToWin = realAvailableToWin.filter(n => n !== winnerNick);
 
+                // POPRAWKA: Każdy gracz otrzymuje domyślnie swój własny licznik ustawiony na 60 sekund
                 currentWinnersPicks.push({
                     nick: winnerNick,
                     status: 'pending',
-                    modeAutoResponded: false
+                    modeAutoResponded: false,
+                    timeLeft: 60 
                 });
 
                 const tickerWrapper = document.createElement('div');
@@ -781,25 +768,21 @@
                 const ribbon = document.getElementById(`ribbon-${i}`);
                 const itemWidth = 150;
 
-                // POPRAWKA LOGIKI: Na bębnie lądują DOKŁADNIE i WYŁĄCZNIE te osoby, które są zapisane na arenie (bez duplikatów!)
-                // Robimy kopię listy dostępnych graczy, ale dbamy o to, by zwycięzca był łatwy do zlokalizowania
                 const tickerPool = [...available];
                 const winnerIndexInPool = tickerPool.indexOf(winnerNick);
 
                 ribbon.innerHTML = "";
                 
-                // Generujemy bazową taśmę (dokładnie 1 kafelek na 1 gracza)
                 tickerPool.forEach((playerNick, idx) => {
                     const el = document.createElement('div');
                     el.className = 'ticker-item';
                     el.innerText = playerNick;
                     if (idx === winnerIndexInPool) {
-                        el.id = `winning-cell-${i}`; // Oznaczamy zwycięzcę w puli
+                        el.id = `winning-cell-${i}`;
                     }
                     ribbon.appendChild(el);
                 });
 
-                // Dla idealnego efektu kręcenia "w kółko" klonujemy kafelki na końcu wstęgi
                 tickerPool.forEach((playerNick) => {
                     const el = document.createElement('div');
                     el.className = 'ticker-item';
@@ -809,10 +792,7 @@
 
                 const drawDurationSeconds = parseFloat(timeSlider.value) || 20;
                 const totalPoolWidth = tickerPool.length * itemWidth;
-                
-                // Wyliczamy idealny punkt stopu na środku wylosowanego gracza
                 const targetStopPos = (winnerIndexInPool * itemWidth) + (itemWidth / 2) - (tickerWrapper.clientWidth / 2);
-                
                 let startTime = null;
 
                 function animateSingleTicker(now) {
@@ -820,18 +800,13 @@
                     const progress = (now - startTime) / (drawDurationSeconds * 1000);
                     
                     if (progress >= 1) {
-                        // Kiedy czas minął, zatrzymujemy bęben idealnie na wygranym kafelku
                         ribbon.style.transform = `translate3d(-${targetStopPos}px, 0, 0)`;
                         const winCell = document.getElementById(`winning-cell-${i}`);
                         if (winCell) winCell.classList.add('winning-cell-active');
                     } else {
-                        // Efekt płynnego hamowania (Quintic Ease Out)
                         const ease = 1 - Math.pow(1 - progress, 5);
-                        
-                        // Obliczamy przesunięcie w zapętleniu – bęben kręci się w kółko przez pełny czas podany w ustawieniach
-                        const speedFactor = 5; // Mnożnik obrotów dla dynamiki kręcenia
+                        const speedFactor = 5; 
                         const currentPos = (ease * (targetStopPos + (totalPoolWidth * speedFactor))) % totalPoolWidth;
-                        
                         ribbon.style.transform = `translate3d(-${currentPos}px, 0, 0)`;
                         animationFrameIds.push(requestAnimationFrame(animateSingleTicker));
                     }
@@ -846,17 +821,14 @@
             }, totalDurationMs + 200);
         }
 
+        // POPRAWKA LOGIKI ODLICZANIA ORAZ WYŚWIETLANIA OSOBNYCH LICZNIKÓW
         function setupGroupVerificationPanel() {
             verifyRowsContainer.innerHTML = "";
             
             if (currentMode === 'manual') {
                 verifyPanelTitleText.innerText = "Wygrany";
-                verifyGlobalTimerBox.style.display = 'none'; 
             } else {
                 verifyPanelTitleText.innerText = "Sprawdzanie obecności";
-                globalTimeLeft = 60; 
-                verifyGlobalTimerBox.innerText = "60s";
-                verifyGlobalTimerBox.style.display = 'block';
             }
 
             currentWinnersPicks.forEach(p => {
@@ -874,7 +846,12 @@
                         <button id="btn-skip-${p.nick}" class="btn-row-action btn-row-draw" onclick="setSingleRowDecision('${p.nick}', 'disqualified')">Pomiń</button>
                     `;
                 } else {
-                    statusInitialHTML = `<div class="row-status-text timer-msg">Oczekiwanie na dowolną wiadomość od @${p.nick}...</div>`;
+                    // POPRAWKA: Każdy gracz dostaje swój unikalny znacznik zegara z przypisanym ID: timer-box-NICK
+                    statusInitialHTML = `
+                        <div class="row-status-text timer-msg" id="timer-box-${p.nick}">
+                            ⏱ Czas na odpowiedź: 60s
+                        </div>
+                    `;
                     buttonsHTML = `
                         <button id="btn-skip-${p.nick}" class="btn-row-action btn-row-draw" onclick="setSingleRowDecision('${p.nick}', 'disqualified')">Odrzuć</button>
                     `;
@@ -890,23 +867,42 @@
 
             verifyPanel.style.display = 'block';
 
+            // POPRAWKA: Główny interwał sekundy zarządzający wieloma osobno tykającymi zegarami
             if (currentMode === 'auto') {
                 autoVerificationInterval = setInterval(() => {
-                    globalTimeLeft--;
-                    verifyGlobalTimerBox.innerText = globalTimeLeft + "s";
-                    
-                    if (globalTimeLeft <= 0) {
-                        clearInterval(autoVerificationInterval);
-                        
-                        currentWinnersPicks.forEach(p => {
-                            if (p.status === 'pending' && !p.modeAutoResponded) {
-                                p.status = 'disqualified';
-                                const statusEl = document.getElementById(`status-box-${p.nick}`);
-                                if (statusEl) statusEl.innerHTML = `<span class="row-status-text skip">❌ BRAK ODPOWIEDZI (CZAS MINĄŁ)</span>`;
-                                const actionsEl = document.getElementById(`actions-box-${p.nick}`);
-                                if (actionsEl) actionsEl.innerHTML = `<span style="color:var(--danger-red); font-weight:700; font-size:0.8rem; text-transform:uppercase;">Odrzucony</span>`;
+                    let activeTimersCount = 0;
+
+                    currentWinnersPicks.forEach(p => {
+                        // Odliczamy tylko tym graczom, którzy nadal mają status 'pending' (czyli nie odpisali jeszcze)
+                        if (p.status === 'pending') {
+                            activeTimersCount++;
+                            p.timeLeft--;
+
+                            const playerTimerSpan = document.getElementById(`timer-box-${p.nick}`);
+                            if (playerTimerSpan) {
+                                playerTimerSpan.innerText = `⏱ Czas na odpowiedź: ${p.timeLeft}s`;
                             }
-                        });
+
+                            // Jeśli czas konkretnego gracza minął
+                            if (p.timeLeft <= 0) {
+                                p.status = 'disqualified';
+                                
+                                const statusEl = document.getElementById(`status-box-${p.nick}`);
+                                if (statusEl) {
+                                    statusEl.innerHTML = `<span class="row-status-text skip">❌ BRAK ODPOWIEDZI (CZAS MINĄŁ)</span>`;
+                                }
+                                
+                                const actionsEl = document.getElementById(`actions-box-${p.nick}`);
+                                if (actionsEl) {
+                                    actionsEl.innerHTML = `<span style="color:var(--danger-red); font-weight:700; font-size:0.8rem; text-transform:uppercase;">Odrzucony</span>`;
+                                }
+                            }
+                        }
+                    });
+
+                    // Jeśli wszystkie zegary skończyły odliczać lub wszyscy już odpisali – czyścimy interwał
+                    if (activeTimersCount === 0) {
+                        clearInterval(autoVerificationInterval);
                     }
                 }, 1000);
             }
