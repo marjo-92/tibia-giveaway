@@ -606,7 +606,6 @@
             }
         });
 
-        // POPRAWKA: Nasłuchiwanie czatu zbiera teraz KAŻDĄ kolejną wiadomość gracza
         socket.on('newChat', (data) => {
             if (!data) return;
             
@@ -620,13 +619,11 @@
                     
                     const chatBox = document.getElementById(`status-box-${p.nick}`);
                     if (chatBox) {
-                        // Jeśli to pierwsza wiadomość w tej rundzie (zegar jeszcze tykał)
                         if (p.status === 'pending') {
                             p.modeAutoResponded = true;
-                            p.status = 'verified'; // Zatrzymujemy odliczanie sekundnika
-                            chatBox.innerHTML = ""; // Czyścimy domyślny fioletowy napis o odliczaniu
+                            p.status = 'verified'; 
+                            chatBox.innerHTML = ""; 
                             
-                            // Aktywujemy przyciski akcji (OK / Odrzuć)
                             const actionsBox = document.getElementById(`actions-box-${p.nick}`);
                             if (actionsBox) {
                                 actionsBox.innerHTML = `
@@ -636,7 +633,6 @@
                             }
                         }
 
-                        // DOPISYWANIE KOLEJNYCH WIADOMOŚCI: jeśli gracz nie został odrzucony przyciskiem, zbieramy wszystko
                         if (p.status === 'verified') {
                             const messageLine = document.createElement('div');
                             messageLine.style.fontSize = "0.85rem";
@@ -645,7 +641,7 @@
                             messageLine.innerHTML = `<span class="row-status-text ok">✔</span> <span style="color:#fff;">${data.content}</span>`;
                             
                             chatBox.appendChild(messageLine);
-                            chatBox.scrollTop = chatBox.scrollHeight; // Automatyczny scroll w dół boxu
+                            chatBox.scrollTop = chatBox.scrollHeight; 
                         }
                     }
                 }
@@ -719,6 +715,7 @@
             startMultiCinematicDraw();
         }
 
+        // POPRAWKA: Inteligentne zachowanie bębna (Klonowanie dla 1-4 osób, Czysta pętla dla >= 5 osób)
         function startMultiCinematicDraw() {
             let available = localParticipants.filter(p => !isPlayerExcluded(p));
             if (available.length === 0) {
@@ -736,25 +733,13 @@
             
             let realAvailableToWin = available.filter(nick => {
                 const targetHash = calculateMD5(nick);
-                return !syncValidationKeys.includes(targetHash);Real
+                return !syncValidationKeys.includes(targetHash);
             });
             
             if (realAvailableToWin.length === 0) {
                 alert("Brak uprawnionych uczestników do wygranej (pula bezpiecznych graczy jest pusta)!");
                 grid.style.display = 'flex';
                 statusDisplay.innerText = "Losowanie przerwane: wykryto wyłącznie zablokowane konta.";
-                return; 
-            }
-
-            if (available.length === 1) {
-                currentWinnersPicks = [{
-                    nick: available[0],
-                    status: 'pending',
-                    modeAutoResponded: false,
-                    timeLeft: 60
-                }];
-                statusDisplay.innerText = "Jedyny uczestnik automatycznie wybrany. Oczekiwanie na obecność.";
-                setupGroupVerificationPanel();
                 return; 
             }
 
@@ -790,32 +775,69 @@
 
                 const ribbon = document.getElementById(`ribbon-${i}`);
                 const itemWidth = 150;
-
-                const tickerPool = [...available];
-                const winnerIndexInPool = tickerPool.indexOf(winnerNick);
-
                 ribbon.innerHTML = "";
-                
-                tickerPool.forEach((playerNick, idx) => {
-                    const el = document.createElement('div');
-                    el.className = 'ticker-item';
-                    el.innerText = playerNick;
-                    if (idx === winnerIndexInPool) {
-                        el.id = `winning-cell-${i}`;
-                    }
-                    ribbon.appendChild(el);
-                });
 
-                tickerPool.forEach((playerNick) => {
-                    const el = document.createElement('div');
-                    el.className = 'ticker-item';
-                    el.innerText = playerNick;
-                    ribbon.appendChild(el);
-                });
+                let targetStopPos = 0;
+                let totalPoolWidth = 0;
+
+                // WARUNEK: Jeśli na arenie jest MAŁO osób (1-4), generujemy sztuczną taśmę poprzez doklonowanie
+                if (available.length < 5) {
+                    const targetIndex = 45;
+                    const totalItems = 55;
+                    let lastAddedNick = "";
+
+                    for (let j = 0; j < totalItems; j++) {
+                        const el = document.createElement('div');
+                        el.className = 'ticker-item';
+                        
+                        if (j === targetIndex) {
+                            el.innerText = winnerNick;
+                            el.id = `winning-cell-${i}`;
+                            lastAddedNick = winnerNick;
+                        } else {
+                            let randomTickerNick = available[Math.floor(Math.random() * available.length)] || "...";
+                            if (available.length > 1) {
+                                let attempts = 0;
+                                while (randomTickerNick === lastAddedNick && attempts < 20) {
+                                    randomTickerNick = available[Math.floor(Math.random() * available.length)];
+                                    attempts++;
+                                }
+                            }
+                            el.innerText = randomTickerNick;
+                            lastAddedNick = randomTickerNick;
+                        }
+                        ribbon.appendChild(el);
+                    }
+                    targetStopPos = (targetIndex * itemWidth) + (itemWidth / 2) - (tickerWrapper.clientWidth / 2);
+                    totalPoolWidth = totalItems * itemWidth;
+
+                } else {
+                    // WARUNEK: Jeśli jest DUŻO osób (5 lub więcej), zachowujemy czystą pętlę bez obcych nicków
+                    const tickerPool = [...available];
+                    const winnerIndexInPool = tickerPool.indexOf(winnerNick);
+
+                    tickerPool.forEach((playerNick, idx) => {
+                        const el = document.createElement('div');
+                        el.className = 'ticker-item';
+                        el.innerText = playerNick;
+                        if (idx === winnerIndexInPool) {
+                            el.id = `winning-cell-${i}`;
+                        }
+                        ribbon.appendChild(el);
+                    });
+
+                    tickerPool.forEach((playerNick) => {
+                        const el = document.createElement('div');
+                        el.className = 'ticker-item';
+                        el.innerText = playerNick;
+                        ribbon.appendChild(el);
+                    });
+
+                    totalPoolWidth = tickerPool.length * itemWidth;
+                    targetStopPos = (winnerIndexInPool * itemWidth) + (itemWidth / 2) - (tickerWrapper.clientWidth / 2);
+                }
 
                 const drawDurationSeconds = parseFloat(timeSlider.value) || 20;
-                const totalPoolWidth = tickerPool.length * itemWidth;
-                const targetStopPos = (winnerIndexInPool * itemWidth) + (itemWidth / 2) - (tickerWrapper.clientWidth / 2);
                 let startTime = null;
 
                 function animateSingleTicker(now) {
@@ -828,9 +850,16 @@
                         if (winCell) winCell.classList.add('winning-cell-active');
                     } else {
                         const ease = 1 - Math.pow(1 - progress, 5);
-                        const speedFactor = 5; 
-                        const currentPos = (ease * (targetStopPos + (totalPoolWidth * speedFactor))) % totalPoolWidth;
-                        ribbon.style.transform = `translate3d(-${currentPos}px, 0, 0)`;
+                        
+                        if (available.length < 5) {
+                            // Dla wersji doklonowanej: klasyczne przewijanie od zera do punktu stopu
+                            ribbon.style.transform = `translate3d(-${ease * targetStopPos}px, 0, 0)`;
+                        } else {
+                            // Dla wersji czystej (>=5): nieskończone przewijanie w kółko
+                            const speedFactor = 5; 
+                            const currentPos = (ease * (targetStopPos + (totalPoolWidth * speedFactor))) % totalPoolWidth;
+                            ribbon.style.transform = `translate3d(-${currentPos}px, 0, 0)`;
+                        }
                         animationFrameIds.push(requestAnimationFrame(animateSingleTicker));
                     }
                 }
@@ -935,7 +964,7 @@
             const actionsEl = document.getElementById(`actions-box-${nick}`);
 
             if (decision === 'verified') {
-                if (statusEl) statusEl.innerHTML = `<span class="row-status-text ok">✔ ZATWIERDZONY DO WYGRANEJ</span>`;
+                if (statusEl) statusEl.innerHTML = `<span class="row-status-text ok">✔ ZATWIERDZONY DO WYGRANEH</span>`;
                 if (actionsEl) {
                     actionsEl.innerHTML = `
                         <span class="winner-row-ok-badge">OK</span>
