@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>FERULOSOWANIE - ADVANCED CYBER REEL 3D</title>
+    <title>FERULOSOWANIE by Mar jo</title>
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/spark-md5/3.0.2/spark-md5.min.js"></script>
     <style>
@@ -159,10 +159,22 @@
             font-size: 1.75rem; color: #fff; letter-spacing: 2px; text-shadow: 0 0 15px var(--accent-glow), 0 0 30px var(--accent-hover);
         }
 
-        .arena-wrapper { flex: 1; background-color: rgba(0,0,0,0.5); border: 2px solid var(--border-panel); border-radius: 16px; padding: 24px; display: flex; flex-direction: column; overflow: hidden; box-shadow: inset 0 4px 40px rgba(0,0,0,0.9); position: relative;}
+        /* POPRAWKA: Wrapper areny pozwala teraz na płynne przewijanie całej zawartości pionowo */
+        .arena-wrapper { 
+            flex: 1; 
+            background-color: rgba(0,0,0,0.5); 
+            border: 2px solid var(--border-panel); 
+            border-radius: 16px; 
+            padding: 24px; 
+            display: flex; 
+            flex-direction: column; 
+            overflow-y: auto; 
+            box-shadow: inset 0 4px 40px rgba(0,0,0,0.9); 
+            position: relative;
+        }
         .arena-title { text-align: center; font-size: 0.9rem; text-transform: uppercase; color: var(--text-muted); font-weight: 800; letter-spacing: 4px; margin-bottom: 20px; flex-shrink: 0; }
         
-        .arena { flex: 1; display: flex; flex-direction: column; gap: 10px; padding-bottom: 10px; overflow-y: auto;}
+        .arena { flex: 1; display: flex; flex-direction: column; gap: 10px; padding-bottom: 10px; }
 
         .p-card {
             background-color: var(--bg-panel); border: 2px solid var(--border-card); padding: 14px 20px; border-radius: 10px; text-align: left; display: flex; align-items: center; justify-content: flex-start; font-size: 1rem; font-weight: 700; color: var(--text-main); word-break: break-all; transition: all 0.2s ease; width: 100%; box-sizing: border-box;
@@ -171,20 +183,19 @@
             background-color: rgba(20, 12, 36, 0.4) !important; border-color: rgba(61, 39, 108, 0.2) !important; color: var(--text-muted) !important; text-decoration: line-through !important; opacity: 0.4 !important; box-shadow: none !important;
         }
 
-        /* Główny kontener na zaawansowany silnik rysujący płótno */
+        /* POPRAWKA: Okno wyświetlania płótna dopasowuje wysokość dynamicznie w zależności od liczby rzędów bębnów */
         #canvas-display-box {
             display: none;
             width: 100%;
-            height: 100%;
-            position: absolute;
-            top: 50px;
-            left: 0;
+            position: relative;
             z-index: 2;
+            margin-top: 10px;
+            margin-bottom: 20px;
         }
         canvas {
             display: block;
             width: 100%;
-            height: 100%;
+            background-color: transparent;
         }
 
         .sidebar-right { width: 340px; min-width: 340px; display: flex; flex-direction: column; }
@@ -697,7 +708,7 @@
             startMultiCinematicDraw();
         }
 
-        // ======================== PRAWDZIWY HIT: SILNIK GRAFICZNY CANVAS 3D CYLINDER CLONE ========================
+        // ======================== NOWA LOGIKA GRIDU 4xX Z ODPOWIEDZIALNYM WYMIAROWANIEM ========================
         function startMultiCinematicDraw() {
             let poolToDraw = localParticipants.filter(p => !permanentlyExcludedNicks.some(n => n.toLowerCase() === p.toLowerCase()));
             if (poolToDraw.length === 0) {
@@ -742,22 +753,37 @@
                 });
             }
 
-            // Inicjalizacja płótna (Canvas) i dostosowanie rozdzielczości
-            canvasDisplayBox.style.display = 'block';
-            const rect = canvasDisplayBox.getBoundingClientRect();
-            reelCanvas.width = rect.width;
-            reelCanvas.height = rect.height;
+            // POPRAWKA: Dynamiczne obliczanie wymiarów siatki bębnów (Maksymalnie 4 w jednym rzędzie)
+            const maxColumns = 4;
+            const reelWidth = 220;
+            const reelHeight = 320;
+            const gapX = 25;
+            const gapY = 30;
 
-            statusDisplay.innerText = `Uruchomiono maszynę losującą (Płótno 3D Matrix)...`;
+            const columns = Math.min(drawCount, maxColumns);
+            const rows = Math.ceil(drawCount / maxColumns);
+
+            // Aktywacja kontenera płótna
+            canvasDisplayBox.style.display = 'block';
+            
+            // Dopasowanie wymiaru wewnętrznego canvasa do struktury siatki, aby okno było idealnie scrollowalne
+            const parentWidth = canvasDisplayBox.parentElement.clientWidth - 48; // uwzględnienie paddingów
+            reelCanvas.width = parentWidth;
+            
+            // Wysokość jest obliczana dynamicznie z liczby rzędów + marginesy bezpieczeństwa
+            const calculatedCanvasHeight = (rows * reelHeight) + ((rows - 1) * gapY) + 40;
+            reelCanvas.height = calculatedCanvasHeight;
+
+            statusDisplay.innerText = `Trwa losowanie (${drawCount} bębnów w układzie siatki)...`;
 
             const drawDurationSeconds = parseFloat(timeSlider.value) || 20;
             const startTime = performance.now();
 
-            // Budowanie struktury danych dla każdego niezależnego cylindra graficznego
+            // Przypisywanie danych startowych dla każdego niezależnego cylindra
             canvasReelsData = currentWinnersPicks.map((pick, i) => {
-                const totalFaces = 20; // Liczba krawędzi walca dająca piękny efekt obłości
+                const totalFaces = 16; 
                 let facesNames = [];
-                const targetStopIdx = 14; // Pozycja zatrzymania zwycięzcy na tarczy
+                const targetStopIdx = 10; 
 
                 for (let j = 0; j < totalFaces; j++) {
                     if (j === targetStopIdx) {
@@ -770,8 +796,20 @@
 
                 const faceAngle = 360 / totalFaces;
                 const finalAngle = -(targetStopIdx * faceAngle);
-                const baseSpins = (3 + i) * 360; // Niesymetryczna prędkość obrotowa bębnów
+                const baseSpins = (3 + i) * 360; 
                 const totalRotationNeeded = finalAngle - baseSpins;
+
+                // Obliczanie stałej pozycji X oraz Y w siatce gridu dla danego indeksu bębna
+                const rowIdx = Math.floor(i / maxColumns);
+                const colIdx = i % maxColumns;
+
+                // Obliczanie wyśrodkowania wewnątrz rzędu (przydatne gdy ostatni rząd ma mniej bębnów niż 4)
+                const currentGridItemsCount = (rowIdx === rows - 1) ? (drawCount - (rowIdx * maxColumns)) : columns;
+                const rowTotalWidth = (currentGridItemsCount * reelWidth) + ((currentGridItemsCount - 1) * gapX);
+                const startX = (reelCanvas.width - rowTotalWidth) / 2;
+
+                const posX = startX + (colIdx * (reelWidth + gapX));
+                const posY = 20 + (rowIdx * (reelHeight + gapY));
 
                 return {
                     winnerNick: pick.nick,
@@ -780,96 +818,82 @@
                     finalAngle: finalAngle,
                     totalRotationNeeded: totalRotationNeeded,
                     currentRotation: 0,
-                    isFinished: false
+                    isFinished: false,
+                    x: posX,
+                    y: posY
                 };
             });
 
             isCanvasLoopRunning = true;
 
-            // Główna pętla renderująca klatki na sekundę (60 FPS Matrix Animation)
             function render3DCanvasLoop() {
                 if (!isCanvasLoopRunning) return;
 
-                // Czyszczenie tła głęboką cyberpunkową czernią
-                ctx.fillStyle = '#06030c';
-                ctx.fillRect(0, 0, reelCanvas.width, reelCanvas.height);
+                // Czyszczenie i odświeżanie klatki tła
+                ctx.clearRect(0, 0, reelCanvas.width, reelCanvas.height);
 
                 const now = performance.now();
                 const progress = Math.min((now - startTime) / (drawDurationSeconds * 1000), 1);
-                
-                // Krzywa hamowania (Quintic Ease Out) dająca luksusowy feeling spowolnienia slotów
                 const ease = 1 - Math.pow(1 - progress, 5);
 
-                const reelWidth = 240;
-                const reelHeight = 340;
-                const gap = 30;
-                
-                const totalWidth = (canvasReelsData.length * reelWidth) + ((canvasReelsData.length - 1) * gap);
-                let startX = (reelCanvas.width - totalWidth) / 2;
-                const centerY = reelCanvas.height / 2;
-
-                canvasReelsData.forEach((reel, idx) => {
+                canvasReelsData.forEach((reel) => {
                     reel.currentRotation = ease * reel.totalRotationNeeded;
                     if (progress >= 1) reel.isFinished = true;
 
-                    const rx = startX + (idx * (reelWidth + gap));
-                    const ry = centerY - (reelHeight / 2);
+                    const rx = reel.x;
+                    const ry = reel.y;
+                    const centerY = ry + (reelHeight / 2);
 
-                    // --- 1. RYSOWANIE FUTURYSTYCZNEJ KAPSUŁY TURNIEJOWEJ (Mroczny szklany klon) ---
+                    // --- 1. RENDERING NEONOWEJ KAPSUŁY SLOTU ---
                     ctx.save();
                     ctx.strokeStyle = reel.isFinished ? '#00f5d4' : '#9e1be0';
                     ctx.lineWidth = 4;
                     ctx.shadowColor = reel.isFinished ? '#00f5d4' : '#b624ff';
-                    ctx.shadowBlur = reel.isFinished ? 25 : 15;
+                    ctx.shadowBlur = reel.isFinished ? 25 : 12;
                     
-                    // Zaokrąglony prostokąt kapsuły slotu
                     ctx.beginPath();
-                    ctx.roundRect(rx, ry, reelWidth, reelHeight, 24);
+                    ctx.roundRect(rx, ry, reelWidth, reelHeight, 20);
                     ctx.stroke();
                     ctx.restore();
 
-                    // Przycięcie rysowania klocków do wnętrza szklanej kapsuły
+                    // Maskowanie i obcinanie do wnętrza kapsuły
                     ctx.save();
                     ctx.beginPath();
-                    ctx.roundRect(rx, ry, reelWidth, reelHeight, 24);
+                    ctx.roundRect(rx, ry, reelWidth, reelHeight, 20);
                     ctx.clip();
 
-                    ctx.fillStyle = '#0f0720';
+                    ctx.fillStyle = '#0a0416';
                     ctx.fillRect(rx, ry, reelWidth, reelHeight);
 
-                    // --- 2. ZAOWANSOWANA MATEMATYKA RYSOWANIA WALCA TRÓJWYMIAROWEGO (Cylinder 3D Pro) ---
-                    const radius = 140; // Promień wewnętrzny osi walca
+                    // --- 2. ZAOWANSOWANA MATEMATYKA WALCA 3D ---
+                    const radius = 120; 
                     
                     reel.faces.forEach((name, fIdx) => {
                         const angleDeg = (fIdx * reel.faceAngle) + reel.currentRotation;
                         const angleRad = (angleDeg * Math.PI) / 180;
 
-                        // Rzutowanie współrzędnych sin/cos tworzących złudzenie optyczne obracającego się bębna
                         const cosX = Math.cos(angleRad);
                         const sinY = Math.sin(angleRad);
 
-                        // Skalowanie klocka i przezroczystości na podstawie jego pozycji głębi (Z-axis)
-                        if (cosX > 0) { // Rysujemy tylko klocki skierowane przodem do krupiera
-                            const itemY = (reelCanvas.height / 2) + (sinY * radius);
-                            const alpha = Math.max(0, cosX); // Im dalej w głąb tym ciemniejszy
+                        if (cosX > 0) { 
+                            const itemY = centerY + (sinY * radius);
+                            const alpha = Math.max(0, cosX); 
 
                             ctx.save();
                             ctx.globalAlpha = alpha;
 
-                            // Rysowanie kafelka wewnątrz walca
-                            const cardH = 44;
+                            const cardH = 42;
                             const cardW = reelWidth - 30;
                             const cardX = rx + 15;
                             const cardY = itemY - (cardH / 2);
 
-                            // Gradient tła kafelka imitujący światłocień
                             const tileGrad = ctx.createLinearGradient(cardX, cardY, cardX + cardW, cardY);
-                            tileGrad.addColorStop(0, '#18092d');
-                            tileGrad.addColorStop(0.5, '#2a0f4d');
-                            tileGrad.addColorStop(1, '#18092d');
+                            tileGrad.addColorStop(0, '#160829');
+                            tileGrad.addColorStop(0.5, '#280e47');
+                            tileGrad.addColorStop(1, '#160829');
                             ctx.fillStyle = tileGrad;
                             
-                            ctx.strokeStyle = 'rgba(182, 36, 255, 0.2)';
+                            ctx.strokeStyle = 'rgba(182, 36, 255, 0.15)';
                             ctx.lineWidth = 1;
                             
                             ctx.beginPath();
@@ -877,9 +901,8 @@
                             ctx.fill();
                             ctx.stroke();
 
-                            // Rysowanie tekstu nicku gracza
                             ctx.fillStyle = '#f5f2fa';
-                            ctx.font = 'bold 15px Segoe UI, sans-serif';
+                            ctx.font = 'bold 14px Segoe UI, sans-serif';
                             ctx.textAlign = 'center';
                             ctx.textBaseline = 'middle';
                             ctx.fillText(name, cardX + (cardW / 2), cardY + (cardH / 2));
@@ -888,29 +911,29 @@
                         }
                     });
 
-                    // --- 3. SKALOWANIE GRADIENTU MROKU (Zanikanie na krawędziach kapsuły) ---
-                    const edgeGradTop = ctx.createLinearGradient(rx, ry, rx, ry + 70);
+                    // Cieniowanie krawędzi (Zanikanie na krańcach kapsuły)
+                    const edgeGradTop = ctx.createLinearGradient(rx, ry, rx, ry + 60);
                     edgeGradTop.addColorStop(0, '#06030c');
                     edgeGradTop.addColorStop(1, 'rgba(6, 3, 12, 0)');
                     ctx.fillStyle = edgeGradTop;
-                    ctx.fillRect(rx, ry, reelWidth, 75);
+                    ctx.fillRect(rx, ry, reelWidth, 65);
 
-                    const edgeGradBot = ctx.createLinearGradient(rx, ry + reelHeight, rx, ry + reelHeight - 70);
+                    const edgeGradBot = ctx.createLinearGradient(rx, ry + reelHeight, rx, ry + reelHeight - 60);
                     edgeGradBot.addColorStop(0, '#06030c');
                     edgeGradBot.addColorStop(1, 'rgba(6, 3, 12, 0)');
                     ctx.fillStyle = edgeGradBot;
-                    ctx.fillRect(rx, ry + reelHeight - 75, reelWidth, 75);
+                    ctx.fillRect(rx, ry + reelHeight - 65, reelWidth, 65);
 
-                    ctx.restore(); // Koniec clipowania
+                    ctx.restore(); 
 
-                    // --- 4. RYSOWANIE STAŁEGO CELOWNIKA WYGRANEJ (Laser Cyan Frame) ---
+                    // --- 3. SKALOWALNY CELOWNIK LASEROWY ---
                     ctx.save();
                     ctx.strokeStyle = reel.isFinished ? '#fff' : '#00f5d4';
                     ctx.lineWidth = 3;
                     ctx.shadowColor = '#00f5d4';
                     ctx.shadowBlur = reel.isFinished ? 20 : 8;
 
-                    const ptrH = 52;
+                    const ptrH = 50;
                     const ptrY = centerY - (ptrH / 2);
                     
                     ctx.beginPath();
@@ -920,7 +943,6 @@
                     ctx.lineTo(rx + reelWidth + 4, ptrY + ptrH);
                     ctx.stroke();
 
-                    // Rozbłysk podświetlenia środka przy wygranej
                     if (reel.isFinished) {
                         ctx.fillStyle = 'rgba(0, 245, 212, 0.04)';
                         ctx.fillRect(rx, ptrY, reelWidth, ptrH);
@@ -931,13 +953,12 @@
                 if (progress < 1) {
                     requestAnimationFrame(render3DCanvasLoop);
                 } else {
-                    // Maszyna zakończyła bieg
                     setTimeout(() => {
                         isCanvasLoopRunning = false;
                         canvasDisplayBox.style.display = 'none';
-                        statusDisplay.innerText = "Losowanie ukończone. Wyniki przesłane do paneli weryfikacji.";
+                        statusDisplay.innerText = "Losowanie ukończone. Przejdź do paneli weryfikacji.";
                         setupGroupVerificationPanel();
-                    }, 1000);
+                    }, 1200);
                 }
             }
 
@@ -988,6 +1009,9 @@
             });
 
             verifyPanel.style.display = 'block';
+
+            // Po wygenerowaniu listy weryfikacji, automatycznie przewijamy widok areny na samą górę okna
+            document.querySelector('.arena-wrapper').scrollTo({ top: 0, behavior: 'smooth' });
 
             if (currentMode === 'auto') {
                 autoVerificationInterval = setInterval(() => {
