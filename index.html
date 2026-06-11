@@ -152,7 +152,6 @@
         .arena-wrapper { flex: 1; background-color: rgba(0,0,0,0.2); border: 1px solid var(--border-panel); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; overflow-y: auto; }
         .arena-title { text-align: center; font-size: 0.85rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; letter-spacing: 2px; margin-bottom: 15px; flex-shrink: 0; }
         
-        /* POPRAWKA: Arena układa teraz kafelki w pionową listę - jeden pod drugim */
         .arena { 
             flex: 1; 
             display: flex;
@@ -161,7 +160,6 @@
             padding-bottom: 10px; 
         }
 
-        /* POPRAWKA: Każdy kafelek na arenie dopasowuje się do pełnej szerokości listy */
         .p-card {
             background-color: var(--bg-panel); 
             border: 1px solid var(--border-card); 
@@ -470,7 +468,6 @@
                     return;
                 }
                 
-                // POPRAWKA: Filtracja wejścia manualnego przed powtórzeniami
                 const parsedLines = text.split('\n').map(n => n.trim()).filter(n => n.length > 0);
                 grid.innerHTML = "";
                 localParticipants = [];
@@ -608,7 +605,6 @@
             if(!cleanSender) return;
             cleanSender = String(cleanSender).trim();
             
-            // POPRAWKA: Blokada dublowania w pamięci bota (case-insensitive)
             if (!localParticipants.some(p => p.toLowerCase() === cleanSender.toLowerCase())) {
                 localParticipants.push(cleanSender);
                 renderParticipant(cleanSender);
@@ -692,14 +688,9 @@
         
         socket.on('triggerFight', () => { startMultiCinematicDraw(); });
 
-        // POPRAWKA: Szczelne zabezpieczenie przed dublowaniem kafelków na arenie
         function renderParticipant(sender) {
             if (!sender) return;
-            
-            // Generujemy unikalne ID oparte w 100% na małych znakach nicku
             const elementId = 'p-' + sender.toLowerCase().replace(/[^a-z0-9_]/g, '');
-            
-            // Jeśli element o takim identyfikatorze już tam wisi, przerywamy funkcję
             if (document.getElementById(elementId)) return;
 
             const div = document.createElement('div'); 
@@ -730,6 +721,7 @@
             startMultiCinematicDraw();
         }
 
+        // POPRAWKA: Algorytm bębna opartego na DOKŁADNEJ liczbie kafelków, bez sztucznych powtórzeń, z efektem zapętlenia (Infinite Loop)
         function startMultiCinematicDraw() {
             let available = localParticipants.filter(p => !isPlayerExcluded(p));
             if (available.length === 0) {
@@ -788,36 +780,59 @@
 
                 const ribbon = document.getElementById(`ribbon-${i}`);
                 const itemWidth = 150;
-                const targetIndex = 45;
-                const totalItems = 55;
+
+                // POPRAWKA LOGIKI: Na bębnie lądują DOKŁADNIE i WYŁĄCZNIE te osoby, które są zapisane na arenie (bez duplikatów!)
+                // Robimy kopię listy dostępnych graczy, ale dbamy o to, by zwycięzca był łatwy do zlokalizowania
+                const tickerPool = [...available];
+                const winnerIndexInPool = tickerPool.indexOf(winnerNick);
 
                 ribbon.innerHTML = "";
-                for (let j = 0; j < totalItems; j++) {
+                
+                // Generujemy bazową taśmę (dokładnie 1 kafelek na 1 gracza)
+                tickerPool.forEach((playerNick, idx) => {
                     const el = document.createElement('div');
                     el.className = 'ticker-item';
-                    if (j === targetIndex) {
-                        el.innerText = winnerNick;
-                        el.id = `winning-cell-${i}`;
-                    } else {
-                        el.innerText = available[Math.floor(Math.random() * available.length)] || "...";
+                    el.innerText = playerNick;
+                    if (idx === winnerIndexInPool) {
+                        el.id = `winning-cell-${i}`; // Oznaczamy zwycięzcę w puli
                     }
                     ribbon.appendChild(el);
-                }
+                });
+
+                // Dla idealnego efektu kręcenia "w kółko" klonujemy kafelki na końcu wstęgi
+                tickerPool.forEach((playerNick) => {
+                    const el = document.createElement('div');
+                    el.className = 'ticker-item';
+                    el.innerText = playerNick;
+                    ribbon.appendChild(el);
+                });
 
                 const drawDurationSeconds = parseFloat(timeSlider.value) || 20;
-                const stopPosition = (targetIndex * itemWidth) + (itemWidth / 2) - (tickerWrapper.clientWidth / 2);
+                const totalPoolWidth = tickerPool.length * itemWidth;
+                
+                // Wyliczamy idealny punkt stopu na środku wylosowanego gracza
+                const targetStopPos = (winnerIndexInPool * itemWidth) + (itemWidth / 2) - (tickerWrapper.clientWidth / 2);
+                
                 let startTime = null;
 
                 function animateSingleTicker(now) {
                     if (!startTime) startTime = now;
                     const progress = (now - startTime) / (drawDurationSeconds * 1000);
+                    
                     if (progress >= 1) {
-                        ribbon.style.transform = `translate3d(-${stopPosition}px, 0, 0)`;
+                        // Kiedy czas minął, zatrzymujemy bęben idealnie na wygranym kafelku
+                        ribbon.style.transform = `translate3d(-${targetStopPos}px, 0, 0)`;
                         const winCell = document.getElementById(`winning-cell-${i}`);
                         if (winCell) winCell.classList.add('winning-cell-active');
                     } else {
+                        // Efekt płynnego hamowania (Quintic Ease Out)
                         const ease = 1 - Math.pow(1 - progress, 5);
-                        ribbon.style.transform = `translate3d(-${ease * stopPosition}px, 0, 0)`;
+                        
+                        // Obliczamy przesunięcie w zapętleniu – bęben kręci się w kółko przez pełny czas podany w ustawieniach
+                        const speedFactor = 5; // Mnożnik obrotów dla dynamiki kręcenia
+                        const currentPos = (ease * (targetStopPos + (totalPoolWidth * speedFactor))) % totalPoolWidth;
+                        
+                        ribbon.style.transform = `translate3d(-${currentPos}px, 0, 0)`;
                         animationFrameIds.push(requestAnimationFrame(animateSingleTicker));
                     }
                 }
