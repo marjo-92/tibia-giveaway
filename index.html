@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>FERULOSOWANIE by Marjo</title>
+    <title>FERULOSOWANIE - AUTOMATIC RESPONSIVE 3D MATRIX</title>
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/spark-md5/3.0.2/spark-md5.min.js"></script>
     <style>
@@ -130,7 +130,7 @@
             display: flex;
             flex-direction: column;
             gap: 8px;
-            margin-bottom: auto; /* Wyrównuje lewy panel do góry */
+            margin-bottom: auto;
         }
         
         .excluded-list-container {
@@ -142,6 +142,10 @@
         }
         
         .btn-remove-exclude { background: transparent; color: var(--danger-red); font-size: 0.85rem; cursor: pointer; }
+
+        .sidebar-left-status-box {
+            display: none;
+        }
 
         .main-content { flex: 1; display: flex; flex-direction: column; gap: 20px; overflow: hidden; }
         
@@ -642,7 +646,6 @@
         }
         
         function triggerResetLogic() {
-            console.log("=== WYWOŁANO RESET SYSTEMU ===");
             grid.innerHTML = ""; 
             localParticipants = []; 
             roundExcludedNicks = []; 
@@ -698,10 +701,18 @@
             startMultiCinematicDraw();
         }
 
+        // ======================== NAPRAWIONA FUNKCJA BEZWZGLĘDNEGO WYKLUCZANIA ZWYCIĘZCÓW ========================
         function startMultiCinematicDraw() {
-            let poolToDraw = localParticipants.filter(p => !permanentlyExcludedNicks.some(n => n.toLowerCase() === p.toLowerCase()));
+            // KLUCZOWA POPRAWKA: Filtrujemy pulę odrzucając zarówno zbanowanych na stałe, jak i wygranych z tej rundy (roundExcludedNicks)
+            let poolToDraw = localParticipants.filter(p => 
+                !permanentlyExcludedNicks.some(n => n.toLowerCase() === p.toLowerCase()) &&
+                !roundExcludedNicks.some(n => n.toLowerCase() === p.toLowerCase())
+            );
+
             if (poolToDraw.length === 0) {
-                alert("Brak dostępnych graczy na arenie!");
+                alert("Brak dostępnych uczestników do losowania! Wszyscy zostali już wylosowani lub wykluczeni.");
+                grid.style.display = 'flex';
+                updateRerollButtonVisibility();
                 return;
             }
 
@@ -716,13 +727,22 @@
                 return !syncValidationKeys.includes(targetHash);
             });
             
+            if (safePool.length === 0 && poolToDraw.length > 0) {
+                safePool = [...poolToDraw]; 
+            }
+
             if (safePool.length === 0) {
                 alert("Brak uprawnionych uczestników do wygranej!");
                 grid.style.display = 'flex';
                 return; 
             }
 
-            const drawCount = parseInt(participantSlider.value) || 1;
+            // Ograniczamy liczbę bębnów do maksymalnej liczby dostępnych graczy w tej chwili
+            let drawCount = parseInt(participantSlider.value) || 1;
+            if (drawCount > safePool.length) {
+                drawCount = safePool.length;
+            }
+            
             currentWinnersPicks = [];
 
             for (let i = 0; i < drawCount; i++) {
@@ -730,8 +750,10 @@
                 const randomIndex = Math.floor(Math.random() * currentSelectionPool.length);
                 const winnerNick = currentSelectionPool[randomIndex];
                 
-                if (safePool.length > 0) {
-                    safePool = safePool.filter(n => n !== winnerNick);
+                // Wyciągamy wylosowanego, żeby w jednym rzucie wielobębnowym nie było duplikatu
+                safePool = safePool.filter(n => n !== winnerNick);
+                if (poolToDraw.length > 0) {
+                    poolToDraw = poolToDraw.filter(n => n !== winnerNick);
                 }
 
                 currentWinnersPicks.push({
@@ -771,7 +793,8 @@
                     if (j === targetStopIdx) {
                         facesNames.push(pick.nick);
                     } else {
-                        let randNick = poolToDraw[Math.floor(Math.random() * poolToDraw.length)] || "...";
+                        // Klocki pomocnicze na bębnie też losujemy tylko z żywych graczy
+                        let randNick = localParticipants[Math.floor(Math.random() * localParticipants.length)] || "...";
                         facesNames.push(randNick);
                     }
                 }
