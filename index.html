@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>FERULOSOWANIE by Marjo</title>
+    <title>FERULOSOWANIE - AUTOMATIC RESPONSIVE 3D MATRIX & WHEEL</title>
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/spark-md5/3.0.2/spark-md5.min.js"></script>
     <style>
@@ -81,7 +81,6 @@
             border: 1px solid rgba(255, 34, 68, 0.3);
         }
 
-        /* Nowy kontener na pod-tryby koło / bębny w menu manualnym */
         .subtabs-container {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -400,7 +399,7 @@
         let roundExcludedNicks = []; 
         let permanentlyExcludedNicks = []; 
         let currentMode = 'auto'; 
-        let currentSubMode = 'reel'; // Domyślnie bębny ('reel' lub 'wheel')
+        let currentSubMode = 'reel'; 
 
         let currentWinnersPicks = []; 
         let autoVerificationInterval = null;
@@ -485,7 +484,7 @@
         function applySubModeUI() {
             const sliderBox = document.getElementById('participants-count-slider-box');
             if (currentMode === 'manual' && currentSubMode === 'wheel') {
-                sliderBox.style.display = "none"; // Koło fortuny losuje zawsze 1 osobę na raz
+                sliderBox.style.display = "none"; 
                 mainDrawBtn.innerText = "🎡 Rozpocznij Koło Fortuny";
             } else {
                 sliderBox.style.display = "flex";
@@ -768,7 +767,6 @@
             startMultiCinematicDraw();
         }
 
-        // ======================== GŁÓWNY SYSTEM PRZEKIEROWANIA TRYBÓW LOSOWANIA ========================
         function startMultiCinematicDraw() {
             let poolToDraw = localParticipants.filter(p => 
                 !permanentlyExcludedNicks.some(n => n.toLowerCase() === p.toLowerCase()) &&
@@ -782,13 +780,11 @@
                 return;
             }
 
-            // JEŚLI UŻYTKOWNIK WYBRAŁ KOŁO FORTUNY W MENU MANUALNYM
             if (currentMode === 'manual' && currentSubMode === 'wheel') {
                 startWheelFortunesCinematic(poolToDraw);
                 return;
             }
 
-            // DOMYŚLNE EMBEDOWANIE BĘBNÓW 3D MATRIX SLOT
             if (autoVerificationInterval) clearInterval(autoVerificationInterval);
             grid.style.display = 'none';
             centerRerollBtn.style.display = 'none';
@@ -942,14 +938,12 @@
             requestAnimationFrame(render3DCanvasLoop);
         }
 
-        // ======================== NOWOŚĆ: SILNIK NEONOWEGO KOŁA FORTUNY 2D PREMIUM ========================
         function startWheelFortunesCinematic(poolToDraw) {
             if (autoVerificationInterval) clearInterval(autoVerificationInterval);
             grid.style.display = 'none';
             centerRerollBtn.style.display = 'none';
             verifyPanel.style.display = 'none';
 
-            // Koło losuje zawsze dokładnie 1 zwycięzcę z dostępnej puli manualnej
             const randomIndex = Math.floor(Math.random() * poolToDraw.length);
             const winnerNick = poolToDraw[randomIndex];
 
@@ -958,23 +952,18 @@
             canvasDisplayBox.style.display = 'block';
             const parentWidth = canvasDisplayBox.parentElement.clientWidth - 48;
             reelCanvas.width = parentWidth;
-            reelCanvas.height = 460; // Stabilna wysokość pod tarczę koła fortuny
+            reelCanvas.height = 460; 
 
             const participantsCount = poolToDraw.length;
             const segmentArc = (2 * Math.PI) / participantsCount;
-
-            // Wyznaczanie indeksu tarczy dla zwycięzcy
             const winnerIndexInPool = poolToDraw.indexOf(winnerNick);
 
-            // Matematyka celu tarczy: znacznik strzałki jest na samej górze koła (-90 stopni / czyli -Math.PI / 2)
             const targetAngle = -(winnerIndexInPool * segmentArc) - (segmentArc / 2) - (Math.PI / 2);
             const extraSpinsRad = (5 + Math.floor(Math.random() * 3)) * 2 * Math.PI; 
             const finalRotationVal = targetAngle - extraSpinsRad;
 
             const drawDurationSeconds = parseFloat(timeSlider.value) || 20;
             const startTime = performance.now();
-
-            // Paleta głębokich neonowych barw cyberpunkowych dla wycinków koła
             const wheelColors = ['#1a0933', '#2a0c4d', '#3d0066', '#140526', '#4c0d66'];
 
             isCanvasLoopRunning = true;
@@ -986,20 +975,17 @@
 
                 const now = performance.now();
                 const progress = Math.min((now - startTime) / (drawDurationSeconds * 1000), 1);
-                const ease = 1 - Math.pow(1 - progress, 5); // Krzywa hamowania tarczy fortuny
+                const ease = 1 - Math.pow(1 - progress, 5); 
 
                 const currentAngleRad = ease * finalRotationVal;
-
                 const cx = reelCanvas.width / 2;
                 const cy = reelCanvas.height / 2 + 10;
                 const radius = 170;
 
-                // 1. RYSOWANIE KOLOROWYCH WYCINKÓW TARCZY Z NICKAMI
                 poolToDraw.forEach((name, idx) => {
                     const startRad = currentAngleRad + (idx * segmentArc);
                     const endRad = startRad + segmentArc;
 
-                    // Tło wycinka
                     ctx.save();
                     ctx.beginPath();
                     ctx.moveTo(cx, cy);
@@ -1008,13 +994,11 @@
                     ctx.fillStyle = wheelColors[idx % wheelColors.length];
                     ctx.fill();
 
-                    // Neonowa linia podziału
                     ctx.strokeStyle = 'rgba(182, 36, 255, 0.3)';
                     ctx.lineWidth = 2;
                     ctx.stroke();
                     ctx.restore();
 
-                    // Tekst nicku widza wewnątrz klina tarczy
                     ctx.save();
                     ctx.translate(cx, cy);
                     ctx.rotate(startRad + segmentArc / 2);
@@ -1024,13 +1008,11 @@
                     ctx.textAlign = 'right';
                     ctx.textBaseline = 'middle';
                     
-                    // Bezpieczne ograniczenie długości wyświetlania zbyt długich nicków na streamie
                     let displayName = name.length > 15 ? name.substring(0, 13) + '..' : name;
                     ctx.fillText(displayName, radius - 25, 0);
                     ctx.restore();
                 });
 
-                // 2. STYLIZACJA NEONOWYCH PIERŚCIENI OBUDOWY KOŁA
                 ctx.save();
                 ctx.strokeStyle = (progress >= 1) ? '#00f5d4' : '#b624ff';
                 ctx.lineWidth = 5;
@@ -1041,7 +1023,6 @@
                 ctx.stroke();
                 ctx.restore();
 
-                // Środkowy kapsel/oś obrotu koła
                 ctx.save();
                 ctx.fillStyle = '#06030c';
                 ctx.strokeStyle = '#b624ff';
@@ -1052,7 +1033,6 @@
                 ctx.stroke();
                 ctx.restore();
 
-                // 3. SKALOWALNY WSKAŹNIK LASEROWY U GÓRY (Strzałka wskazująca cel wygranej)
                 ctx.save();
                 ctx.fillStyle = '#fff';
                 ctx.strokeStyle = '#00f5d4';
